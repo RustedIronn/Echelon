@@ -10,6 +10,7 @@ import NonNegotiables from "@components/cards/NonNegotiables";
 import MinimumStandard from "@components/cards/MinimumStandard";
 
 import WorkoutPlan from "@components/plans/WorkoutPlan";
+import WorkoutSession from "@components/workout/WorkoutSession";
 import WeekendPlan from "@components/plans/WeekendPlan";
 
 export default function Today() {
@@ -42,6 +43,8 @@ export default function Today() {
       <MinimumStandard />
 
       <WorkoutPlan />
+
+      <WorkoutSession />
 
       <WeekendPlan />
     </div>

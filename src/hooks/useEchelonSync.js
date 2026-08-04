@@ -7,6 +7,7 @@ import { useSchedule } from "@store/useSchedule";
 import { useLockIn } from "@store/useLockIn";
 import { useHabits } from "@store/useHabits";
 import { useFocus } from "@store/useFocus";
+import { useWorkout } from "@store/useWorkout";
 
 export default function useEchelonSync() {
   const { user } = useAuth();
@@ -34,6 +35,8 @@ export default function useEchelonSync() {
           useFocus.getState().loadFromCloud(),
 
           useSchedule.getState().loadFromCloud(),
+          
+          useWorkout.getState().loadFromCloud(),
         ]);
 
         useSync.getState().setSynced(true);

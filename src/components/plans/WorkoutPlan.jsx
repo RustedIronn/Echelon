@@ -1,26 +1,30 @@
+import { useNavigate } from "react-router-dom";
+
+import { Card, Button } from "@components/ui";
 import { workouts } from "@data/workouts";
-import { Card } from "../ui";
 
 export default function WorkoutPlan() {
+  const navigate = useNavigate();
+
   return (
-    <Card>
-      <div className="section-header">
-        <h2>Weekly Workout</h2>
+    <div className="workout-plan">
+      {workouts.map((workout) => (
+        <Card key={workout.day}>
+          <p>{workout.day}</p>
 
-        <p>Train consistently, not perfectly.</p>
-      </div>
+          <h3>{workout.title}</h3>
 
-      <div className="workout-grid">
-        {workouts.map((workout) => (
-          <div className="workout-item" key={workout.day}>
-            <span>{workout.day}</span>
+          <p>{workout.description}</p>
 
-            <h3>{workout.title}</h3>
-
-            <p>{workout.description}</p>
-          </div>
-        ))}
-      </div>
-    </Card>
+          <Button
+            onClick={() => {
+              navigate("/workouts");
+            }}
+          >
+            View Workout
+          </Button>
+        </Card>
+      ))}
+    </div>
   );
 }

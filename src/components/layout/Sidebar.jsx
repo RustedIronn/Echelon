@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
   Home,
   CalendarDays,
+  Dumbbell,
   Timer,
   CheckSquare,
   BookOpen,
@@ -23,6 +24,7 @@ const links = [
   ["Review", "/review", BookOpen],
   ["Settings", "/settings", Settings],
   ["Analytics", "/analytics", BarChart3],
+  ["Workouts", "/workouts", Dumbbell],
 ];
 
 export default function Sidebar() {

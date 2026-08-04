@@ -7,6 +7,7 @@ import Review from "../pages/Review";
 import Settings from "../pages/Settings";
 import Schedule from "../pages/Schedule";
 import Analytics from "../pages/Analytics";
+import Workouts from "@pages/Workouts";
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
         path: "analytics",
         element: <Analytics />,
       },
+      {
+        path: "/workouts",
+        element: <Workouts />
+      }
     ],
   },
 ]);
