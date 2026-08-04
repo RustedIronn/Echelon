@@ -1,16 +1,93 @@
-# React + Vite
+# Echelon
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<p align="center">
+  <img src="./public/assets/echelon.svg" width="80" alt="Echelon Logo">
+</p>
 
-Currently, two official plugins are available:
+<h3 align="center">
+A personal operating system for focus, habits, and growth.
+</h3>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+<p align="center">
+Plan your day. Execute your goals. Reflect. Improve.
+</p>
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Overview
 
-## Expanding the ESLint configuration
+Echelon is a personal growth system designed to help you build consistency through structured planning, focused work, habit tracking, and daily reflection.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Instead of relying on motivation alone, Echelon creates a repeatable system:
+
+**Plan → Execute → Review → Improve**
+
+Your progress is synced securely across devices through Firebase.
+
+---
+
+## Features
+
+### Daily System
+
+- Structured daily schedule
+- Timeline-based execution
+- Task completion tracking
+- Daily progress overview
+
+### Focus Mode
+
+- Deep work sessions
+- Focus session history
+- Track time spent on important tasks
+
+### Habit Tracking
+
+- Daily habit checklist
+- Consistency tracking
+- Cloud synchronized progress
+
+### Reflection & Review
+
+- Daily reviews
+- Personal insights
+- Learn from previous days
+
+### Cloud Sync
+
+- Google authentication
+- Firestore-backed storage
+- Multi-device synchronization
+- Works across desktop and mobile
+
+---
+
+## Screenshots
+
+_Add screenshots here_
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- React
+- Vite
+- Zustand
+- React Router
+- Framer Motion
+- Lucide Icons
+
+### Backend / Cloud
+
+- Firebase Authentication
+- Cloud Firestore
+
+### Deployment
+
+- Vercel
+
+---
+
+## Architecture
