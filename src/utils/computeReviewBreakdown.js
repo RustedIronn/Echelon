@@ -1,4 +1,4 @@
-export function getReviewBreakdown({
+export function computeReviewBreakdown({
   tasks,
   habits,
   sessions,

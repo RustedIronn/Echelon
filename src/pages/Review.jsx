@@ -7,7 +7,7 @@ import { generateReview } from "@utils/reviewAnalyzer";
 import useReview from "@hooks/useReview";
 
 import ReviewBreakdown from "@components/review/ReviewBreakdown";
-import { getReviewBreakdown } from "@utils/reviewBreakdown";
+import { computeReviewBreakdown } from "@/utils/computeReviewBreakdown";
 
 export default function Review() {
   const { tasks } = useToday();
@@ -25,7 +25,7 @@ export default function Review() {
     workouts,
   });
 
-  const breakdown = getReviewBreakdown({
+  const breakdown = computeReviewBreakdown({
     tasks,
     habits,
     sessions,
