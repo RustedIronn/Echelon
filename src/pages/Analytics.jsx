@@ -4,6 +4,7 @@ import ProgressChart from "@components/analytics/ProgressChart";
 import FocusAnalytics from "@components/analytics/FocusAnalytics";
 import HabitAnalytics from "@components/analytics/HabitAnalytics";
 import WeeklyInsight from "@components/analytics/WeeklyInsight";
+import WorkoutAnalytics from "@components/analytics/WorkoutAnalytics";
 
 import { useStats } from "@store/useStats";
 
@@ -25,6 +26,8 @@ export default function Analytics() {
       <FocusAnalytics />
 
       <HabitAnalytics />
+
+      <WorkoutAnalytics />
     </div>
   );
 }

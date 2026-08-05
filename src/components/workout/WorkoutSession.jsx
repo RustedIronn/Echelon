@@ -31,6 +31,8 @@ export default function WorkoutSession() {
   if (!workout) return null;
 
   if (phase === "finished") {
+    const minutes = Math.floor(useWorkout.getState().elapsed / 60);
+
     return (
       <Card>
         <div className="workout-session">
@@ -38,7 +40,24 @@ export default function WorkoutSession() {
 
           <h2>{workout.title}</h2>
 
-          <Button onClick={completeWorkout}>Done</Button>
+          <div className="completion-stats">
+            <div>
+              <strong>{workout.exercises.length}</strong>
+              <span>Exercises</span>
+            </div>
+
+            <div>
+              <strong>{workout.rounds}</strong>
+              <span>Rounds</span>
+            </div>
+
+            <div>
+              <strong>{minutes}</strong>
+              <span>Minutes</span>
+            </div>
+          </div>
+
+          <Button onClick={completeWorkout}>Finish</Button>
         </div>
       </Card>
     );
@@ -73,6 +92,8 @@ export default function WorkoutSession() {
         </p>
 
         <h2>{exercise?.name}</h2>
+
+        <p className="exercise-instruction">{exercise?.description}</p>
 
         <p>
           Round {round}/{workout.rounds}

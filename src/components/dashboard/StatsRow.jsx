@@ -1,22 +1,29 @@
 import { useFocus } from "@store/useFocus";
 import { useHabits } from "@store/useHabits";
+import { useWorkout } from "@store/useWorkout";
 
-import { Clock3, CheckCircle2, Target, Flame } from "lucide-react";
+import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
 
 import { getTodayFocusTime, formatTime } from "@utils/focusStats";
 
 import { getCompletedCount } from "@utils/stats";
+
+import { getWorkoutStreak } from "@utils/workoutAnalyzer";
 
 export default function StatsRow({ tasks }) {
   const { sessions } = useFocus();
 
   const { habits } = useHabits();
 
+  const workouts = useWorkout((state) => state.sessions);
+
   const focus = getTodayFocusTime(sessions);
 
   const completed = getCompletedCount(tasks);
 
   const doneHabits = habits.filter((habit) => habit.done).length;
+
+  const streak = getWorkoutStreak(workouts);
 
   const stats = [
     {
@@ -25,23 +32,26 @@ export default function StatsRow({ tasks }) {
       icon: Clock3,
       type: "focus",
     },
+
     {
       label: "Tasks",
       value: `${completed}/${tasks.length}`,
       icon: CheckCircle2,
       type: "build",
     },
-    {
-      label: "Sessions",
-      value: sessions.length,
-      icon: Target,
-      type: "movement",
-    },
+
     {
       label: "Habits",
       value: `${doneHabits}/${habits.length}`,
       icon: Flame,
       type: "nourishment",
+    },
+
+    {
+      label: "Training",
+      value: `🔥 ${streak}`,
+      icon: Dumbbell,
+      type: "movement",
     },
   ];
 

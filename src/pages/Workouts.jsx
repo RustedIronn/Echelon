@@ -6,6 +6,7 @@ import { getTodayWorkout, getWorkoutDuration } from "@utils/workout";
 import ExerciseList from "@components/workout/ExerciseList";
 import WorkoutHistory from "@components/workout/WorkoutHistory";
 import WorkoutSession from "@components/workout/WorkoutSession";
+import WorkoutStats from "@components/cards/WorkoutStats";
 
 export default function Workouts() {
   const workout = getTodayWorkout();
@@ -53,6 +54,8 @@ export default function Workouts() {
           <ExerciseList workout={workout} />
 
           <WorkoutHistory />
+
+          <WorkoutStats />
         </>
       )}
     </div>

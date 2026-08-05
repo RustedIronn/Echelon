@@ -2,8 +2,12 @@ import { PageTitle, Card } from "@components/ui";
 import { useLockIn } from "@store/useLockIn";
 import { useHabits } from "@store/useHabits";
 import { useFocus } from "@store/useFocus";
+import { useWorkout } from "@store/useWorkout";
 import { generateReview } from "@utils/reviewAnalyzer";
 import useReview from "@hooks/useReview";
+
+import ReviewBreakdown from "@components/review/ReviewBreakdown";
+import { getReviewBreakdown } from "@utils/reviewBreakdown";
 
 export default function Review() {
   const { tasks } = useLockIn();
@@ -12,10 +16,20 @@ export default function Review() {
 
   const { sessions } = useFocus();
 
+  const workouts = useWorkout((state) => state.sessions);
+
   const review = generateReview({
     tasks,
     habits,
     sessions,
+    workouts,
+  });
+
+  const breakdown = getReviewBreakdown({
+    tasks,
+    habits,
+    sessions,
+    workoutCompleted: review.workoutCompleted,
   });
 
   const { history } = useReview(review);
@@ -40,6 +54,16 @@ export default function Review() {
 
           <span>Execution Score</span>
         </div>
+
+        <ReviewBreakdown breakdown={breakdown} />
+
+        {review.todayWorkout && (
+          <div className="review-workout">
+            <h3>Training</h3>
+
+            <p>{review.todayWorkout.title}</p>
+          </div>
+        )}
 
         <div className="review-section">
           <h3>What went well</h3>
@@ -74,7 +98,7 @@ export default function Review() {
             .slice(-7)
             .reverse()
             .map((day) => (
-              <div className="history-item" key={day.date}>
+              <div className="history-item" key={`${day.date}-${day.score}`}>
                 <span>{day.date}</span>
 
                 <strong>{day.score}%</strong>
@@ -82,7 +106,6 @@ export default function Review() {
             ))}
         </div>
       </Card>
-      
     </div>
   );
 }

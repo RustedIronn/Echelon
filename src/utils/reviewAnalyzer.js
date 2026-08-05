@@ -1,7 +1,7 @@
 import { getToday } from "./date";
 import { getWorkoutStats } from "./workoutAnalyzer";
 
-export function generateReview({ tasks, habits, sessions }) {
+export function generateReview({ tasks, habits, sessions, workouts = [] }) {
   const completedTasks = tasks.filter((task) => task.done).length;
 
   const taskScore = Math.round((completedTasks / tasks.length) * 100) || 0;
@@ -17,9 +17,17 @@ export function generateReview({ tasks, habits, sessions }) {
 
   const focusMinutes = Math.floor(focusSeconds / 60);
 
-  const workoutStats = getWorkoutStats();
+  const workoutStats = getWorkoutStats(workouts);
 
-  const workoutScore = workoutStats.completedToday ? 100 : 0;
+  const todayWorkout = workouts.find((item) => item.date === getToday());
+
+  const workoutRequired =
+    todayWorkout &&
+    !["Recovery", "Active Recovery", "Fun Movement"].includes(
+      todayWorkout.title,
+    );
+
+  const workoutScore = workoutRequired && workoutStats.completedToday ? 100 : 0;
 
   const score = Math.round(
     taskScore * 0.45 +
@@ -50,12 +58,6 @@ export function generateReview({ tasks, habits, sessions }) {
     improvements.push("Increase deep work time");
   }
 
-  const workoutRequired =
-    workoutStats.todayWorkout &&
-    workoutStats.todayWorkout.title !== "Recovery" &&
-    workoutStats.todayWorkout.title !== "Active Recovery" &&
-    workoutStats.todayWorkout.title !== "Fun Movement";
-
   if (workoutRequired) {
     if (workoutScore === 100) {
       wins.push("Completed training session");
@@ -75,6 +77,10 @@ export function generateReview({ tasks, habits, sessions }) {
 
     focusMinutes,
 
-    workoutCompleted: workoutStats.completedToday,
+    workoutCompleted: !!workoutStats.completedToday,
+
+    workoutStats,
+
+    todayWorkout,
   };
 }

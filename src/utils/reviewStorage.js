@@ -1,37 +1,21 @@
-import {saveData,loadData} from "./storage";
+import { saveData, loadData } from "./storage";
 
-const KEY="lockin_reviews";
+const KEY = "lockin_reviews";
 
+export function saveReview(review) {
+  const reviews = loadData(KEY, []);
 
-export function saveReview(review){
+  const exists = reviews.some((item) => item.date === review.date);
 
-	const reviews=loadData(
-		KEY,
-		[]
-	);
+  const updated = exists
+    ? reviews.map((item) => (item.date === review.date ? review : item))
+    : [...reviews, review];
 
+  saveData(KEY, updated);
 
-	const updated=[
-		...reviews,
-		review
-	];
-
-
-	saveData(
-		KEY,
-		updated
-	);
-
-
-	return updated;
+  return updated;
 }
 
-
-export function getReviews(){
-
-	return loadData(
-		KEY,
-		[]
-	);
-
+export function getReviews() {
+  return loadData(KEY, []);
 }

@@ -1,9 +1,32 @@
-import { calculateProgress } from "@utils/stats";
+import { useHabits } from "@store/useHabits";
+import { useFocus } from "@store/useFocus";
+import { useWorkout } from "@store/useWorkout";
+
+import { getTodayFocusTime } from "@utils/focusStats";
+import { calculateExecutionScore } from "@utils/executionScore";
 
 export default function DayProgress({ tasks }) {
-  const progress = calculateProgress(tasks);
+  const { habits } = useHabits();
+
+  const { sessions } = useFocus();
+
+  const workouts = useWorkout((state) => state.sessions);
+
+  const focusMinutes = Math.floor(getTodayFocusTime(sessions) / 60);
+
+  const hasWorkout = workouts.some(
+    (item) => item.date === new Date().toISOString().split("T")[0],
+  );
+
+  const progress = calculateExecutionScore({
+    tasks,
+    habits,
+    focusMinutes,
+    hasWorkout,
+  });
 
   const radius = 42;
+
   const circumference = 2 * Math.PI * radius;
 
   const offset = circumference - (progress / 100) * circumference;

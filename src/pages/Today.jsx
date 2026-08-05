@@ -5,6 +5,7 @@ import CurrentMission from "@components/dashboard/CurrentMission";
 import DayProgress from "@components/dashboard/DayProgress";
 import StatsRow from "@components/dashboard/StatsRow";
 import Timeline from "@components/timeline/Timeline";
+import DailyOverview from "@components/dashboard/DailyOverview";
 
 import NonNegotiables from "@components/cards/NonNegotiables";
 import MinimumStandard from "@components/cards/MinimumStandard";
@@ -12,6 +13,7 @@ import MinimumStandard from "@components/cards/MinimumStandard";
 import WorkoutPlan from "@components/plans/WorkoutPlan";
 import WorkoutSession from "@components/workout/WorkoutSession";
 import WeekendPlan from "@components/plans/WeekendPlan";
+import TodayWorkout from "@components/dashboard/TodayWorkout";
 
 export default function Today() {
   const { tasks, toggleTask} = useLockIn();
@@ -23,6 +25,8 @@ export default function Today() {
         title="Today"
         description="Execute the plan. Improve the system."
       />
+
+      <DailyOverview />
 
       <div className="dashboard-grid">
         <div className="dashboard-main">
@@ -42,7 +46,7 @@ export default function Today() {
 
       <MinimumStandard />
 
-      <WorkoutPlan />
+      <TodayWorkout />
 
       <WorkoutSession />
 

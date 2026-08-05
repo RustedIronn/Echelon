@@ -13,6 +13,8 @@ export default function ExerciseCard({ exercise, index }) {
           {" • "}
           {exercise.rest}s rest
         </p>
+
+        <p className="exercise-description">{exercise.description}</p>
       </div>
     </Card>
   );
