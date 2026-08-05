@@ -18,7 +18,7 @@ export const useFocus = create((set) => ({
   seconds: 0,
 
   sessions:
-    loadData("lockin_focus", {
+    loadData("echelon_focus", {
       date: getToday(),
       data: [],
     }).data || [],
@@ -57,7 +57,7 @@ export const useFocus = create((set) => ({
 
       const sessions = [...state.sessions, session];
 
-      saveData("lockin_focus", {
+      saveData("echelon_focus", {
         date: getToday(),
         data: sessions,
       });
@@ -95,7 +95,7 @@ export const useFocus = create((set) => ({
           sessions,
         });
 
-        saveData("lockin_focus", {
+        saveData("echelon_focus", {
           date: getToday(),
           data: sessions,
         });

@@ -1,6 +1,6 @@
 import { saveData, loadData } from "./storage";
 
-const KEY = "lockin_workouts";
+const KEY = "echelon_workouts";
 
 export function saveWorkout(workout) {
   const workouts = loadData(KEY, []);

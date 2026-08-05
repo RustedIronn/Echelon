@@ -1,11 +1,11 @@
 import { useSchedule } from "@store/useSchedule";
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { Card, Button } from "../ui";
 
 export default function ScheduleEditor() {
   const { schedule, updateTask } = useSchedule();
 
-  const { refreshSchedule } = useLockIn();
+  const { refreshSchedule } = useToday();
 
   return (
     <Card>

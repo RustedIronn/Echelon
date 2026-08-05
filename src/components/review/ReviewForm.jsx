@@ -1,7 +1,7 @@
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 
 export default function ReviewForm() {
-  const { review, setReview } = useLockIn();
+  const { review, setReview } = useToday();
 
   return (
     <div className="card">

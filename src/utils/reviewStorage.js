@@ -1,6 +1,6 @@
 import { saveData, loadData } from "./storage";
 
-const KEY = "lockin_reviews";
+const KEY = "echelon_reviews";
 
 export function saveReview(review) {
   const reviews = loadData(KEY, []);

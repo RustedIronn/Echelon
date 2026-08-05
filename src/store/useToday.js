@@ -13,7 +13,7 @@ import { useToast } from "./useToast";
 import { saveDaily, loadDaily } from "@services/daily";
 
 const getTasks = () => {
-  const schedule = loadData("lockin_schedule", defaultSchedule);
+  const schedule = loadData("echelon_schedule", defaultSchedule);
 
   return schedule.map((task) => ({
     ...task,
@@ -21,9 +21,9 @@ const getTasks = () => {
   }));
 };
 
-const saved = loadData("lockin_day", null);
+const saved = loadData("echelon_today", null);
 
-export const useLockIn = create((set) => ({
+export const useToday = create((set) => ({
   tasks: saved?.date === getToday() ? saved.tasks : getTasks(),
 
   toggleTask: (id) =>
@@ -44,7 +44,7 @@ export const useLockIn = create((set) => ({
         tasks,
       };
 
-      saveData("lockin_day", data);
+      saveData("echelon_today", data);
 
       const user = useAuth.getState().user;
 
@@ -69,7 +69,7 @@ export const useLockIn = create((set) => ({
       tasks,
     };
 
-    saveData("lockin_day", data);
+    saveData("echelon_today", data);
 
     const user = useAuth.getState().user;
 
@@ -95,7 +95,7 @@ export const useLockIn = create((set) => ({
           tasks: cloud.tasks,
         });
 
-        saveData("lockin_day", cloud);
+        saveData("echelon_today", cloud);
       }
     } catch (error) {
       console.error("Cloud sync failed:", error);

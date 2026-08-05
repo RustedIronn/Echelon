@@ -1,8 +1,8 @@
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { Card } from "../ui";
 
 export default function DayStatus() {
-  const { date } = useLockIn();
+  const { date } = useToday();
 
   return (
     <Card>

@@ -1,4 +1,4 @@
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { PageTitle } from "@components/ui";
 
 import CurrentMission from "@components/dashboard/CurrentMission";
@@ -16,7 +16,7 @@ import WeekendPlan from "@components/plans/WeekendPlan";
 import TodayWorkout from "@components/dashboard/TodayWorkout";
 
 export default function Today() {
-  const { tasks, toggleTask} = useLockIn();
+  const { tasks, toggleTask } = useToday();
 
   return (
     <div className="page">

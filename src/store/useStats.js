@@ -1,38 +1,25 @@
-import {create} from "zustand";
-import {saveData,loadData} from "@utils/storage";
-import {getToday} from "@utils/date";
+import { create } from "zustand";
+import { saveData, loadData } from "@utils/storage";
+import { getToday } from "@utils/date";
 
-export const useStats=create((set)=>({
-	history:loadData(
-		"lockin_history",
-		[]
-	),
+export const useStats = create((set) => ({
+  history: loadData("echelon_history", []),
 
-	saveDay:(progress)=>{
+  saveDay: (progress) => {
+    const history = loadData("echelon_history", []);
 
-		const history=loadData(
-			"lockin_history",
-			[]
-		);
+    const updated = [
+      ...history.filter((day) => day.date !== getToday()),
+      {
+        date: getToday(),
+        progress,
+      },
+    ];
 
-		const updated=[
-			...history.filter(
-				day=>day.date!==getToday()
-			),
-			{
-				date:getToday(),
-				progress
-			}
-		];
+    saveData("echelon_history", updated);
 
-		saveData(
-			"lockin_history",
-			updated
-		);
-
-		set({
-			history:updated
-		});
-	}
-
+    set({
+      history: updated,
+    });
+  },
 }));

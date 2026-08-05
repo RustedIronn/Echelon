@@ -9,7 +9,7 @@ import { useAuth } from "@store/useAuth";
 import { saveSchedule, loadSchedule } from "@services/schedule";
 
 export const useSchedule = create((set) => ({
-  schedule: loadData("lockin_schedule", defaultSchedule),
+  schedule: loadData("echelon_schedule", defaultSchedule),
 
   updateTask: (id, data) =>
     set((state) => {
@@ -22,7 +22,7 @@ export const useSchedule = create((set) => ({
           : task,
       );
 
-      saveData("lockin_schedule", updated);
+      saveData("echelon_schedule", updated);
 
       const user = useAuth.getState().user;
 
@@ -48,7 +48,7 @@ export const useSchedule = create((set) => ({
           schedule: cloud,
         });
 
-        saveData("lockin_schedule", cloud);
+        saveData("echelon_schedule", cloud);
       }
     } catch (error) {
       console.error("Schedule sync failed:", error);

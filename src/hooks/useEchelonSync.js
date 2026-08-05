@@ -4,7 +4,7 @@ import { useSync } from "@store/useSync";
 import { useAuth } from "@store/useAuth";
 import { useSchedule } from "@store/useSchedule";
 
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { useHabits } from "@store/useHabits";
 import { useFocus } from "@store/useFocus";
 import { useWorkout } from "@store/useWorkout";
@@ -28,14 +28,14 @@ export default function useEchelonSync() {
 
       try {
         await Promise.all([
-          useLockIn.getState().loadFromCloud(),
+          useToday.getState().loadFromCloud(),
 
           useHabits.getState().loadFromCloud(),
 
           useFocus.getState().loadFromCloud(),
 
           useSchedule.getState().loadFromCloud(),
-          
+
           useWorkout.getState().loadFromCloud(),
         ]);
 

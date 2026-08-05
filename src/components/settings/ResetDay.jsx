@@ -1,8 +1,8 @@
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { Button } from "../ui";
 
 export default function ResetDay() {
-  const { resetDay } = useLockIn();
+  const { resetDay } = useToday();
 
   return (
     <section className="card danger-card">

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import AppRoot from "./app/AppRoot";
 import { useAuth } from "@store/useAuth";
 import Login from "@components/auth/Login";
+import { migrateStorage } from "@utils/storage";
 
 import "./index.css";
 
@@ -17,6 +18,8 @@ function Root() {
 }
 
 useAuth.getState().init();
+
+migrateStorage();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

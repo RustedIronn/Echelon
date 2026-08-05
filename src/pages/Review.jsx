@@ -1,5 +1,5 @@
 import { PageTitle, Card } from "@components/ui";
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import { useHabits } from "@store/useHabits";
 import { useFocus } from "@store/useFocus";
 import { useWorkout } from "@store/useWorkout";
@@ -10,7 +10,7 @@ import ReviewBreakdown from "@components/review/ReviewBreakdown";
 import { getReviewBreakdown } from "@utils/reviewBreakdown";
 
 export default function Review() {
-  const { tasks } = useLockIn();
+  const { tasks } = useToday();
 
   const { habits } = useHabits();
 

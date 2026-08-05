@@ -1,9 +1,9 @@
-import { useLockIn } from "@store/useLockIn";
+import { useToday } from "@/store/useToday";
 import Timeline from "@components/timeline/Timeline";
 import { PageTitle } from "@components/ui";
 
 export default function Schedule() {
-  const { tasks, toggleTask } = useLockIn();
+  const { tasks, toggleTask } = useToday();
 
   return (
     <div className="page">
