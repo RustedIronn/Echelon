@@ -1,7 +1,6 @@
-import { getToday } from "./date";
-import { getWorkoutStats } from "@features/workout/analyzer";
+import { getToday } from "@utils/date";
 
-export function generateReview({ tasks, habits, sessions, workouts = [] }) {
+export function generateReview({ tasks, habits, sessions, workoutStats }) {
   const completedTasks = tasks.filter((task) => task.done).length;
 
   const taskScore = Math.round((completedTasks / tasks.length) * 100) || 0;
@@ -17,9 +16,7 @@ export function generateReview({ tasks, habits, sessions, workouts = [] }) {
 
   const focusMinutes = Math.floor(focusSeconds / 60);
 
-  const workoutStats = getWorkoutStats(workouts);
-
-  const todayWorkout = workouts.find((item) => item.date === getToday());
+  const todayWorkout = workoutStats.todayWorkout;
 
   const workoutRequired =
     todayWorkout &&

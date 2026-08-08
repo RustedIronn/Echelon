@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { saveReview, getReviews } from "@utils/reviewStorage";
-
-import { saveReviewCloud, loadReviewsCloud } from "@services/reviews";
-
-import { useAuth } from "@store/useAuth";
+import { saveReview, getReviews } from "./reviewStorage";
+import { saveReviewCloud, loadReviewsCloud } from "./service";
+import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 
 export default function useReview(review) {
   const [history, setHistory] = useState([]);
@@ -15,15 +13,14 @@ export default function useReview(review) {
 
       setHistory(local);
 
-      const user = useAuth.getState().user;
-
-      if (user) {
-        const cloud = await loadReviewsCloud(user.uid);
-
-        if (cloud.length) {
+      await loadFromCloud(
+        (uid) => loadReviewsCloud(uid),
+        (cloud) => {
+          // preserve original semantic: don't clobber local with an empty cloud result
+          if (!cloud.length) return;
           setHistory(cloud);
-        }
-      }
+        },
+      );
 
       if (!review) return;
 
@@ -33,10 +30,7 @@ export default function useReview(review) {
         const updated = saveReview(review);
 
         setHistory(updated);
-
-        if (user) {
-          saveReviewCloud(user.uid, review).catch(console.error);
-        }
+        syncToCloud((uid) => saveReviewCloud(uid, review));
       }
     };
 

@@ -3,11 +3,12 @@ import { useToday } from "@/store/useToday";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";
-import { generateReview } from "@utils/reviewAnalyzer";
-import useReview from "@hooks/useReview";
+import { getWorkoutStats } from "@features/workout/analyzer";
+import { generateReview } from "@features/review/analyzer";
+import useReview from "@features/review/store";
 
-import ReviewBreakdown from "@components/review/ReviewBreakdown";
-import { computeReviewBreakdown } from "@/utils/computeReviewBreakdown";
+import ReviewBreakdown from "@features/review/components/ReviewBreakdown";
+import { computeReviewBreakdown } from "@features/review/computeReviewBreakdown";
 
 export default function Review() {
   const { tasks } = useToday();
@@ -17,12 +18,13 @@ export default function Review() {
   const { sessions } = useFocus();
 
   const workouts = useWorkout((state) => state.sessions);
+  const workoutStats = getWorkoutStats(workouts);
 
   const review = generateReview({
     tasks,
     habits,
     sessions,
-    workouts,
+    workoutStats,
   });
 
   const breakdown = computeReviewBreakdown({

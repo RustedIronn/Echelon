@@ -1,4 +1,4 @@
-import { saveData, loadData } from "./storage";
+import { saveData, loadData } from "@utils/storage";
 
 const KEY = "echelon_reviews";
 

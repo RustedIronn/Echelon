@@ -1,5 +1,5 @@
 import { generateWeeklyInsights } from "@utils/weeklyInsights";
-import useReview from "@hooks/useReview";
+import useReview from "@features/review/store";
 
 export default function WeeklyInsight() {
   const { history } = useReview();
