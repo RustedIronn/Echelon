@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createUserProfile } from "@services/user";
+import { createUserProfile } from "./user";
 
 import { onAuthStateChanged } from "firebase/auth";
 

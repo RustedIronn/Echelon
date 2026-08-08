@@ -1,4 +1,4 @@
-import { useAuth } from "@store/useAuth";
+import { useAuth } from "@features/auth/store";
 
 // Fire-and-forget cloud write, gated on auth. Replaces the
 // "const user = useAuth.getState().user; if (user) { ...().catch(console.error) }"
