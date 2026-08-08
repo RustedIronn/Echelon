@@ -1,4 +1,4 @@
-import { saveUserData, getUserData } from "@services/firestore";
+import { saveUserData, getUserData } from "@core/firestore";
 
 export async function saveHabits(uid, date, data) {
   await saveUserData(uid, "habits", date, { date, data });

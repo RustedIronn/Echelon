@@ -10,12 +10,6 @@
 			"@pages/*":[
 				"./src/pages/*"
 			],
-			"@config/*":[
-				"./src/config/*"
-			],
-			"@services/*":[
-				"./src/services/*"
-			],
 			"@store/*":[
 				"./src/store/*"
 			],
@@ -33,6 +27,9 @@
 			],
 			"@features/*":[
 				"./src/features/*"
+			],
+			"@core/*":[
+				"./src/core/*"
 			]
 		}
 	}

@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import AppRoot from "./app/AppRoot";
-import { useAuth } from "@features/auth/store";
-import Login from "@features/auth/components/Login";
+import { useAuth } from "@core/auth/store";
+import Login from "@core/auth/components/Login";
 import { migrateStorage } from "@utils/storage";
 
 import "./index.css";

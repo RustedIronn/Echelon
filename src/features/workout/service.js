@@ -1,4 +1,4 @@
-import { saveUserData, getUserData } from "@services/firestore";
+import { saveUserData, getUserData } from "@core/firestore";
 
 export async function saveWorkoutCloud(uid, sessions) {
   await saveUserData(uid, "workout", "history", { sessions });

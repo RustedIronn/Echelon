@@ -13,8 +13,8 @@ import {
 
 import { useSync } from "@store/useSync";
 
-import { useAuth } from "@features/auth/store";
-import { logout } from "@features/auth/service";
+import { useAuth } from "@core/auth/store";
+import { logout } from "@core/auth/service";
 
 const links = [
   ["Today", "/", Home],

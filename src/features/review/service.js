@@ -8,7 +8,7 @@ import {
   query,
 } from "firebase/firestore";
 
-import { db } from "@config/firebase";
+import { db } from "@core/firebase";
 
 export async function saveReviewCloud(uid, review) {
   await setDoc(doc(db, "users", uid, "reviews", review.date), review, {

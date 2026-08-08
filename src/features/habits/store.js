@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { saveData, loadData } from "@utils/storage";
 import { getToday, isNewDay } from "@utils/date";
 import { habits as defaultHabits } from "./data";
-import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
+import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveHabits, loadHabits } from "./service";
 
 const createHabits = () =>

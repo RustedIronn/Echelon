@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { schedule as defaultSchedule } from "./data";
 import { saveData, loadData } from "@utils/storage";
-import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
+import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveSchedule, loadSchedule } from "./service";
 
 export const useSchedule = create((set) => ({

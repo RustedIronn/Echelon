@@ -18,14 +18,13 @@ export default defineConfig({
 			"@":path.resolve(__dirname,"src"),
 			"@components":path.resolve(__dirname,"src/components"),
 			"@pages":path.resolve(__dirname,"src/pages"),
-			"@config":path.resolve(__dirname,"src/config"),
-			"@services":path.resolve(__dirname,"src/services"),
 			"@store":path.resolve(__dirname,"src/store"),
 			"@utils":path.resolve(__dirname,"src/utils"),
 			"@hooks":path.resolve(__dirname,"src/hooks"),
 			"@assets":path.resolve(__dirname,"src/assets"),
 			"@data":path.resolve(__dirname,"src/data"),
-			"@features":path.resolve(__dirname,"src/features")
+			"@features":path.resolve(__dirname,"src/features"),
+			"@core":path.resolve(__dirname,"src/core")
 		}
 	}
 

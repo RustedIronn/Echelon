@@ -1,4 +1,4 @@
-import { saveUserData, getUserData } from "@services/firestore";
+import { saveUserData, getUserData } from "@core/firestore";
 
 export async function saveSchedule(uid, schedule) {
   await saveUserData(uid, "settings", "schedule", { schedule });

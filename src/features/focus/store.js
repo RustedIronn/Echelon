@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { getToday } from "@utils/date";
 import { saveData, loadData } from "@utils/storage";
 import { useToast } from "@store/useToast";
-import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
+import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveFocusSession, loadFocusSessions } from "./service";
 
 export const useFocus = create((set) => ({

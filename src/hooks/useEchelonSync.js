@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSync } from "@store/useSync";
 
-import { useAuth } from "@features/auth/store";
+import { useAuth } from "@core/auth/store";
 import { useSchedule } from "@features/schedule/store";
 
 import { useToday } from "@features/schedule/today";

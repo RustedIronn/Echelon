@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { saveWorkoutCloud, loadWorkoutCloud } from "./service";
 import { saveWorkout, getWorkouts } from "./workoutStorage";
 import { getToday } from "@utils/date";
-import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
+import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 
 export const useWorkout = create((set) => ({
   active: false,

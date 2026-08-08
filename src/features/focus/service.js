@@ -6,7 +6,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 
-import { db } from "@config/firebase";
+import { db } from "@core/firebase";
 
 export async function saveFocusSession(uid, session) {
   await addDoc(collection(db, "users", uid, "focusSessions"), session);

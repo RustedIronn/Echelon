@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { saveReview, getReviews } from "./reviewStorage";
 import { saveReviewCloud, loadReviewsCloud } from "./service";
-import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
+import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 
 export default function useReview(review) {
   const [history, setHistory] = useState([]);
