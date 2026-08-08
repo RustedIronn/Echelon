@@ -1,5 +1,5 @@
-import { weekend } from "@data/weekend";
-import { Card } from "../ui";
+import { weekend } from "../weekend";
+import { Card } from "@components/ui";
 
 export default function WeekendPlan() {
   return (

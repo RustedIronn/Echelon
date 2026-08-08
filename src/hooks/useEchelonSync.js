@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useSync } from "@store/useSync";
 
 import { useAuth } from "@store/useAuth";
-import { useSchedule } from "@store/useSchedule";
+import { useSchedule } from "@features/schedule/store";
 
-import { useToday } from "@/store/useToday";
+import { useToday } from "@features/schedule/today";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";

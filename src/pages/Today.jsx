@@ -1,10 +1,10 @@
-import { useToday } from "@/store/useToday";
+import { useToday } from "@features/schedule/today";
 import { PageTitle } from "@components/ui";
 
 import CurrentMission from "@components/dashboard/CurrentMission";
 import DayProgress from "@components/dashboard/DayProgress";
 import StatsRow from "@components/dashboard/StatsRow";
-import Timeline from "@components/timeline/Timeline";
+import Timeline from "@features/schedule/components/Timeline";
 import DailyOverview from "@components/dashboard/DailyOverview";
 
 import NonNegotiables from "@components/cards/NonNegotiables";
@@ -12,7 +12,7 @@ import MinimumStandard from "@components/cards/MinimumStandard";
 
 import WorkoutPlan from "@features/workout/components/WorkoutPlan";
 import WorkoutSession from "@features/workout/components/WorkoutSession";
-import WeekendPlan from "@components/plans/WeekendPlan";
+import WeekendPlan from "@features/schedule/components/WeekendPlan";
 import TodayWorkout from "@components/dashboard/TodayWorkout";
 
 export default function Today() {

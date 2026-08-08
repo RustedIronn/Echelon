@@ -1,5 +1,5 @@
-import { useToday } from "@/store/useToday";
-import Timeline from "@components/timeline/Timeline";
+import { useToday } from "@features/schedule/today";
+import Timeline from "@features/schedule/components/Timeline";
 import { PageTitle } from "@components/ui";
 
 export default function Schedule() {

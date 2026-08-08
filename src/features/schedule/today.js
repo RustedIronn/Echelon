@@ -2,8 +2,8 @@ import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
 import { getToday } from "@utils/date";
-import { schedule as defaultSchedule } from "@data/schedule";
-import { useToast } from "./useToast";
+import { schedule as defaultSchedule } from "./data";
+import { useToast } from "@store/useToast";
 import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 import { saveDaily, loadDaily } from "@services/daily";
 
@@ -66,6 +66,29 @@ export const useToday = create((set) => ({
       tasks,
     });
   },
+
+  // clears today's checkmarks without reloading the schedule template —
+  // distinct from refreshSchedule, which also pulls in any schedule edits.
+  // was missing entirely after the phase-3 rewrite, which broke ResetDay.jsx.
+  resetDay: () =>
+    set((state) => {
+      const tasks = state.tasks.map((task) => ({
+        ...task,
+        done: false,
+      }));
+
+      const data = {
+        date: getToday(),
+        tasks,
+      };
+
+      saveData("echelon_today", data);
+      syncToCloud((uid) => saveDaily(uid, getToday(), data));
+
+      return {
+        tasks,
+      };
+    }),
 
   loadFromCloud: () =>
     loadFromCloud(
