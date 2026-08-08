@@ -1,20 +1,14 @@
 import { create } from "zustand";
 
 import { getToday } from "@utils/date";
-
 import { saveData, loadData } from "@utils/storage";
-
 import { useToast } from "./useToast";
-
-import { useAuth } from "@store/useAuth";
-
+import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 import { saveFocusSession, loadFocusSessions } from "@services/focus";
 
 export const useFocus = create((set) => ({
   active: false,
-
   task: null,
-
   seconds: 0,
 
   sessions:
@@ -47,11 +41,8 @@ export const useFocus = create((set) => ({
 
       const session = {
         task: state.task.title,
-
         category: state.task.category,
-
         duration: state.seconds,
-
         date: new Date().toISOString(),
       };
 
@@ -62,48 +53,34 @@ export const useFocus = create((set) => ({
         data: sessions,
       });
 
-      const user = useAuth.getState().user;
-
-      if (user) {
-        saveFocusSession(user.uid, session).catch(console.error);
-      }
+      syncToCloud((uid) => saveFocusSession(uid, session));
 
       useToast.getState().show("Focus session saved");
 
       return {
         active: false,
-
         task: null,
-
         seconds: 0,
-
         sessions,
       };
     });
   },
 
-  loadFromCloud: async () => {
-    const user = useAuth.getState().user;
+  loadFromCloud: () =>
+    loadFromCloud(
+      (uid) => loadFocusSessions(uid),
+      (sessions) => {
+        // preserve original semantic: don't clobber local with an empty cloud result
+        if (!sessions.length) return;
 
-    if (!user) return;
-
-    try {
-      const sessions = await loadFocusSessions(user.uid);
-
-      if (sessions.length) {
-        set({
-          sessions,
-        });
+        set({ sessions });
 
         saveData("echelon_focus", {
           date: getToday(),
           data: sessions,
         });
-      }
-    } catch (error) {
-      console.error("Focus sync failed:", error);
-    }
-  },
+      },
+    ),
 
   tick: () =>
     set((state) => ({

@@ -1,13 +1,9 @@
 import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
-
 import { getToday, isNewDay } from "@utils/date";
-
 import { habits as defaultHabits } from "@data/habits";
-
-import { useAuth } from "@store/useAuth";
-
+import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 import { saveHabits, loadHabits } from "@services/habits";
 
 const createHabits = () =>
@@ -38,35 +34,19 @@ export const useHabits = create((set) => ({
       };
 
       saveData("echelon_habits", data);
-
-      const user = useAuth.getState().user;
-
-      if (user) {
-        saveHabits(user.uid, getToday(), habits).catch(console.error);
-      }
+      syncToCloud((uid) => saveHabits(uid, getToday(), habits));
 
       return {
         habits,
       };
     }),
 
-  loadFromCloud: async () => {
-    const user = useAuth.getState().user;
-
-    if (!user) return;
-
-    try {
-      const cloud = await loadHabits(user.uid, getToday());
-
-      if (cloud) {
-        set({
-          habits: cloud.data,
-        });
-
+  loadFromCloud: () =>
+    loadFromCloud(
+      (uid) => loadHabits(uid, getToday()),
+      (cloud) => {
+        set({ habits: cloud.data });
         saveData("echelon_habits", cloud);
-      }
-    } catch (error) {
-      console.error("Habits sync failed:", error);
-    }
-  },
+      },
+    ),
 }));

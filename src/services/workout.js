@@ -1,21 +1,10 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { saveUserData, getUserData } from "@services/firestore";
 
-import { db } from "@config/firebase";
-
-export async function saveWorkoutCloud(userId, sessions) {
-  const ref = doc(db, "users", userId, "workout", "history");
-
-  await setDoc(ref, {
-    sessions,
-  });
+export async function saveWorkoutCloud(uid, sessions) {
+  await saveUserData(uid, "workout", "history", { sessions });
 }
 
-export async function loadWorkoutCloud(userId) {
-  const ref = doc(db, "users", userId, "workout", "history");
-
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) return [];
-
-  return snap.data().sessions || [];
+export async function loadWorkoutCloud(uid) {
+  const data = await getUserData(uid, "workout", "history");
+  return data?.sessions || [];
 }

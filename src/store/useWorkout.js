@@ -1,63 +1,45 @@
 import { create } from "zustand";
 
 import { saveWorkoutCloud, loadWorkoutCloud } from "@services/workout";
-
-import { useAuth } from "@store/useAuth";
-
-import { saveWorkout } from "@utils/workoutStorage";
+import { saveWorkout, getWorkouts } from "@utils/workoutStorage";
 import { getToday } from "@utils/date";
+import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 
 export const useWorkout = create((set) => ({
   active: false,
-
   paused: false,
-
   workout: null,
-
   startedAt: null,
-
   elapsed: 0,
 
-  sessions: [],
+  // was `sessions: []` — never read local storage on init, so a full
+  // page reload silently dropped whatever completeWorkout had saved.
+  sessions: getWorkouts(),
 
   round: 0,
-
   exerciseIndex: 0,
-
   phase: "idle",
-
   seconds: 0,
 
-  loadFromCloud: async () => {
-    const user = useAuth.getState().user;
-
-    if (!user) return;
-
-    const sessions = await loadWorkoutCloud(user.uid);
-
-    set({
-      sessions,
-    });
-  },
+  loadFromCloud: () =>
+    loadFromCloud(
+      (uid) => loadWorkoutCloud(uid),
+      (sessions) => {
+        set({ sessions });
+        saveWorkout(sessions);
+      },
+    ),
 
   startWorkout: (workout) => {
     set({
       active: true,
-
       paused: false,
-
       workout,
-
       startedAt: new Date(),
-
       elapsed: 0,
-
       round: 1,
-
       exerciseIndex: 0,
-
       phase: "prepare",
-
       seconds: 5,
     });
   },
@@ -75,9 +57,7 @@ export const useWorkout = create((set) => ({
       if (nextExercise < state.workout.exercises.length) {
         return {
           exerciseIndex: nextExercise,
-
           phase: "prepare",
-
           seconds: 5,
         };
       }
@@ -85,40 +65,41 @@ export const useWorkout = create((set) => ({
       if (state.round < state.workout.rounds) {
         return {
           round: state.round + 1,
-
           exerciseIndex: 0,
-
           phase: "prepare",
-
           seconds: 5,
         };
       }
 
       return {
         active: false,
-
         phase: "finished",
-
         seconds: 0,
       };
     }),
 
-  completeWorkout: async () => {
+  // was `async`, and `await saveWorkoutCloud(...)` — completeWorkout no longer
+  // waits on the network, matching how every other store's cloud sync behaves
+  // (fire-and-forget via syncToCloud). If a caller was relying on awaiting
+  // this to know the cloud write finished, that behavior has changed.
+  completeWorkout: () => {
     const state = useWorkout.getState();
 
     if (!state.workout) return;
 
     const completed = {
       workout: state.workout.title,
-
       date: getToday(),
-
       duration: state.elapsed,
     };
 
+    // previously: saveWorkout(updated) appended `updated` (the whole new
+    // sessions array) as a single element onto whatever was already in
+    // localStorage, nesting the array deeper every completed workout.
     const updated = [...state.sessions, completed];
 
     saveWorkout(updated);
+    syncToCloud((uid) => saveWorkoutCloud(uid, updated));
 
     set({
       active: false,
@@ -127,12 +108,6 @@ export const useWorkout = create((set) => ({
       workout: null,
       sessions: updated,
     });
-
-    const user = useAuth.getState().user;
-
-    if (user) {
-      await saveWorkoutCloud(user.uid, updated);
-    }
   },
 
   tick: () =>
@@ -142,7 +117,6 @@ export const useWorkout = create((set) => ({
       if (state.seconds > 0) {
         return {
           seconds: state.seconds - 1,
-
           elapsed: state.elapsed + 1,
         };
       }
@@ -152,7 +126,6 @@ export const useWorkout = create((set) => ({
       if (state.phase === "prepare") {
         return {
           phase: "exercise",
-
           seconds: exercise.duration,
         };
       }
@@ -160,7 +133,6 @@ export const useWorkout = create((set) => ({
       if (state.phase === "exercise") {
         return {
           phase: "rest",
-
           seconds: exercise.rest,
         };
       }
@@ -171,9 +143,7 @@ export const useWorkout = create((set) => ({
         if (nextExercise < state.workout.exercises.length) {
           return {
             exerciseIndex: nextExercise,
-
             phase: "prepare",
-
             seconds: 5,
           };
         }
@@ -181,20 +151,15 @@ export const useWorkout = create((set) => ({
         if (state.round < state.workout.rounds) {
           return {
             round: state.round + 1,
-
             exerciseIndex: 0,
-
             phase: "prepare",
-
             seconds: 5,
           };
         }
 
         return {
           active: false,
-
           phase: "finished",
-
           seconds: 0,
         };
       }
@@ -205,21 +170,13 @@ export const useWorkout = create((set) => ({
   reset: () => {
     set({
       active: false,
-
       paused: false,
-
       workout: null,
-
       startedAt: null,
-
       elapsed: 0,
-
       round: 0,
-
       exerciseIndex: 0,
-
       phase: "idle",
-
       seconds: 0,
     });
   },

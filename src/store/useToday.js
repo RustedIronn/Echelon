@@ -1,15 +1,10 @@
 import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
-
 import { getToday } from "@utils/date";
-
 import { schedule as defaultSchedule } from "@data/schedule";
-
-import { useAuth } from "@store/useAuth";
-
 import { useToast } from "./useToast";
-
+import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 import { saveDaily, loadDaily } from "@services/daily";
 
 const getTasks = () => {
@@ -45,12 +40,7 @@ export const useToday = create((set) => ({
       };
 
       saveData("echelon_today", data);
-
-      const user = useAuth.getState().user;
-
-      if (user) {
-        saveDaily(user.uid, getToday(), data).catch(console.error);
-      }
+      syncToCloud((uid) => saveDaily(uid, getToday(), data));
 
       useToast
         .getState()
@@ -70,35 +60,19 @@ export const useToday = create((set) => ({
     };
 
     saveData("echelon_today", data);
-
-    const user = useAuth.getState().user;
-
-    if (user) {
-      saveDaily(user.uid, getToday(), data).catch(console.error);
-    }
+    syncToCloud((uid) => saveDaily(uid, getToday(), data));
 
     set({
       tasks,
     });
   },
 
-  loadFromCloud: async () => {
-    const user = useAuth.getState().user;
-
-    if (!user) return;
-
-    try {
-      const cloud = await loadDaily(user.uid, getToday());
-
-      if (cloud) {
-        set({
-          tasks: cloud.tasks,
-        });
-
+  loadFromCloud: () =>
+    loadFromCloud(
+      (uid) => loadDaily(uid, getToday()),
+      (cloud) => {
+        set({ tasks: cloud.tasks });
         saveData("echelon_today", cloud);
-      }
-    } catch (error) {
-      console.error("Cloud sync failed:", error);
-    }
-  },
+      },
+    ),
 }));

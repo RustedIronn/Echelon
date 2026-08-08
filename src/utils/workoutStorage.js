@@ -2,14 +2,9 @@ import { saveData, loadData } from "./storage";
 
 const KEY = "echelon_workouts";
 
-export function saveWorkout(workout) {
-  const workouts = loadData(KEY, []);
-
-  const updated = [...workouts, workout];
-
-  saveData(KEY, updated);
-
-  return updated;
+export function saveWorkout(sessions) {
+  saveData(KEY, sessions);
+  return sessions;
 }
 
 export function getWorkouts() {
