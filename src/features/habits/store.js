@@ -2,9 +2,9 @@ import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
 import { getToday, isNewDay } from "@utils/date";
-import { habits as defaultHabits } from "@data/habits";
+import { habits as defaultHabits } from "./data";
 import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
-import { saveHabits, loadHabits } from "@services/habits";
+import { saveHabits, loadHabits } from "./service";
 
 const createHabits = () =>
   defaultHabits.map((name) => ({

@@ -1,4 +1,4 @@
-import { useHabits } from "@store/useHabits";
+import { useHabits } from "@features/habits/store";
 import { useFocus } from "@store/useFocus";
 import { useWorkout } from "@store/useWorkout";
 

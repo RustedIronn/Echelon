@@ -1,5 +1,5 @@
-import { useHabits } from "@store/useHabits";
-import { habits as defaultHabits } from "@data/habits";
+import { useHabits } from "@features/habits/store";
+import { habits as defaultHabits } from "@features/habits/data";
 
 export default function HabitList() {
   const { habits, toggleHabit } = useHabits();

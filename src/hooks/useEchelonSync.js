@@ -5,7 +5,7 @@ import { useAuth } from "@store/useAuth";
 import { useSchedule } from "@store/useSchedule";
 
 import { useToday } from "@/store/useToday";
-import { useHabits } from "@store/useHabits";
+import { useHabits } from "@features/habits/store";
 import { useFocus } from "@store/useFocus";
 import { useWorkout } from "@store/useWorkout";
 

@@ -1,4 +1,4 @@
-import { useHabits } from "@store/useHabits";
+import { useHabits } from "@features/habits/store";
 import { Card } from "../ui";
 
 export default function HabitAnalytics() {

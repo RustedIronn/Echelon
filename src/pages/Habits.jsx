@@ -1,4 +1,4 @@
-import HabitList from "@components/habits/HabitList";
+import HabitList from "@features/habits/components/HabitList";
 import PageTitle from "@components/ui/PageTitle";
 
 export default function Habits() {

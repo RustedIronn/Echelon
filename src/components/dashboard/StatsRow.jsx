@@ -1,5 +1,5 @@
 import { useFocus } from "@store/useFocus";
-import { useHabits } from "@store/useHabits";
+import { useHabits } from "@features/habits/store";
 import { useWorkout } from "@store/useWorkout";
 
 import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
