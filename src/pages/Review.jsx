@@ -2,7 +2,7 @@ import { PageTitle, Card } from "@components/ui";
 import { useToday } from "@/store/useToday";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 import { generateReview } from "@utils/reviewAnalyzer";
 import useReview from "@hooks/useReview";
 

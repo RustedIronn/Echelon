@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
-import { saveWorkoutCloud, loadWorkoutCloud } from "@services/workout";
-import { saveWorkout, getWorkouts } from "@utils/workoutStorage";
+import { saveWorkoutCloud, loadWorkoutCloud } from "./service";
+import { saveWorkout, getWorkouts } from "./workoutStorage";
 import { getToday } from "@utils/date";
 import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
 

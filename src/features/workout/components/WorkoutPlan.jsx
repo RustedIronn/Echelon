@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { Card, Button } from "@components/ui";
-import { workouts } from "@data/workouts";
+import { workouts } from "../data";
 
 export default function WorkoutPlan() {
   const navigate = useNavigate();

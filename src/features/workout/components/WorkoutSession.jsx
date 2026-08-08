@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 
 import { Card, Button } from "@components/ui";
 

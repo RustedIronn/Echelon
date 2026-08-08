@@ -7,7 +7,7 @@ import { useSchedule } from "@store/useSchedule";
 import { useToday } from "@/store/useToday";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 
 export default function useEchelonSync() {
   const { user } = useAuth();

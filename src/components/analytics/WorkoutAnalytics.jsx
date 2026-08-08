@@ -1,8 +1,8 @@
 import { Card } from "@components/ui";
 
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 
-import { getWorkoutStats, getWorkoutStreak } from "@utils/workoutAnalyzer";
+import { getWorkoutStats, getWorkoutStreak } from "@features/workout/analyzer";
 
 export default function WorkoutAnalytics() {
   const workouts = useWorkout((state) => state.sessions);

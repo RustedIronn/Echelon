@@ -1,6 +1,6 @@
 import { Card } from "@components/ui";
 
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 
 export default function WorkoutHistory() {
   const workouts = useWorkout((state) => state.sessions);

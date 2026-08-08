@@ -1,11 +1,11 @@
 import { PageTitle, Card, Button } from "@components/ui";
 
-import { useWorkout } from "@store/useWorkout";
-import { getTodayWorkout, getWorkoutDuration } from "@utils/workout";
+import { useWorkout } from "@features/workout/store";
+import { getTodayWorkout, getWorkoutDuration } from "@features/workout/utils";
 
-import ExerciseList from "@components/workout/ExerciseList";
-import WorkoutHistory from "@components/workout/WorkoutHistory";
-import WorkoutSession from "@components/workout/WorkoutSession";
+import ExerciseList from "@features/workout/components/ExerciseList";
+import WorkoutHistory from "@features/workout/components/WorkoutHistory";
+import WorkoutSession from "@features/workout/components/WorkoutSession";
 import WorkoutStats from "@components/dashboard/WorkoutStats";
 
 export default function Workouts() {

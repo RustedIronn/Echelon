@@ -1,6 +1,6 @@
 import { useFocus } from "@features/focus/store";
 import { useHabits } from "@features/habits/store";
-import { useWorkout } from "@store/useWorkout";
+import { useWorkout } from "@features/workout/store";
 
 import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
 
@@ -8,7 +8,7 @@ import { getTodayFocusTime, formatTime } from "@features/focus/utils";
 
 import { getCompletedCount } from "@utils/stats";
 
-import { getWorkoutStreak } from "@utils/workoutAnalyzer";
+import { getWorkoutStreak } from "@features/workout/analyzer";
 
 export default function StatsRow({ tasks }) {
   const { sessions } = useFocus();

@@ -1,5 +1,5 @@
 import { getToday } from "./date";
-import { getWorkoutStats } from "./workoutAnalyzer";
+import { getWorkoutStats } from "@features/workout/analyzer";
 
 export function generateReview({ tasks, habits, sessions, workouts = [] }) {
   const completedTasks = tasks.filter((task) => task.done).length;
