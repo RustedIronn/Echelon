@@ -2,9 +2,9 @@ import { create } from "zustand";
 
 import { getToday } from "@utils/date";
 import { saveData, loadData } from "@utils/storage";
-import { useToast } from "./useToast";
+import { useToast } from "@store/useToast";
 import { syncToCloud, loadFromCloud } from "@utils/cloudSync";
-import { saveFocusSession, loadFocusSessions } from "@services/focus";
+import { saveFocusSession, loadFocusSessions } from "./service";
 
 export const useFocus = create((set) => ({
   active: false,

@@ -1,5 +1,5 @@
-import FocusSession from "@components/focus/FocusSession";
-import { useFocus } from "@store/useFocus";
+import FocusSession from "@features/focus/components/FocusSession";
+import { useFocus } from "@features/focus/store";
 import { PageTitle, Card } from "@components/ui";
 
 export default function Focus() {

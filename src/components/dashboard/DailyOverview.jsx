@@ -1,7 +1,7 @@
 import { Card } from "@components/ui";
 
 import { useHabits } from "@features/habits/store";
-import { useFocus } from "@store/useFocus";
+import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@store/useWorkout";
 
 export default function DailyOverview() {

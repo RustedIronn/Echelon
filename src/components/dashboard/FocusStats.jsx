@@ -1,5 +1,5 @@
-import { useFocus } from "@store/useFocus";
-import { getTodayFocusTime, formatTime } from "@utils/focusStats";
+import { useFocus } from "@features/focus/store";
+import { getTodayFocusTime, formatTime } from "@features/focus/utils";
 import { Card } from "../ui";
 
 export default function FocusStats() {

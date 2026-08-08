@@ -1,10 +1,10 @@
-import { useFocus } from "@store/useFocus";
+import { useFocus } from "@features/focus/store";
 import { useHabits } from "@features/habits/store";
 import { useWorkout } from "@store/useWorkout";
 
 import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
 
-import { getTodayFocusTime, formatTime } from "@utils/focusStats";
+import { getTodayFocusTime, formatTime } from "@features/focus/utils";
 
 import { getCompletedCount } from "@utils/stats";
 

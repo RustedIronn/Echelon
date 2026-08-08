@@ -1,5 +1,5 @@
-import { useFocus } from "@store/useFocus";
-import { getTotalFocusTime, formatTime } from "@utils/focusStats";
+import { useFocus } from "@features/focus/store";
+import { getTotalFocusTime, formatTime } from "@features/focus/utils";
 
 export default function FocusAnalytics() {
   const { sessions } = useFocus();
