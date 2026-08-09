@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
 import { getToday, isNewDay } from "@utils/date";
-import { habits as defaultHabits } from "./data";
+import { habits as defaultHabits } from "./constants";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveHabits, loadHabits } from "./service";
 

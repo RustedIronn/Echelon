@@ -2,10 +2,10 @@ import { create } from "zustand";
 
 import { saveData, loadData } from "@utils/storage";
 import { getToday } from "@utils/date";
-import { schedule as defaultSchedule } from "./data";
+import { schedule as defaultSchedule } from "./constants";
 import { useToast } from "@store/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
-import { saveDaily, loadDaily } from "./dailyService";
+import { saveDaily, loadDaily } from "./todayService";
 
 const getTasks = () => {
   const schedule = loadData("echelon_schedule", defaultSchedule);

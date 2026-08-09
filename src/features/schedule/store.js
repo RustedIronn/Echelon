@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { schedule as defaultSchedule } from "./data";
+import { schedule as defaultSchedule } from "./constants";
 import { saveData, loadData } from "@utils/storage";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveSchedule, loadSchedule } from "./service";

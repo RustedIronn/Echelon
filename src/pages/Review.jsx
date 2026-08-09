@@ -8,7 +8,7 @@ import { generateReview } from "@features/review/analyzer";
 import useReview from "@features/review/store";
 
 import ReviewBreakdown from "@features/review/components/ReviewBreakdown";
-import { computeReviewBreakdown } from "@features/review/computeReviewBreakdown";
+import { computeReviewBreakdown } from "@features/review/breakdown";
 
 export default function Review() {
   const { tasks } = useToday();

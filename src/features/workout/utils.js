@@ -1,4 +1,4 @@
-import { workouts } from "./data";
+import { workouts } from "./constants";
 
 export function getTodayWorkout() {
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
