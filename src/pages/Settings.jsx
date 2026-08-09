@@ -1,5 +1,5 @@
-import ScheduleEditor from "@components/settings/ScheduleEditor";
-import ResetDay from "@components/settings/ResetDay";
+import ScheduleEditor from "@features/schedule/components/ScheduleEditor";
+import ResetDay from "@features/schedule/components/ResetDay";
 import PageTitle from "@components/ui/PageTitle";
 
 export default function Settings() {

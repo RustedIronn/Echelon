@@ -1,5 +1,5 @@
 import { useToday } from "@features/schedule/today";
-import { Card } from "../ui";
+import { Card } from "@components/ui";
 
 export default function DayStatus() {
   const { date } = useToday();

@@ -1,6 +1,6 @@
 import { useFocus } from "@features/focus/store";
 import { getTodayFocusTime, formatTime } from "@features/focus/utils";
-import { Card } from "../ui";
+import { Card } from "@components/ui";
 
 export default function FocusStats() {
   const { sessions } = useFocus();

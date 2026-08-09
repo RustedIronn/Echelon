@@ -1,5 +1,5 @@
 import { useToday } from "@features/schedule/today";
-import { Button } from "../ui";
+import { Button } from "@components/ui";
 
 export default function ResetDay() {
   const { resetDay } = useToday();

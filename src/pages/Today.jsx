@@ -1,7 +1,7 @@
 import { useToday } from "@features/schedule/today";
 import { PageTitle } from "@components/ui";
 
-import CurrentMission from "@components/dashboard/CurrentMission";
+import CurrentMission from "@features/focus/components/CurrentMission";
 import DayProgress from "@components/dashboard/DayProgress";
 import StatsRow from "@components/dashboard/StatsRow";
 import Timeline from "@features/schedule/components/Timeline";
@@ -13,7 +13,7 @@ import MinimumStandard from "@components/cards/MinimumStandard";
 import WorkoutPlan from "@features/workout/components/WorkoutPlan";
 import WorkoutSession from "@features/workout/components/WorkoutSession";
 import WeekendPlan from "@features/schedule/components/WeekendPlan";
-import TodayWorkout from "@components/dashboard/TodayWorkout";
+import TodayWorkout from "@features/workout/components/TodayWorkout";
 
 export default function Today() {
   const { tasks, toggleTask } = useToday();

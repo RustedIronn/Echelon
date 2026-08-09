@@ -1,4 +1,4 @@
-import { generateWeeklyInsights } from "@utils/weeklyInsights";
+import { generateWeeklyInsights } from "../insights";
 import useReview from "@features/review/store";
 
 export default function WeeklyInsight() {

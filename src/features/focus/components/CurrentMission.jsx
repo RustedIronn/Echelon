@@ -1,6 +1,6 @@
 import { getCurrentTask } from "@utils/time";
 import { useFocus } from "@features/focus/store";
-import { Button, EmptyState } from "../ui";
+import { Button, EmptyState } from "@components/ui";
 
 export default function CurrentMission({ tasks }) {
   const { start } = useFocus();

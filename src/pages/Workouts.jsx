@@ -6,7 +6,7 @@ import { getTodayWorkout, getWorkoutDuration } from "@features/workout/utils";
 import ExerciseList from "@features/workout/components/ExerciseList";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
 import WorkoutSession from "@features/workout/components/WorkoutSession";
-import WorkoutStats from "@components/dashboard/WorkoutStats";
+import WorkoutStats from "@features/workout/components/WorkoutStats";
 
 export default function Workouts() {
   const workout = getTodayWorkout();

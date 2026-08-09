@@ -1,10 +1,10 @@
 import { PageTitle } from "@components/ui";
 
 import ProgressChart from "@components/analytics/ProgressChart";
-import FocusAnalytics from "@components/analytics/FocusAnalytics";
-import HabitAnalytics from "@components/analytics/HabitAnalytics";
-import WeeklyInsight from "@components/analytics/WeeklyInsight";
-import WorkoutAnalytics from "@components/analytics/WorkoutAnalytics";
+import FocusAnalytics from "@features/focus/components/FocusAnalytics";
+import HabitAnalytics from "@features/habits/components/HabitAnalytics";
+import WeeklyInsight from "@features/review/components/WeeklyInsight";
+import WorkoutAnalytics from "@features/workout/components/WorkoutAnalytics";
 
 import { useStats } from "@store/useStats";
 

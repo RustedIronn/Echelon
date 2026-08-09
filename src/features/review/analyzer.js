@@ -10,7 +10,7 @@ export function generateReview({ tasks, habits, sessions, workoutStats }) {
   const habitScore = Math.round((completedHabits / habits.length) * 100) || 0;
 
   const focusSeconds = sessions.reduce(
-    (total, session) => total + session.duration,
+    (total, session) => total + (Number(session.duration) || 0),
     0,
   );
 

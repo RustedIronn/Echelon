@@ -1,6 +1,6 @@
 import { useSchedule } from "@features/schedule/store";
 import { useToday } from "@features/schedule/today";
-import { Card, Button } from "../ui";
+import { Card, Button } from "@components/ui";
 
 export default function ScheduleEditor() {
   const { schedule, updateTask } = useSchedule();
