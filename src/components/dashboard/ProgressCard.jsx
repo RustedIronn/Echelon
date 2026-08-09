@@ -4,7 +4,7 @@ import {
   getScore,
 } from "@utils/stats";
 
-import { Card } from "../ui";
+import { Card } from "@ui";
 
 import {useStats} from "@store/useStats";
 

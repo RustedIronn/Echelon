@@ -1,5 +1,5 @@
 import { useHabits } from "@features/habits/store";
-import { Card } from "@components/ui";
+import { Card } from "@ui";
 
 export default function HabitAnalytics() {
   const { habits } = useHabits();

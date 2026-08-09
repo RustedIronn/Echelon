@@ -1,4 +1,4 @@
-import { PageTitle } from "@components/ui";
+import { PageTitle } from "@ui";
 
 import ProgressChart from "@components/analytics/ProgressChart";
 import FocusAnalytics from "@features/focus/components/FocusAnalytics";

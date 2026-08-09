@@ -1,6 +1,6 @@
 import FocusSession from "@features/focus/components/FocusSession";
 import { useFocus } from "@features/focus/store";
-import { PageTitle, Card } from "@components/ui";
+import { PageTitle, Card } from "@ui";
 
 export default function Focus() {
   const { sessions } = useFocus();

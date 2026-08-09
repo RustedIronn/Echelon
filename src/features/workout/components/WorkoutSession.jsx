@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { useWorkout } from "@features/workout/store";
 
-import { Card, Button } from "@components/ui";
+import { Card, Button } from "@ui";
 
 export default function WorkoutSession() {
   const {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button } from "@components/ui";
+import { Button } from "@ui";
 
 export default function Timer() {
   const [seconds, setSeconds] = useState(1500);

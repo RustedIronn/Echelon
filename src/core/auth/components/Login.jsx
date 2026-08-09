@@ -1,5 +1,5 @@
 import { loginWithGoogle } from "../service";
-import { Button } from "@components/ui";
+import { Button } from "@ui";
 
 async function handleLogin() {
   try {

@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import Layout from "@components/layout/Layout";
+import Layout from "./layout/Layout";
 import Today from "../pages/Today";
 import Focus from "../pages/Focus";
 import Habits from "../pages/Habits";

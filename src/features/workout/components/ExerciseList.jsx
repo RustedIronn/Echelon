@@ -1,4 +1,4 @@
-import { Card } from "@components/ui";
+import { Card } from "@ui";
 import ExerciseCard from "./ExerciseCard";
 
 export default function ExerciseList({ workout }) {

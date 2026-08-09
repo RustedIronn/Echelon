@@ -1,4 +1,4 @@
-import { PageTitle, Card, Button } from "@components/ui";
+import { PageTitle, Card, Button } from "@ui";
 
 import { useWorkout } from "@features/workout/store";
 import { getTodayWorkout, getWorkoutDuration } from "@features/workout/utils";

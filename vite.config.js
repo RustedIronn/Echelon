@@ -24,7 +24,8 @@ export default defineConfig({
 			"@assets":path.resolve(__dirname,"src/assets"),
 			"@data":path.resolve(__dirname,"src/data"),
 			"@features":path.resolve(__dirname,"src/features"),
-			"@core":path.resolve(__dirname,"src/core")
+			"@core":path.resolve(__dirname,"src/core"),
+			"@ui":path.resolve(__dirname,"src/ui")
 		}
 	}
 

@@ -1,5 +1,5 @@
 import { useStats } from "@store/useStats";
-import { Card } from "../ui";
+import { Card } from "@ui";
 
 export default function WeeklyProgress() {
   const { history } = useStats();

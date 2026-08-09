@@ -1,5 +1,5 @@
 import { useToday } from "@features/schedule/today";
-import { PageTitle } from "@components/ui";
+import { PageTitle } from "@ui";
 
 import CurrentMission from "@features/focus/components/CurrentMission";
 import DayProgress from "@components/dashboard/DayProgress";

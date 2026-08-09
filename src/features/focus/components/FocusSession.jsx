@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useFocus } from "@features/focus/store";
-import { Button } from "@components/ui";
+import { Button } from "@ui";
 
 export default function FocusSession() {
   const { active, task, seconds, tick, start, stop } = useFocus();

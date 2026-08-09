@@ -1,4 +1,4 @@
-import { PageTitle, Card } from "@components/ui";
+import { PageTitle, Card } from "@ui";
 import { useToday } from "@features/schedule/today";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";

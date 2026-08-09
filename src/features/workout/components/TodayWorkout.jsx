@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-import { Card, Button } from "@components/ui";
+import { Card, Button } from "@ui";
 
 import { getTodayWorkout } from "@features/workout/utils";
 

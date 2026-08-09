@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
 import PageTransition from "./PageTransition";
 import useKeyboard from "@hooks/useKeyboard";
-import Toast from "../ui/Toast";
+import Toast from "@ui/Toast";
 
 export default function Layout() {
     useKeyboard();

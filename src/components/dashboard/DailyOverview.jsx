@@ -1,4 +1,4 @@
-import { Card } from "@components/ui";
+import { Card } from "@ui";
 
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";

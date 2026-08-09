@@ -1,5 +1,5 @@
 import HabitList from "@features/habits/components/HabitList";
-import PageTitle from "@components/ui/PageTitle";
+import PageTitle from "@ui/PageTitle";
 
 export default function Habits() {
 

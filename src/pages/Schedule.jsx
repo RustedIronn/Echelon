@@ -1,6 +1,6 @@
 import { useToday } from "@features/schedule/today";
 import Timeline from "@features/schedule/components/Timeline";
-import { PageTitle } from "@components/ui";
+import { PageTitle } from "@ui";
 
 export default function Schedule() {
   const { tasks, toggleTask } = useToday();

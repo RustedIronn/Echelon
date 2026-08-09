@@ -1,4 +1,4 @@
-import { Card } from "@components/ui";
+import { Card } from "@ui";
 
 import { useWorkout } from "@features/workout/store";
 
