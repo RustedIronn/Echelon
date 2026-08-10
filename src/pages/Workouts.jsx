@@ -13,7 +13,8 @@ export default function Workouts() {
 
   const duration = getWorkoutDuration(workout);
 
-  const { active, phase, startWorkout } = useWorkout();
+  const { active, phase, startWorkout, savedProgress, continueWorkout, reset } =
+    useWorkout();
 
   if (!workout) return null;
 
@@ -29,27 +30,49 @@ export default function Workouts() {
         <WorkoutSession />
       ) : (
         <>
-          <Card>
-            <div className="workout-header">
-              <h2>Today's Session</h2>
+          {savedProgress?.workout ? (
+            <Card>
+              <div className="workout-header">
+                <h2>Resume {savedProgress.workout.title}</h2>
 
-              <div className="workout-stats">
-                <span>{workout.exercises.length} Exercises</span>
+                <div className="workout-stats">
+                  <span>
+                    Round {savedProgress.round}/{savedProgress.workout.rounds}
+                  </span>
 
-                <span>{workout.rounds} Rounds</span>
+                  <span>{Math.floor(savedProgress.elapsed / 60)}m elapsed</span>
+                </div>
 
-                <span>~{duration} min</span>
+                <div className="workout-actions">
+                  <Button onClick={continueWorkout}>Continue Workout</Button>
+
+                  <Button onClick={reset}>Discard</Button>
+                </div>
               </div>
+            </Card>
+          ) : (
+            <Card>
+              <div className="workout-header">
+                <h2>Today's Session</h2>
 
-              <Button
-                onClick={() => {
-                  startWorkout(workout);
-                }}
-              >
-                Start Workout
-              </Button>
-            </div>
-          </Card>
+                <div className="workout-stats">
+                  <span>{workout.exercises.length} Exercises</span>
+
+                  <span>{workout.rounds} Rounds</span>
+
+                  <span>~{duration} min</span>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    startWorkout(workout);
+                  }}
+                >
+                  Start Workout
+                </Button>
+              </div>
+            </Card>
+          )}
 
           <ExerciseList workout={workout} />
 

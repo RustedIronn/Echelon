@@ -1,9 +1,31 @@
 import { create } from "zustand";
 
 import { saveWorkoutCloud, loadWorkoutCloud } from "./service";
-import { saveWorkout, getWorkouts } from "./workoutStorage";
+import {
+  saveWorkout,
+  getWorkouts,
+  saveProgress,
+  getProgress,
+  clearProgress,
+} from "./workoutStorage";
 import { getToday } from "@utils/date";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+
+// The fields that make up a resumable in-progress session. Persisted after
+// every meaningful change (tick, pause, exercise complete, stop) so a closed
+// tab, a "Stop Workout", or an accidental refresh doesn't lose progress.
+// Kept separate from `sessions`, which is completed-workout history.
+const progressFields = (state) => ({
+  workout: state.workout,
+  startedAt: state.startedAt,
+  elapsed: state.elapsed,
+  round: state.round,
+  exerciseIndex: state.exerciseIndex,
+  phase: state.phase,
+  seconds: state.seconds,
+});
+
+const savedProgress = getProgress();
 
 export const useWorkout = create((set) => ({
   active: false,
@@ -11,15 +33,16 @@ export const useWorkout = create((set) => ({
   workout: null,
   startedAt: null,
   elapsed: 0,
-
-  // was `sessions: []` — never read local storage on init, so a full
-  // page reload silently dropped whatever completeWorkout had saved.
   sessions: getWorkouts(),
-
   round: 0,
   exerciseIndex: 0,
   phase: "idle",
   seconds: 0,
+
+  // A saved-but-not-active session, if one exists on load or after
+  // stopWorkout. The Workouts page uses this to offer "Continue" instead of
+  // "Start". Cleared once the workout finishes or is explicitly discarded.
+  savedProgress,
 
   loadFromCloud: () =>
     loadFromCloud(
@@ -31,7 +54,7 @@ export const useWorkout = create((set) => ({
     ),
 
   startWorkout: (workout) => {
-    set({
+    const next = {
       active: true,
       paused: false,
       workout,
@@ -41,41 +64,72 @@ export const useWorkout = create((set) => ({
       exerciseIndex: 0,
       phase: "prepare",
       seconds: 5,
-    });
+    };
+
+    set(next);
+    saveProgress(progressFields(next));
   },
 
-  togglePause: () => {
-    set((state) => ({
-      paused: !state.paused,
-    }));
+  togglePause: () =>
+    set((state) => {
+      const paused = !state.paused;
+
+      saveProgress(progressFields({ ...state, paused }));
+
+      return { paused };
+    }),
+
+  // Leaves the active session and returns to the Workouts page, but keeps
+  // progress saved so continueWorkout can pick it back up later. This is
+  // "pause and exit" — use reset() for a hard discard.
+  stopWorkout: () =>
+    set((state) => {
+      const progress = progressFields(state);
+
+      saveProgress(progress);
+
+      return { active: false, savedProgress: progress };
+    }),
+
+  // Rehydrates a previously saved session. Always resumes paused, even if it
+  // wasn't paused when saved — silently continuing a countdown after the app
+  // was closed for an unknown amount of time would be confusing, so the
+  // user explicitly hits Resume once they're back and ready.
+  continueWorkout: () => {
+    const progress = getProgress();
+
+    if (!progress?.workout) return;
+
+    set({
+      ...progress,
+      startedAt: progress.startedAt ? new Date(progress.startedAt) : null,
+      active: true,
+      paused: true,
+    });
   },
 
   completeExercise: () =>
     set((state) => {
       const nextExercise = state.exerciseIndex + 1;
 
-      if (nextExercise < state.workout.exercises.length) {
-        return {
-          exerciseIndex: nextExercise,
-          phase: "prepare",
-          seconds: 5,
-        };
-      }
+      let next;
 
-      if (state.round < state.workout.rounds) {
-        return {
+      if (nextExercise < state.workout.exercises.length) {
+        next = { exerciseIndex: nextExercise, phase: "prepare", seconds: 5 };
+      } else if (state.round < state.workout.rounds) {
+        next = {
           round: state.round + 1,
           exerciseIndex: 0,
           phase: "prepare",
           seconds: 5,
         };
+      } else {
+        next = { active: false, phase: "finished", seconds: 0 };
       }
 
-      return {
-        active: false,
-        phase: "finished",
-        seconds: 0,
-      };
+      saveProgress(progressFields({ ...state, ...next }));
+
+      return next;
     }),
 
   // was `async`, and `await saveWorkoutCloud(...)` — completeWorkout no longer
@@ -93,13 +147,11 @@ export const useWorkout = create((set) => ({
       duration: state.elapsed,
     };
 
-    // previously: saveWorkout(updated) appended `updated` (the whole new
-    // sessions array) as a single element onto whatever was already in
-    // localStorage, nesting the array deeper every completed workout.
     const updated = [...state.sessions, completed];
 
     saveWorkout(updated);
     syncToCloud((uid) => saveWorkoutCloud(uid, updated));
+    clearProgress();
 
     set({
       active: false,
@@ -107,6 +159,7 @@ export const useWorkout = create((set) => ({
       seconds: 0,
       workout: null,
       sessions: updated,
+      savedProgress: null,
     });
   },
 
@@ -114,60 +167,50 @@ export const useWorkout = create((set) => ({
     set((state) => {
       if (!state.active || state.paused) return state;
 
+      let next;
+
       if (state.seconds > 0) {
-        return {
-          seconds: state.seconds - 1,
-          elapsed: state.elapsed + 1,
-        };
-      }
+        next = { seconds: state.seconds - 1, elapsed: state.elapsed + 1 };
+      } else {
+        const exercise = state.workout.exercises[state.exerciseIndex];
 
-      const exercise = state.workout.exercises[state.exerciseIndex];
+        if (state.phase === "prepare") {
+          next = { phase: "exercise", seconds: exercise.duration };
+        } else if (state.phase === "exercise") {
+          next = { phase: "rest", seconds: exercise.rest };
+        } else if (state.phase === "rest") {
+          const nextExercise = state.exerciseIndex + 1;
 
-      if (state.phase === "prepare") {
-        return {
-          phase: "exercise",
-          seconds: exercise.duration,
-        };
-      }
-
-      if (state.phase === "exercise") {
-        return {
-          phase: "rest",
-          seconds: exercise.rest,
-        };
-      }
-
-      if (state.phase === "rest") {
-        const nextExercise = state.exerciseIndex + 1;
-
-        if (nextExercise < state.workout.exercises.length) {
-          return {
-            exerciseIndex: nextExercise,
-            phase: "prepare",
-            seconds: 5,
-          };
+          if (nextExercise < state.workout.exercises.length) {
+            next = {
+              exerciseIndex: nextExercise,
+              phase: "prepare",
+              seconds: 5,
+            };
+          } else if (state.round < state.workout.rounds) {
+            next = {
+              round: state.round + 1,
+              exerciseIndex: 0,
+              phase: "prepare",
+              seconds: 5,
+            };
+          } else {
+            next = { active: false, phase: "finished", seconds: 0 };
+          }
+        } else {
+          next = state;
         }
-
-        if (state.round < state.workout.rounds) {
-          return {
-            round: state.round + 1,
-            exerciseIndex: 0,
-            phase: "prepare",
-            seconds: 5,
-          };
-        }
-
-        return {
-          active: false,
-          phase: "finished",
-          seconds: 0,
-        };
       }
 
-      return state;
+      // persisted every tick — worst case on a crash you lose ~1 second
+      saveProgress(progressFields({ ...state, ...next }));
+
+      return next;
     }),
 
   reset: () => {
+    clearProgress();
+
     set({
       active: false,
       paused: false,
@@ -178,6 +221,7 @@ export const useWorkout = create((set) => ({
       exerciseIndex: 0,
       phase: "idle",
       seconds: 0,
+      savedProgress: null,
     });
   },
 }));

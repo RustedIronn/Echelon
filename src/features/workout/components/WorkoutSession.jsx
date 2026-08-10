@@ -17,7 +17,7 @@ export default function WorkoutSession() {
     phase,
     seconds,
     tick,
-    reset,
+    stopWorkout,
   } = useWorkout();
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function WorkoutSession() {
         <div className="workout-actions">
           <Button onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
 
-          <Button onClick={reset}>Stop Workout</Button>
+          <Button onClick={stopWorkout}>Stop Workout</Button>
         </div>
       </div>
     </Card>
