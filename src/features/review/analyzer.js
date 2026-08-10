@@ -1,4 +1,5 @@
 import { getToday } from "@utils/date";
+import { weightedScore } from "@utils/executionScore";
 
 export function generateReview({ tasks, habits, sessions, workoutStats }) {
   const completedTasks = tasks.filter((task) => task.done).length;
@@ -26,12 +27,7 @@ export function generateReview({ tasks, habits, sessions, workoutStats }) {
 
   const workoutScore = workoutRequired && workoutStats.completedToday ? 100 : 0;
 
-  const score = Math.round(
-    taskScore * 0.45 +
-      habitScore * 0.25 +
-      Math.min(focusMinutes / 240, 1) * 100 * 0.2 +
-      workoutScore * 0.1,
-  );
+  const score = weightedScore({ taskScore, habitScore, focusMinutes, workoutScore });
 
   const wins = [];
 
