@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
 import { schedule as defaultSchedule } from "./constants";
-import { saveData, loadData } from "@utils/storage";
+import { saveData, loadData } from "@/shared/storage";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
-import { saveSchedule, loadSchedule } from "./service";
+import { saveSchedule, loadSchedule } from "./scheduleService";
 
 export const useSchedule = create((set) => ({
   schedule: loadData("echelon_schedule", defaultSchedule),

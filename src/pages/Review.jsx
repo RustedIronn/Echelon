@@ -1,5 +1,5 @@
 import { PageTitle, Card } from "@ui";
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";

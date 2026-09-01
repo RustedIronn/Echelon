@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import AppRoot from "./app/AppRoot";
 import { useAuth } from "@core/auth/store";
 import Login from "@core/auth/components/Login";
-import { migrateStorage } from "@utils/storage";
+import { migrateStorage } from "@/shared/storage";
 
 import "./index.css";
 

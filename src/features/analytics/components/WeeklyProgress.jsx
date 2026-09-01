@@ -1,4 +1,4 @@
-import { useStats } from "@store/useStats";
+import { useStats } from "@/features/analytics/useStats";
 import { Card } from "@ui";
 
 export default function WeeklyProgress() {

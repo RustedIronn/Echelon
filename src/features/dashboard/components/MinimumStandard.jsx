@@ -1,4 +1,4 @@
-import { minimumStandard } from "@data/principles";
+import { minimumStandard } from "@/features/dashboard/standards";
 
 export default function MinimumStandard() {
   return (

@@ -1,5 +1,5 @@
-import { useSchedule } from "@features/schedule/store";
-import { useToday } from "@features/schedule/today";
+import { useSchedule } from "@/features/schedule/scheduleStore";
+import { useToday } from "@/features/schedule/todayStore";
 import { Card, Button } from "@ui";
 
 export default function ScheduleEditor() {

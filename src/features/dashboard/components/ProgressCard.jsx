@@ -1,12 +1,8 @@
-import {
-  calculateProgress,
-  getCompletedCount,
-  getScore,
-} from "@utils/stats";
+import { calculateProgress, getCompletedCount, getScore } from "@/shared/stats";
 
 import { Card } from "@ui";
 
-import {useStats} from "@store/useStats";
+import { useStats } from "@/features/analytics/useStats";
 
 export default function ProgressCard({ tasks }) {
   const progress = calculateProgress(tasks);
@@ -27,7 +23,6 @@ export default function ProgressCard({ tasks }) {
       <p>{score}</p>
 
       <button onClick={() => saveDay(progress)}>Save Day</button>
-
     </Card>
   );
 }

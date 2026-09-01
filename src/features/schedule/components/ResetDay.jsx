@@ -1,4 +1,4 @@
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 import { Button } from "@ui";
 
 export default function ResetDay() {

@@ -11,7 +11,7 @@ import {
   BarChart3,
 } from "lucide-react";
 
-import { useSync } from "@store/useSync";
+import { useSync } from "@/ui/useSync";
 
 import { useAuth } from "@core/auth/store";
 import { logout } from "@core/auth/service";
@@ -28,10 +28,9 @@ const links = [
 ];
 
 export default function Sidebar() {
-
   const { user } = useAuth();
-  const { syncing, synced } = useSync();
-  
+  const { status } = useSync();
+
   return (
     <aside>
       <div className="brand">
@@ -55,7 +54,13 @@ export default function Sidebar() {
       </nav>
 
       <div className="sync-status">
-        {syncing ? "☁ Syncing..." : synced ? "✓ Synced" : ""}
+        {status === "syncing"
+          ? "☁ Syncing..."
+          : status === "synced"
+            ? "✓ Synced"
+            : status === "error"
+              ? "⚠ Sync failed"
+              : ""}
       </div>
 
       {user && (

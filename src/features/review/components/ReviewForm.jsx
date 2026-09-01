@@ -1,4 +1,4 @@
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 
 export default function ReviewForm() {
   const { review, setReview } = useToday();

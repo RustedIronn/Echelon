@@ -1,4 +1,4 @@
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 import Timeline from "@features/schedule/components/Timeline";
 import { PageTitle } from "@ui";
 

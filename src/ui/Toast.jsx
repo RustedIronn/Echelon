@@ -1,4 +1,4 @@
-import { useToast } from "@store/useToast";
+import { useToast } from "@/ui/useToast";
 
 export default function Toast() {
   const { message } = useToast();

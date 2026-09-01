@@ -3,7 +3,7 @@ import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";
 
 import { getTodayFocusTime } from "@features/focus/utils";
-import { calculateExecutionScore } from "@utils/executionScore";
+import { calculateExecutionScore } from "@/shared/executionScore";
 
 export default function DayProgress({ tasks }) {
   const { habits } = useHabits();

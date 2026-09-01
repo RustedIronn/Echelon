@@ -1,14 +1,14 @@
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 import { PageTitle } from "@ui";
 
-import CurrentMission from "@features/focus/components/CurrentMission";
-import DayProgress from "@components/dashboard/DayProgress";
-import StatsRow from "@components/dashboard/StatsRow";
-import Timeline from "@features/schedule/components/Timeline";
-import DailyOverview from "@components/dashboard/DailyOverview";
+import CurrentMission from "@/features/focus/components/CurrentMission";
+import DayProgress from "@/features/dashboard/components/DayProgress";
+import StatsRow from "@/features/dashboard/components/StatsRow";
+import Timeline from "@/features/schedule/components/Timeline";
+import DailyOverview from "@/features/dashboard/components/DailyOverview";
 
-import NonNegotiables from "@components/cards/NonNegotiables";
-import MinimumStandard from "@components/cards/MinimumStandard";
+import NonNegotiables from "@/features/dashboard/components/NonNegotiables";
+import MinimumStandard from "@/features/dashboard/components/MinimumStandard";
 
 import WorkoutPlan from "@features/workout/components/WorkoutPlan";
 import WorkoutSession from "@features/workout/components/WorkoutSession";

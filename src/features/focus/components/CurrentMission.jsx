@@ -1,4 +1,4 @@
-import { getCurrentTask } from "@utils/time";
+import { getCurrentTask } from "@/shared/time";
 import { useFocus } from "@features/focus/store";
 import { Button, EmptyState } from "@ui";
 

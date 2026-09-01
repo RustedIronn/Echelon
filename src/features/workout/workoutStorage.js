@@ -1,4 +1,4 @@
-import { saveData, loadData } from "@utils/storage";
+import { saveData, loadData } from "@/shared/storage";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";

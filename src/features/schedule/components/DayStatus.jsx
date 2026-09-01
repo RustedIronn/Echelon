@@ -1,4 +1,4 @@
-import { useToday } from "@features/schedule/today";
+import { useToday } from "@/features/schedule/todayStore";
 import { Card } from "@ui";
 
 export default function DayStatus() {

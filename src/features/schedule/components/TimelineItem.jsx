@@ -1,5 +1,5 @@
-import { categories } from "@data/categories";
-import { getHeight } from "@utils/duration";
+import { categories } from "@/app/layout/categories";
+import { getHeight } from "@/shared/duration";
 import { Check } from "lucide-react";
 
 export default function TimelineItem({ task, toggleTask, current }) {

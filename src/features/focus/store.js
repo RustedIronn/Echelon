@@ -1,8 +1,8 @@
 import { create } from "zustand";
 
-import { getToday } from "@utils/date";
-import { saveData, loadData } from "@utils/storage";
-import { useToast } from "@store/useToast";
+import { getToday } from "@/shared/date";
+import { saveData, loadData } from "@/shared/storage";
+import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveFocusSession, loadFocusSessions } from "./service";
 

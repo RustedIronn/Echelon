@@ -8,7 +8,7 @@ import {
   getProgress,
   clearProgress,
 } from "./workoutStorage";
-import { getToday } from "@utils/date";
+import { getToday } from "@/shared/date";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 
 // The fields that make up a resumable in-progress session. Persisted after

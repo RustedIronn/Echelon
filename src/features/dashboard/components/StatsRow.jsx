@@ -6,7 +6,7 @@ import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
 
 import { getTodayFocusTime, formatTime } from "@features/focus/utils";
 
-import { getCompletedCount } from "@utils/stats";
+import { getCompletedCount } from "@/shared/stats";
 
 import { getWorkoutStreak } from "@features/workout/analyzer";
 

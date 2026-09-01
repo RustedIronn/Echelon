@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
-import { saveData, loadData } from "@utils/storage";
-import { getToday } from "@utils/date";
+import { saveData, loadData } from "@/shared/storage";
+import { getToday } from "@/shared/date";
 import { schedule as defaultSchedule } from "./constants";
-import { useToast } from "@store/useToast";
+import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveDaily, loadDaily } from "./todayService";
 

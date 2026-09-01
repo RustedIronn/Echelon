@@ -1,5 +1,5 @@
-import { getToday } from "@utils/date";
-import { weightedScore } from "@utils/executionScore";
+import { getToday } from "@/shared/date";
+import { weightedScore } from "@/shared/executionScore";
 
 export function generateReview({ tasks, habits, sessions, workoutStats }) {
   const completedTasks = tasks.filter((task) => task.done).length;
@@ -27,7 +27,12 @@ export function generateReview({ tasks, habits, sessions, workoutStats }) {
 
   const workoutScore = workoutRequired && workoutStats.completedToday ? 100 : 0;
 
-  const score = weightedScore({ taskScore, habitScore, focusMinutes, workoutScore });
+  const score = weightedScore({
+    taskScore,
+    habitScore,
+    focusMinutes,
+    workoutScore,
+  });
 
   const wins = [];
 

@@ -1,4 +1,4 @@
-import { nonNegotiables } from "@data/principles";
+import { nonNegotiables } from "@/features/dashboard/standards";
 import { Check } from "lucide-react";
 
 export default function NonNegotiables() {
