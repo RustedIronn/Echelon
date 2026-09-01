@@ -1,0 +1,39 @@
+textarea,
+input {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 14px;
+
+  border: 1px solid var(--line);
+
+  background: var(--panel);
+
+  border-radius: 10px;
+
+  padding: 12px;
+
+  color: var(--ink);
+
+  resize: vertical;
+
+  transition:
+    border .2s ease,
+    box-shadow .2s ease;
+}
+
+
+textarea {
+  min-height: 120px;
+  width: 100%;
+}
+
+
+textarea:focus,
+input:focus {
+  outline: none;
+
+  border-color: var(--focus);
+
+  box-shadow:
+    0 0 0 3px rgba(40, 106, 100, .12);
+
+}

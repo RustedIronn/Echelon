@@ -1,0 +1,134 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.stats-grid div {
+  text-align: center;
+}
+
+.stats-grid strong {
+  display: block;
+  font-size: 2rem;
+}
+
+.stats-grid span {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 700px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.chart {
+  height: 220px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding-top: 20px;
+}
+
+.bar-wrapper {
+  flex: 1;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+}
+
+.bar {
+  width: 100%;
+  max-width: 36px;
+
+  background: var(--focus);
+
+  border-radius: 10px 10px 4px 4px;
+
+  min-height: 4px;
+}
+
+.bar-wrapper span {
+  font-family: "IBM Plex Mono";
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.analytics-grid div {
+  text-align: center;
+}
+
+.analytics-grid strong {
+  display: block;
+  font-size: 2rem;
+}
+
+.analytics-grid span {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 700px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-highlight {
+  background: #17181A;
+  color: white;
+}
+
+.analytics-highlight p {
+  font-family: "IBM Plex Mono";
+  font-size: 11px;
+  letter-spacing: .2em;
+  opacity: .6;
+}
+
+.analytics-highlight h1 {
+  font-size: 56px;
+  margin: 14px 0;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.insight-grid div {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.insight-grid span {
+  display: block;
+  font-family: "IBM Plex Mono";
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.insight-grid strong {
+  font-size: 24px;
+}
+
+@media (max-width: 800px) {
+  .insight-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

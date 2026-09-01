@@ -1,0 +1,47 @@
+.habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+.habit-item {
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px;
+
+  border: 1px solid var(--line);
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  transition: .2s ease;
+
+}
+
+
+.habit-item:hover {
+  background: #F1EFE8;
+}
+
+
+.habit-item input {
+
+  width: 18px;
+  height: 18px;
+
+  accent-color: var(--focus);
+
+}
+
+
+.habit-item.completed span {
+  text-decoration: line-through;
+  color: var(--muted);
+
+}

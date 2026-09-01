@@ -1,0 +1,127 @@
+.card {
+  background: rgba(252, 251, 247, .8);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .06);
+}
+
+.card h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 0;
+}
+
+button {
+  border: none;
+  background: var(--ink);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "IBM Plex Sans", sans-serif;
+
+  transition:
+    transform .15s ease,
+    opacity .15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  opacity: .9;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  margin-bottom: 8px;
+}
+
+.section-header p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.page {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 40px;
+}
+
+.page-header p {
+  font-family: "IBM Plex Mono";
+  font-size: 11px;
+  letter-spacing: .2em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.page-header h1 {
+  font-size: 48px;
+  margin: 0 0 8px;
+}
+
+.page-header span {
+  color: var(--muted);
+}
+
+.empty-state {
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+
+  background: var(--ink);
+  color: white;
+
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+
+  z-index: 200;
+
+  animation: toast-in .25s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

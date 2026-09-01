@@ -1,0 +1,21 @@
+:root {
+  --bg: #F4F2EC;
+  --panel: #FCFBF7;
+  --ink: #17181A;
+  --muted: #707278;
+  --line: #E3E0D8;
+
+  --foundation: #7D8087;
+  --movement: #C08A32;
+  --nourishment: #78904D;
+  --focus: #286A64;
+  --build: #566BA5;
+  --unwind: #95657D;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --shadow:
+    0 10px 30px rgba(0, 0, 0, .05);
+}
