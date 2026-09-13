@@ -18,11 +18,9 @@ export default function useEchelonSync() {
       return;
     }
 
+    let cancelled = false;
+
     const sync = async () => {
-      const { status } = useSync.getState();
-
-      if (status === "syncing") return;
-
       useSync.getState().setSyncing();
 
       try {
@@ -34,13 +32,26 @@ export default function useEchelonSync() {
           useWorkout.getState().loadFromCloud(),
         ]);
 
-        useSync.getState().setSynced();
+        if (
+          !cancelled &&
+          useAuth.getState().user?.uid === user.uid &&
+          useSync.getState().status !== "error"
+        ) {
+          useSync.getState().setSynced();
+        }
       } catch (error) {
         console.error("Echelon sync failed:", error);
-        useSync.getState().setSyncError();
+
+        if (!cancelled && useAuth.getState().user?.uid === user.uid) {
+          useSync.getState().setSyncError();
+        }
       }
     };
 
     sync();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 }

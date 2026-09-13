@@ -13,6 +13,7 @@ import {
 import { getToday } from "@/shared/date";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { advanceExercise, createCompletedSession } from "./state";
+import { subscribeStorageOwner } from "@/shared/storage";
 
 // The fields that make up a resumable in-progress session. Persisted after
 // every meaningful change (tick, pause, exercise complete, stop) so a closed
@@ -237,3 +238,19 @@ export const useWorkout = create((set) => ({
     });
   },
 }));
+
+subscribeStorageOwner(() => {
+  useWorkout.setState({
+    active: false,
+    paused: false,
+    workout: null,
+    startedAt: null,
+    elapsed: 0,
+    sessions: getWorkouts(),
+    round: 0,
+    exerciseIndex: 0,
+    phase: "idle",
+    seconds: 0,
+    savedProgress: getProgress(),
+  });
+});

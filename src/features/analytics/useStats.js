@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { saveData, loadData } from "@/shared/storage";
+import { saveData, loadData, subscribeStorageOwner } from "@/shared/storage";
 import { getToday } from "@/shared/date";
 import { normalizeProgressHistory } from "./insights";
 
@@ -27,3 +27,9 @@ export const useStats = create((set) => ({
     set({ history: safeHistory });
   },
 }));
+
+subscribeStorageOwner(() => {
+  useStats.setState({
+    history: normalizeProgressHistory(loadData("echelon_history", [])),
+  });
+});

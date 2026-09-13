@@ -1,4 +1,4 @@
-import { saveData, loadData } from "../../shared/storage.js";
+import { saveData, loadData, removeData } from "../../shared/storage.js";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";
@@ -141,5 +141,5 @@ export function getProgress() {
 }
 
 export function clearProgress() {
-  saveData(PROGRESS_KEY, null);
+  removeData(PROGRESS_KEY);
 }

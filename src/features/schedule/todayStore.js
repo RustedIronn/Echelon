@@ -1,14 +1,28 @@
 import { create } from "zustand";
 
-import { saveData, loadData } from "@/shared/storage";
+import {
+  getStorageOwner,
+  saveData,
+  loadData,
+  subscribeStorageOwner,
+} from "@/shared/storage";
 import { getToday } from "@/shared/date";
-import { schedule as defaultSchedule } from "./constants";
+import {
+  createNextRevision,
+  reconcileVersionedState,
+} from "@/shared/versionedState";
+import {
+  normalizeSchedule,
+  normalizeDailyTasks,
+} from "./constants";
 import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveDaily, loadDaily } from "./todayService";
 
 const getTasks = () => {
-  const schedule = loadData("echelon_schedule", defaultSchedule);
+  const stored = loadData("echelon_schedule", null);
+  const storedSchedule = Array.isArray(stored) ? stored : stored?.schedule;
+  const schedule = normalizeSchedule(storedSchedule);
 
   return schedule.map((task) => ({
     ...task,
@@ -16,10 +30,36 @@ const getTasks = () => {
   }));
 };
 
-const saved = loadData("echelon_today", null);
+const normalizeDocument = (value) => {
+  const tasks = normalizeDailyTasks(value?.tasks);
+
+  if (!tasks || value.date !== getToday()) return null;
+
+  return {
+    ...value,
+    tasks,
+    revision: Number.isInteger(value.revision) ? value.revision : 0,
+    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : null,
+  };
+};
+
+const loadLocalDocument = () =>
+  normalizeDocument(loadData("echelon_today", null));
+
+const initialDocument = loadLocalDocument();
+const stateFromDocument = (document) => ({
+  tasks: document?.tasks ?? getTasks(),
+  revision: document?.revision ?? 0,
+  updatedAt: document?.updatedAt ?? null,
+});
 
 export const useToday = create((set) => ({
-  tasks: saved?.date === getToday() ? saved.tasks : getTasks(),
+  ...stateFromDocument(initialDocument),
+
+  rolloverDay: () => {
+    set(stateFromDocument(loadLocalDocument()));
+    return useToday.getState().loadFromCloud();
+  },
 
   toggleTask: (id) =>
     set((state) => {
@@ -34,13 +74,13 @@ export const useToday = create((set) => ({
           : task,
       );
 
-      const data = {
+      const document = createNextRevision({
         date: getToday(),
         tasks,
-      };
+      }, state);
 
-      saveData("echelon_today", data);
-      syncToCloud((uid) => saveDaily(uid, getToday(), data));
+      saveData("echelon_today", document);
+      syncToCloud((uid) => saveDaily(uid, getToday(), document));
 
       useToast
         .getState()
@@ -48,22 +88,27 @@ export const useToday = create((set) => ({
 
       return {
         tasks,
+        revision: document.revision,
+        updatedAt: document.updatedAt,
       };
     }),
 
   refreshSchedule: () => {
     const tasks = getTasks();
 
-    const data = {
+    const state = useToday.getState();
+    const document = createNextRevision({
       date: getToday(),
       tasks,
-    };
+    }, state);
 
-    saveData("echelon_today", data);
-    syncToCloud((uid) => saveDaily(uid, getToday(), data));
+    saveData("echelon_today", document);
+    syncToCloud((uid) => saveDaily(uid, getToday(), document));
 
     set({
       tasks,
+      revision: document.revision,
+      updatedAt: document.updatedAt,
     });
   },
 
@@ -77,25 +122,41 @@ export const useToday = create((set) => ({
         done: false,
       }));
 
-      const data = {
+      const document = createNextRevision({
         date: getToday(),
         tasks,
-      };
+      }, state);
 
-      saveData("echelon_today", data);
-      syncToCloud((uid) => saveDaily(uid, getToday(), data));
+      saveData("echelon_today", document);
+      syncToCloud((uid) => saveDaily(uid, getToday(), document));
 
       return {
         tasks,
+        revision: document.revision,
+        updatedAt: document.updatedAt,
       };
     }),
 
   loadFromCloud: () =>
     loadFromCloud(
       (uid) => loadDaily(uid, getToday()),
-      (cloud) => {
-        set({ tasks: cloud.tasks });
-        saveData("echelon_today", cloud);
+      async (cloud, uid) => {
+        const resolution = await reconcileVersionedState({
+          local: loadLocalDocument(),
+          cloud: normalizeDocument(cloud),
+          selectContent: ({ date, tasks }) => ({ date, tasks }),
+          uploadLocal: (document) => saveDaily(uid, getToday(), document),
+        });
+
+        if (!resolution.value || getStorageOwner() !== uid) return;
+
+        saveData("echelon_today", resolution.value);
+        set(stateFromDocument(resolution.value));
       },
+      { applyNull: true },
     ),
 }));
+
+subscribeStorageOwner(() => {
+  useToday.setState(stateFromDocument(loadLocalDocument()));
+});

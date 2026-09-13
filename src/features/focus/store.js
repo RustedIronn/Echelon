@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import { getToday } from "@/shared/date";
-import { saveData, loadData } from "@/shared/storage";
+import { saveData, loadData, subscribeStorageOwner } from "@/shared/storage";
 import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveFocusSession, loadFocusSessions } from "./service";
@@ -105,3 +105,12 @@ export const useFocus = create((set) => ({
       seconds: state.seconds + 1,
     })),
 }));
+
+subscribeStorageOwner(() => {
+  useFocus.setState({
+    active: false,
+    task: null,
+    seconds: 0,
+    sessions: loadLocalSessions(),
+  });
+});
