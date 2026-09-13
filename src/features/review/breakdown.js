@@ -1,23 +1,38 @@
+import { getToday } from "../../shared/date.js";
+
 export function computeReviewBreakdown({
-  tasks,
-  habits,
-  sessions,
+  tasks = [],
+  habits = [],
+  sessions = [],
   workoutCompleted,
 }) {
-  const taskScore = tasks.length
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeHabits = Array.isArray(habits) ? habits : [];
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const dayKey = getToday();
+
+  const taskScore = safeTasks.length
     ? Math.round(
-        (tasks.filter((task) => task.done).length / tasks.length) * 100,
+        (safeTasks.filter((task) => task?.done).length / safeTasks.length) * 100,
       )
     : 0;
 
-  const habitScore = habits.length
+  const habitScore = safeHabits.length
     ? Math.round(
-        (habits.filter((habit) => habit.done).length / habits.length) * 100,
+        (safeHabits.filter((habit) => habit?.done).length / safeHabits.length) * 100,
       )
     : 0;
 
   const focusMinutes = Math.floor(
-    sessions.reduce((total, session) => total + session.duration, 0) / 60,
+    safeSessions
+      .filter((session) =>
+        typeof session?.date === "string" && session.date.startsWith(dayKey),
+      )
+      .reduce(
+        (total, session) => total + Math.max(Number(session.duration) || 0, 0),
+        0,
+      ) /
+      60,
   );
 
   const focusScore = Math.min(Math.round((focusMinutes / 240) * 100), 100);

@@ -120,3 +120,38 @@ export const schedule=[
 		description:"Wind down and sleep"
 	}
 ];
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function isValidSchedule(value) {
+	return (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		!value.some((task) =>
+			!task ||
+			(typeof task.id !== "string" && typeof task.id !== "number") ||
+			typeof task.title !== "string" ||
+			typeof task.category !== "string" ||
+			typeof task.description !== "string" ||
+			!TIME_PATTERN.test(task.start) ||
+			!TIME_PATTERN.test(task.end),
+		)
+	);
+}
+
+export function normalizeSchedule(value) {
+	return isValidSchedule(value) ? value : schedule;
+}
+
+export function normalizeDailyTasks(value) {
+	if (!Array.isArray(value)) return null;
+
+	const normalized = normalizeSchedule(value);
+
+	if (normalized === schedule && value !== schedule) return null;
+
+	return normalized.map((task) => ({
+		...task,
+		done: task.done === true,
+	}));
+}

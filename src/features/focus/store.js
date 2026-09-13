@@ -5,17 +5,17 @@ import { saveData, loadData } from "@/shared/storage";
 import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { saveFocusSession, loadFocusSessions } from "./service";
+import { mergeFocusSessions, normalizeFocusSessions } from "./utils";
+
+const loadLocalSessions = () =>
+  normalizeFocusSessions(loadData("echelon_focus", null)?.data);
 
 export const useFocus = create((set) => ({
   active: false,
   task: null,
   seconds: 0,
 
-  sessions:
-    loadData("echelon_focus", {
-      date: getToday(),
-      data: [],
-    }).data || [],
+  sessions: loadLocalSessions(),
 
   start: (task) => {
     useToast.getState().show("Focus started");
@@ -40,6 +40,9 @@ export const useFocus = create((set) => ({
       }
 
       const session = {
+        id:
+          globalThis.crypto?.randomUUID?.() ||
+          `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         task: state.task.title,
         category: state.task.category,
         duration: state.seconds,
@@ -69,16 +72,31 @@ export const useFocus = create((set) => ({
   loadFromCloud: () =>
     loadFromCloud(
       (uid) => loadFocusSessions(uid),
-      (sessions) => {
-        // preserve original semantic: don't clobber local with an empty cloud result
-        if (!sessions.length) return;
+      async (sessions, uid) => {
+        if (!Array.isArray(sessions)) return;
 
-        set({ sessions });
+        const merged = mergeFocusSessions(
+          sessions,
+          useFocus.getState().sessions,
+        );
+
+        const cloudIds = new Set(
+          sessions.map((session) => session?.id).filter(Boolean),
+        );
+        const missingFromCloud = merged.filter(
+          (session) => !cloudIds.has(session.id),
+        );
+
+        set({ sessions: merged });
 
         saveData("echelon_focus", {
           date: getToday(),
-          data: sessions,
+          data: merged,
         });
+
+        await Promise.all(
+          missingFromCloud.map((session) => saveFocusSession(uid, session)),
+        );
       },
     ),
 

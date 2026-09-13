@@ -3,7 +3,7 @@ import { useFocus } from "@features/focus/store";
 import { Button } from "@ui";
 
 export default function FocusSession() {
-  const { active, task, seconds, tick, start, stop } = useFocus();
+  const { active, task, seconds, tick, stop } = useFocus();
 
   useEffect(() => {
     if (!active) return;
@@ -11,7 +11,7 @@ export default function FocusSession() {
     const timer = setInterval(tick, 1000);
 
     return () => clearInterval(timer);
-  }, [active]);
+  }, [active, tick]);
 
   const minutes = Math.floor(seconds / 60);
 

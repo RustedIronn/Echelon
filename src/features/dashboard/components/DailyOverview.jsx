@@ -3,6 +3,8 @@ import { Card } from "@ui";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";
+import { getTodayFocusTime } from "@features/focus/utils";
+import { getToday } from "@/shared/date";
 
 export default function DailyOverview() {
   const habits = useHabits((state) => state.habits);
@@ -14,11 +16,11 @@ export default function DailyOverview() {
   const completedHabits = habits.filter((habit) => habit.done).length;
 
   const focusMinutes = Math.floor(
-    sessions.reduce((total, item) => total + item.duration, 0) / 60,
+    getTodayFocusTime(sessions) / 60,
   );
 
   const trainedToday = workouts.some(
-    (item) => item.date === new Date().toISOString().split("T")[0],
+    (item) => item.date === getToday(),
   );
 
   return (

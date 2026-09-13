@@ -4,6 +4,7 @@ import { useWorkout } from "@features/workout/store";
 
 import { getTodayFocusTime } from "@features/focus/utils";
 import { calculateExecutionScore } from "@/shared/executionScore";
+import { getToday } from "@/shared/date";
 
 export default function DayProgress({ tasks }) {
   const { habits } = useHabits();
@@ -15,7 +16,7 @@ export default function DayProgress({ tasks }) {
   const focusMinutes = Math.floor(getTodayFocusTime(sessions) / 60);
 
   const hasWorkout = workouts.some(
-    (item) => item.date === new Date().toISOString().split("T")[0],
+    (item) => item.date === getToday(),
   );
 
   const progress = calculateExecutionScore({

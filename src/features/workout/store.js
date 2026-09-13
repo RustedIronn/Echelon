@@ -7,9 +7,12 @@ import {
   saveProgress,
   getProgress,
   clearProgress,
+  mergeWorkoutHistories,
+  normalizeWorkoutProgress,
 } from "./workoutStorage";
 import { getToday } from "@/shared/date";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+import { advanceExercise, createCompletedSession } from "./state";
 
 // The fields that make up a resumable in-progress session. Persisted after
 // every meaningful change (tick, pause, exercise complete, stop) so a closed
@@ -47,13 +50,29 @@ export const useWorkout = create((set) => ({
   loadFromCloud: () =>
     loadFromCloud(
       (uid) => loadWorkoutCloud(uid),
-      (sessions) => {
-        set({ sessions });
-        saveWorkout(sessions);
+      async (sessions, uid) => {
+        const merged = mergeWorkoutHistories(getWorkouts(), sessions);
+
+        set({ sessions: merged });
+        saveWorkout(merged);
+
+        if (JSON.stringify(merged) !== JSON.stringify(sessions)) {
+          await saveWorkoutCloud(uid, merged);
+        }
       },
     ),
 
   startWorkout: (workout) => {
+    if (
+      !workout ||
+      !Array.isArray(workout.exercises) ||
+      workout.exercises.length === 0 ||
+      !Number.isInteger(workout.rounds) ||
+      workout.rounds < 1
+    ) {
+      return;
+    }
+
     const next = {
       active: true,
       paused: false,
@@ -72,6 +91,8 @@ export const useWorkout = create((set) => ({
 
   togglePause: () =>
     set((state) => {
+      if (!state.active || !state.workout) return state;
+
       const paused = !state.paused;
 
       saveProgress(progressFields({ ...state, paused }));
@@ -84,6 +105,8 @@ export const useWorkout = create((set) => ({
   // "pause and exit" — use reset() for a hard discard.
   stopWorkout: () =>
     set((state) => {
+      if (!state.active || !state.workout) return state;
+
       const progress = progressFields(state);
 
       saveProgress(progress);
@@ -96,7 +119,7 @@ export const useWorkout = create((set) => ({
   // was closed for an unknown amount of time would be confusing, so the
   // user explicitly hits Resume once they're back and ready.
   continueWorkout: () => {
-    const progress = getProgress();
+    const progress = normalizeWorkoutProgress(getProgress());
 
     if (!progress?.workout) return;
 
@@ -110,24 +133,11 @@ export const useWorkout = create((set) => ({
 
   completeExercise: () =>
     set((state) => {
-      const nextExercise = state.exerciseIndex + 1;
+      const next = advanceExercise(state);
 
-      let next;
+      if (next === state) return state;
 
-      if (nextExercise < state.workout.exercises.length) {
-        next = { exerciseIndex: nextExercise, phase: "prepare", seconds: 5 };
-      } else if (state.round < state.workout.rounds) {
-        next = {
-          round: state.round + 1,
-          exerciseIndex: 0,
-          phase: "prepare",
-          seconds: 5,
-        };
-      } else {
-        next = { active: false, phase: "finished", seconds: 0 };
-      }
-
-      saveProgress(progressFields({ ...state, ...next }));
+      saveProgress(progressFields(next));
 
       return next;
     }),
@@ -139,15 +149,11 @@ export const useWorkout = create((set) => ({
   completeWorkout: () => {
     const state = useWorkout.getState();
 
-    if (!state.workout) return;
+    const completed = createCompletedSession(state, getToday());
 
-    const completed = {
-      workout: state.workout.title,
-      date: getToday(),
-      duration: state.elapsed,
-    };
+    if (!completed) return;
 
-    const updated = [...state.sessions, completed];
+    const updated = mergeWorkoutHistories(state.sessions, [completed]);
 
     saveWorkout(updated);
     syncToCloud((uid) => saveWorkoutCloud(uid, updated));
@@ -165,7 +171,13 @@ export const useWorkout = create((set) => ({
 
   tick: () =>
     set((state) => {
-      if (!state.active || state.paused) return state;
+      if (
+        !state.active ||
+        state.paused ||
+        !state.workout?.exercises?.[state.exerciseIndex]
+      ) {
+        return state;
+      }
 
       let next;
 

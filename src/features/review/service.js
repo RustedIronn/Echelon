@@ -1,7 +1,6 @@
 import {
   doc,
   setDoc,
-  getDoc,
   getDocs,
   collection,
   orderBy,
@@ -24,8 +23,10 @@ export async function loadReviewsCloud(uid) {
 
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  return snapshot.docs
+    .map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }))
+    .filter((review) => typeof review.date === "string");
 }

@@ -1,38 +1,61 @@
-import { getToday } from "@/shared/date";
-import { weightedScore } from "@/shared/executionScore";
+import { getToday } from "../../shared/date.js";
+import { weightedScore } from "../../shared/executionScore.js";
 
-export function generateReview({ tasks, habits, sessions, workoutStats }) {
-  const completedTasks = tasks.filter((task) => task.done).length;
+export function generateReview({
+  tasks = [],
+  habits = [],
+  sessions = [],
+  workoutStats = {},
+  scheduledWorkout = null,
+}) {
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeHabits = Array.isArray(habits) ? habits : [];
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const today = getToday();
 
-  const taskScore = Math.round((completedTasks / tasks.length) * 100) || 0;
+  const completedTasks = safeTasks.filter((task) => task?.done).length;
 
-  const completedHabits = habits.filter((habit) => habit.done).length;
+  const taskScore = safeTasks.length
+    ? Math.round((completedTasks / safeTasks.length) * 100)
+    : 0;
 
-  const habitScore = Math.round((completedHabits / habits.length) * 100) || 0;
+  const completedHabits = safeHabits.filter((habit) => habit?.done).length;
 
-  const focusSeconds = sessions.reduce(
-    (total, session) => total + (Number(session.duration) || 0),
+  const habitScore = safeHabits.length
+    ? Math.round((completedHabits / safeHabits.length) * 100)
+    : 0;
+
+  const focusSeconds = safeSessions
+    .filter((session) =>
+      typeof session?.date === "string" && session.date.startsWith(today),
+    )
+    .reduce(
+    (total, session) => total + Math.max(Number(session.duration) || 0, 0),
     0,
   );
 
   const focusMinutes = Math.floor(focusSeconds / 60);
 
-  const todayWorkout = workoutStats.todayWorkout;
+  const todayWorkout = workoutStats?.todayWorkout || null;
 
   const workoutRequired =
-    todayWorkout &&
+    scheduledWorkout &&
     !["Recovery", "Active Recovery", "Fun Movement"].includes(
-      todayWorkout.title,
+      scheduledWorkout.title,
     );
 
-  const workoutScore = workoutRequired && workoutStats.completedToday ? 100 : 0;
+  const workoutScore = workoutRequired && workoutStats?.completedToday ? 100 : 0;
 
-  const score = weightedScore({
+  const weighted = weightedScore({
     taskScore,
     habitScore,
     focusMinutes,
     workoutScore,
   });
+
+  const score = workoutRequired
+    ? weighted
+    : Math.min(Math.round(weighted / 0.9), 100);
 
   const wins = [];
 
@@ -65,7 +88,7 @@ export function generateReview({ tasks, habits, sessions, workoutStats }) {
   }
 
   return {
-    date: getToday(),
+    date: today,
 
     score,
 
@@ -75,10 +98,12 @@ export function generateReview({ tasks, habits, sessions, workoutStats }) {
 
     focusMinutes,
 
-    workoutCompleted: !!workoutStats.completedToday,
+    workoutCompleted: !!workoutStats?.completedToday,
 
     workoutStats,
 
     todayWorkout,
+
+    workoutRequired: !!workoutRequired,
   };
 }

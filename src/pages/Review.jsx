@@ -4,6 +4,7 @@ import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";
 import { getWorkoutStats } from "@features/workout/analyzer";
+import { getTodayWorkout } from "@features/workout/utils";
 import { generateReview } from "@features/review/analyzer";
 import useReview from "@features/review/store";
 
@@ -19,12 +20,14 @@ export default function Review() {
 
   const workouts = useWorkout((state) => state.sessions);
   const workoutStats = getWorkoutStats(workouts);
+  const scheduledWorkout = getTodayWorkout();
 
   const review = generateReview({
     tasks,
     habits,
     sessions,
     workoutStats,
+    scheduledWorkout,
   });
 
   const breakdown = computeReviewBreakdown({
@@ -63,7 +66,7 @@ export default function Review() {
           <div className="review-workout">
             <h3>Training</h3>
 
-            <p>{review.todayWorkout.title}</p>
+            <p>{review.todayWorkout.workout}</p>
           </div>
         )}
 

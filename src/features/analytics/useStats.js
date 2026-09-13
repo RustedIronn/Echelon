@@ -1,13 +1,17 @@
 import { create } from "zustand";
 import { saveData, loadData } from "@/shared/storage";
 import { getToday } from "@/shared/date";
+import { normalizeProgressHistory } from "./insights";
+
+const savedHistory = loadData("echelon_history", []);
 
 export const useStats = create((set) => ({
-  history: loadData("echelon_history", []),
+  history: normalizeProgressHistory(savedHistory),
 
   saveDay: (progress) => {
     const today = getToday();
-    const history = loadData("echelon_history", []);
+    const storedHistory = loadData("echelon_history", []);
+    const history = normalizeProgressHistory(storedHistory);
 
     const updated = [
       ...history.filter((day) => day.date !== today),
@@ -17,7 +21,9 @@ export const useStats = create((set) => ({
       },
     ];
 
-    saveData("echelon_history", updated);
-    set({ history: updated });
+    const safeHistory = normalizeProgressHistory(updated);
+
+    saveData("echelon_history", safeHistory);
+    set({ history: safeHistory });
   },
 }));
