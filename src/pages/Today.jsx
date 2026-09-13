@@ -10,7 +10,6 @@ import DailyOverview from "@/features/dashboard/components/DailyOverview";
 import NonNegotiables from "@/features/dashboard/components/NonNegotiables";
 import MinimumStandard from "@/features/dashboard/components/MinimumStandard";
 
-import WorkoutPlan from "@features/workout/components/WorkoutPlan";
 import WorkoutSession from "@features/workout/components/WorkoutSession";
 import WeekendPlan from "@features/schedule/components/WeekendPlan";
 import TodayWorkout from "@features/workout/components/TodayWorkout";
