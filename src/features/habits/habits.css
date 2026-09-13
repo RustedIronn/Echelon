@@ -1,47 +1,33 @@
 .habit-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
-
 
 .habit-item {
-
   display: flex;
   align-items: center;
-
-  gap: 12px;
-
+  gap: var(--space-3);
   padding: 14px;
-
-  border: 1px solid var(--line);
-
-  border-radius: 12px;
-
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-
-  transition: .2s ease;
-
+  transition:
+    background var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard);
 }
-
 
 .habit-item:hover {
-  background: #F1EFE8;
+  background: var(--color-surface-hover);
 }
-
 
 .habit-item input {
-
   width: 18px;
   height: 18px;
-
-  accent-color: var(--focus);
-
+  accent-color: var(--color-focus);
 }
-
 
 .habit-item.completed span {
   text-decoration: line-through;
-  color: var(--muted);
-
+  color: var(--color-text-muted);
 }

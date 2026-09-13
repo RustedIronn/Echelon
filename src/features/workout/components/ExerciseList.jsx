@@ -6,7 +6,7 @@ export default function ExerciseList({ workout }) {
     <Card>
       <h2>Exercises</h2>
 
-      <div className="exercise-list">
+      <div className="stack">
         {workout.exercises.map((exercise, index) => (
           <ExerciseCard key={exercise.name} exercise={exercise} index={index} />
         ))}

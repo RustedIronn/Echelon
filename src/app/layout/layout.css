@@ -5,43 +5,42 @@
 
 main {
   flex: 1;
-  max-width: 1100px;
+  max-width: var(--content-max-width);
   margin: auto;
-  padding: 64px 32px 100px;
+  padding: var(--space-16) var(--space-8) 100px;
 }
 
 aside {
-  width: 260px;
-  padding: 36px 24px;
-  border-right: 1px solid var(--line);
-  background: rgba(252, 251, 247, .7);
-  backdrop-filter: blur(15px);
+  width: var(--sidebar-width);
+  padding: var(--space-9) var(--space-6);
+  border-right: 1px solid var(--color-border);
+  background: var(--glass-sidebar-bg);
+  backdrop-filter: blur(var(--blur-sidebar));
 }
 
 aside h1 {
   font-size: 24px;
-  letter-spacing: .08em;
+  letter-spacing: var(--tracking-wide);
 }
 
 nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 nav a {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 13px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  color: var(--muted);
-
+  color: var(--color-text-muted);
   transition:
-    background .2s ease,
-    color .2s ease,
-    transform .2s ease;
+    background var(--duration-normal) var(--ease-standard),
+    color var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
 }
 
 nav a:hover {
@@ -49,22 +48,22 @@ nav a:hover {
 }
 
 nav a.active {
-  background: #EAE8E0;
-  color: var(--ink);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
 }
 
 .sidebar-user {
   margin-top: auto;
-  padding: 16px;
+  padding: var(--space-4);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .sidebar-user-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .sidebar-user img {
@@ -79,14 +78,14 @@ nav a.active {
   cursor: pointer;
   color: var(--color-text-muted);
   padding: 0;
-  font-size: .85rem;
+  font-size: var(--text-md);
 }
 
 .sync-status {
-  font-size: .8rem;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
-  margin-top: 12px;
-  margin-bottom: 12px;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .mobile-nav {
@@ -95,7 +94,10 @@ nav a.active {
 
 .mobile-nav,
 aside {
-  transition: .25s ease;
+  transition:
+    background var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard),
+    opacity var(--duration-slow) var(--ease-standard);
 }
 
 @media (max-width: 760px) {
@@ -104,61 +106,50 @@ aside {
   }
 
   main {
-    padding: 24px 16px 90px;
+    padding: var(--space-6) var(--space-4) 90px;
   }
 
   .mobile-nav {
     display: flex;
+    flex-direction: row;
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-
-    height: 70px;
-
-    background: rgba(250, 250, 248, .92);
-    backdrop-filter: blur(20px);
-
-    border: 1px solid var(--line);
-    border-radius: 20px;
-
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+    height: var(--mobile-nav-height);
+    background: var(--glass-mobile-nav-bg);
+    backdrop-filter: blur(var(--blur-nav));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
     align-items: center;
     justify-content: space-around;
-
-    padding: 8px 12px;
-
-    z-index: 100;
+    padding: var(--space-2) var(--space-3);
+    z-index: var(--z-nav);
   }
 
   .mobile-nav a {
     position: relative;
-
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
-
     text-decoration: none;
-
-    color: var(--muted);
-    font-size: 11px;
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
   }
 
   .mobile-nav a.active {
-    color: var(--ink);
+    color: var(--color-text);
   }
 
   .mobile-nav a.active::before {
     content: "";
-
     position: absolute;
     top: -8px;
-
-    width: 28px;
+    width: var(--space-7);
     height: 3px;
-
-    border-radius: 20px;
-    background: var(--focus);
+    border-radius: var(--radius-xl);
+    background: var(--color-focus);
   }
 
   main {
@@ -169,8 +160,8 @@ aside {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 36px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-9);
 }
 
 .brand img {
@@ -180,15 +171,15 @@ aside {
 
 .brand h1 {
   margin: 0;
-  font-size: 22px;
-  letter-spacing: -.04em;
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-tight);
 }
 
 .brand p {
-  margin: 4px 0 0;
-  font-family: "IBM Plex Mono";
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: var(--tracking-wider);
 }

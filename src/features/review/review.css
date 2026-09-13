@@ -1,153 +1,86 @@
 .review-breakdown {
-
   display: grid;
-
-  grid-template-columns:
-    repeat(4, 1fr);
-
-  gap: 20px;
-
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
 }
-
 
 .review-breakdown div {
-
   text-align: center;
-
 }
-
 
 .review-breakdown strong {
-
   display: block;
-
-  font-size: 1.8rem;
-
+  font-size: var(--text-2xl);
 }
-
 
 .review-breakdown span {
-
   color: var(--color-text-muted);
-
 }
 
-
-@media(max-width:700px) {
-
+@media (max-width: 700px) {
   .review-breakdown {
-
-    grid-template-columns:
-      repeat(2, 1fr);
-
+    grid-template-columns: repeat(2, 1fr);
   }
-
 }
 
 .review-score {
-
   display: flex;
-
   align-items: center;
-
-  gap: 20px;
-
-  padding: 20px;
-
-  background: #17181A;
-
-  color: white;
-
-  border-radius: 18px;
-
-  margin-bottom: 24px;
-
+  gap: var(--space-5);
+  padding: var(--space-5);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
 }
-
 
 .review-score strong {
-
-  font-family: "Space Grotesk";
-
+  font-family: var(--font-display);
   font-size: 52px;
-
 }
-
 
 .review-score span {
-
-  font-family: "IBM Plex Mono";
-
-  font-size: 12px;
-
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   letter-spacing: .1em;
-
   opacity: .7;
-
   text-transform: uppercase;
-
 }
-
 
 .review-section {
-
   padding: 18px 0;
-
-  border-bottom: 1px solid var(--line);
-
+  border-bottom: 1px solid var(--color-border);
 }
-
 
 .review-section:last-child {
-
   border: none;
-
 }
-
 
 .review-section h3 {
-
   margin-top: 0;
-
-  font-size: 18px;
-
+  font-size: var(--text-lg);
 }
 
-
 .review-section li {
-
-  margin-bottom: 8px;
-
-  color: var(--muted);
-
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
 }
 
 .review-history {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .history-item {
-
   display: flex;
-
   justify-content: space-between;
-
   padding: 14px;
-
-  border: 1px solid var(--line);
-
-  border-radius: 12px;
-
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
-
 .history-item span {
-
-  font-family: "IBM Plex Mono";
-
-  color: var(--muted);
-
-
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
 }

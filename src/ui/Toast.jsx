@@ -1,9 +1,9 @@
 import { useToast } from "@/ui/useToast";
 
 export default function Toast() {
-  const { message } = useToast();
+  const { toast } = useToast();
 
-  if (!message) return null;
+  if (!toast) return null;
 
-  return <div className="toast">{message}</div>;
+  return <div className={`toast toast-${toast.type}`}>{toast.message}</div>;
 }

@@ -15,7 +15,7 @@ export default function ScheduleEditor() {
         <p>Customize your daily blocks.</p>
       </div>
 
-      <div className="editor-list">
+      <div className="stack">
         {schedule.map((task) => (
           <div className="editor-item" key={task.id}>
             <div>

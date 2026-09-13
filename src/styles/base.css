@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
 *,
 *::before,
@@ -8,34 +8,37 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 40%);
-  color: var(--ink);
-  font-family: "IBM Plex Sans", sans-serif;
+  background:
+    radial-gradient(circle at top,
+      var(--color-surface) 0%,
+      var(--color-bg) 40%);
+  color: var(--color-text);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 h1,
 h2,
 h3 {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
 }
 
 h1 {
-  letter-spacing: -.035em;
+  letter-spacing: var(--tracking-tight);
 }
 
 h2 {
-  letter-spacing: -.02em;
+  letter-spacing: var(--tracking-snug);
 }
 
 p {
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
 }
 
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
