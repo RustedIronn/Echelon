@@ -1,0 +1,76 @@
+.notification-settings .stack {
+  gap: 0;
+}
+
+.notification-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.notification-setting strong,
+.notification-setting small,
+.notification-setting span {
+  display: block;
+}
+
+.notification-setting small,
+.notification-setting div > span,
+.notification-note {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.notification-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.notification-setting input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+}
+
+.notification-setting select {
+  min-width: 10rem;
+}
+
+.notification-note {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.notification-time-range {
+  display: flex;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.notification-time-range label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+@media (max-width: 600px) {
+  .notification-setting {
+    align-items: flex-start;
+  }
+
+  .notification-setting button {
+    max-width: 11rem;
+  }
+
+  .notification-time-range {
+    flex-direction: column;
+  }
+}

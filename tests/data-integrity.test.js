@@ -49,6 +49,24 @@ import {
   generateWeeklyInsights,
   normalizeProgressHistory,
 } from "../src/features/analytics/insights.js";
+import {
+  calculateReminderTime,
+  createReminderId,
+  createScheduleReminder,
+  deriveScheduleReminders,
+  isWithinQuietHours,
+  planReminders,
+} from "../src/features/notifications/utils.js";
+import { createReminderScheduler } from "../src/features/notifications/scheduler.js";
+import {
+  canUseBrowserNotifications,
+  getNotificationPermission,
+  requestNotificationPermission,
+} from "../src/features/notifications/permissions.js";
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  REMINDER_GRACE_MS,
+} from "../src/features/notifications/constants.js";
 
 const memory = new Map();
 
@@ -107,6 +125,23 @@ test("same-user reload reads the same scoped cache", () => {
   setStorageOwner("user-a");
 
   assert.deepEqual(loadData("echelon_today", null), { owner: "A" });
+});
+
+test("notification settings use the existing UID-scoped storage boundary", () => {
+  memory.clear();
+  setStorageOwner(null);
+  setStorageOwner("user-a");
+  saveData("echelon_notification_settings", { leadMinutes: 10 });
+
+  setStorageOwner(null);
+  setStorageOwner("user-b");
+  assert.deepEqual(loadData("echelon_notification_settings", null), null);
+
+  setStorageOwner(null);
+  setStorageOwner("user-a");
+  assert.deepEqual(loadData("echelon_notification_settings", null), {
+    leadMinutes: 10,
+  });
 });
 
 test("A to logout to B does not expose A's cache", () => {
@@ -452,4 +487,227 @@ test("review and schedule persistence reject partial shapes safely", () => {
 
   const validTasks = defaultSchedule.map((task) => ({ ...task, done: "yes" }));
   assert.equal(normalizeDailyTasks(validTasks).every((task) => !task.done), true);
+});
+
+const scheduleTask = {
+  id: 6,
+  start: "20:00",
+  end: "21:00",
+  title: "Physics",
+  category: "focus",
+  description: "Study",
+};
+
+test("schedule reminder IDs are deterministic and change with timing", () => {
+  const input = {
+    source: "schedule",
+    sourceId: 6,
+    date: "2026-01-02",
+    start: "20:00",
+    leadMinutes: 10,
+  };
+
+  assert.equal(createReminderId(input), createReminderId(input));
+  assert.notEqual(
+    createReminderId(input),
+    createReminderId({ ...input, start: "20:05" }),
+  );
+});
+
+test("reminder times support zero and ten-minute lead times", () => {
+  const atStart = calculateReminderTime("2026-01-02", "20:00", 0);
+  const tenMinutesBefore = calculateReminderTime("2026-01-02", "20:00", 10);
+
+  assert.deepEqual(
+    [atStart.getFullYear(), atStart.getMonth(), atStart.getDate(), atStart.getHours(), atStart.getMinutes()],
+    [2026, 0, 2, 20, 0],
+  );
+  assert.deepEqual(
+    [tenMinutesBefore.getHours(), tenMinutesBefore.getMinutes()],
+    [19, 50],
+  );
+});
+
+test("reminder calculation preserves local-day boundary crossings", () => {
+  const reminder = calculateReminderTime("2026-01-02", "00:05", 10);
+
+  assert.equal(getToday(reminder), "2026-01-01");
+  assert.deepEqual([reminder.getHours(), reminder.getMinutes()], [23, 55]);
+});
+
+test("scheduler derivation includes tomorrow reminders that fire today", () => {
+  const reminders = deriveScheduleReminders(
+    [{ ...scheduleTask, start: "00:05" }],
+    DEFAULT_NOTIFICATION_SETTINGS,
+    new Date(2026, 0, 2, 23, 50),
+  );
+
+  assert.equal(
+    reminders.some(
+      (reminder) =>
+        reminder.date === "2026-01-03" &&
+        getToday(new Date(reminder.scheduledFor)) === "2026-01-02",
+    ),
+    true,
+  );
+});
+
+test("quiet hours handle normal and cross-midnight ranges", () => {
+  const evening = new Date(2026, 0, 2, 23, 0);
+  const earlyMorning = new Date(2026, 0, 3, 6, 0);
+  const midday = new Date(2026, 0, 3, 12, 0);
+
+  assert.equal(
+    isWithinQuietHours(evening, {
+      enabled: true,
+      start: "18:00",
+      end: "23:30",
+    }),
+    true,
+  );
+  assert.equal(
+    isWithinQuietHours(midday, {
+      enabled: true,
+      start: "18:00",
+      end: "23:30",
+    }),
+    false,
+  );
+  assert.equal(
+    isWithinQuietHours(earlyMorning, {
+      enabled: true,
+      start: "22:30",
+      end: "06:30",
+    }),
+    true,
+  );
+  assert.equal(
+    isWithinQuietHours(midday, {
+      enabled: true,
+      start: "22:30",
+      end: "06:30",
+    }),
+    false,
+  );
+});
+
+const createFakeScheduler = (now = new Date(2026, 0, 2, 10, 0)) => {
+  let nextHandle = 0;
+  const callbacks = new Map();
+  const cleared = [];
+  const scheduler = createReminderScheduler({
+    now: () => now,
+    setTimer: (callback, delay) => {
+      const handle = ++nextHandle;
+      callbacks.set(handle, { callback, delay });
+      return handle;
+    },
+    clearTimer: (handle) => {
+      cleared.push(handle);
+      callbacks.delete(handle);
+    },
+  });
+
+  return { scheduler, callbacks, cleared };
+};
+
+test("scheduler prevents duplicate timers for the same reminder", () => {
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 10);
+  const fake = createFakeScheduler();
+
+  fake.scheduler.reconcile([reminder], () => {});
+  const firstHandle = [...fake.callbacks.keys()][0];
+  fake.scheduler.reconcile([reminder], () => {});
+
+  assert.deepEqual(fake.scheduler.getScheduledIds(), [reminder.id]);
+  assert.deepEqual([...fake.callbacks.keys()], [firstHandle]);
+});
+
+test("persisted terminal status prevents delivery after refresh", () => {
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 10);
+  const plan = planReminders(
+    [reminder],
+    [{ ...reminder, status: "fired" }],
+    new Date(2026, 0, 2, 10, 0),
+  );
+
+  assert.deepEqual(plan, { schedulable: [], missed: [] });
+});
+
+test("schedule edits invalidate the old reminder timer", () => {
+  const original = createScheduleReminder(scheduleTask, "2026-01-02", 10);
+  const edited = createScheduleReminder(
+    { ...scheduleTask, start: "20:30" },
+    "2026-01-02",
+    10,
+  );
+  const fake = createFakeScheduler();
+
+  fake.scheduler.reconcile([original], () => {});
+  fake.scheduler.reconcile([edited], () => {});
+
+  assert.deepEqual(fake.scheduler.getScheduledIds(), [edited.id]);
+  assert.equal(fake.cleared.length, 1);
+});
+
+test("schedule removal cancels its reminder timer", () => {
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 10);
+  const fake = createFakeScheduler();
+
+  fake.scheduler.reconcile([reminder], () => {});
+  fake.scheduler.reconcile([], () => {});
+
+  assert.deepEqual(fake.scheduler.getScheduledIds(), []);
+  assert.equal(fake.cleared.length, 1);
+});
+
+test("recently due reminders use the grace window", () => {
+  const now = new Date(2026, 0, 2, 20, 3);
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 0);
+  const plan = planReminders([reminder], [], now, REMINDER_GRACE_MS);
+
+  assert.deepEqual(plan.schedulable, [reminder]);
+  assert.deepEqual(plan.missed, []);
+});
+
+test("old reminders are marked missed without delivery", () => {
+  const now = new Date(2026, 0, 2, 20, 6);
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 0);
+  const plan = planReminders([reminder], [], now, REMINDER_GRACE_MS);
+
+  assert.deepEqual(plan.schedulable, []);
+  assert.deepEqual(plan.missed, [reminder]);
+});
+
+test("disabled schedule reminders derive no work", () => {
+  const reminders = deriveScheduleReminders(
+    [scheduleTask],
+    { ...DEFAULT_NOTIFICATION_SETTINGS, scheduleEnabled: false },
+    new Date(2026, 0, 2, 10, 0),
+  );
+
+  assert.deepEqual(reminders, []);
+});
+
+test("permission boundaries handle unsupported and denied without reprompting", async () => {
+  let prompts = 0;
+  const deniedApi = {
+    permission: "denied",
+    requestPermission: async () => {
+      prompts += 1;
+      return "granted";
+    },
+  };
+
+  assert.equal(getNotificationPermission(undefined), "unsupported");
+  assert.equal(await requestNotificationPermission(deniedApi), "denied");
+  assert.equal(prompts, 0);
+  assert.equal(
+    canUseBrowserNotifications(
+      { browserEnabled: true },
+      "denied",
+      false,
+    ),
+    false,
+  );
 });

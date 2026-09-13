@@ -1,5 +1,6 @@
 textarea,
-input {
+input,
+select {
   font-family: var(--font-sans);
   font-size: var(--text-md);
   border: 1px solid var(--color-border);
@@ -19,7 +20,8 @@ textarea {
 }
 
 textarea:focus,
-input:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--color-focus);
   box-shadow:

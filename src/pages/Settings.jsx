@@ -1,6 +1,7 @@
 import ScheduleEditor from "@features/schedule/components/ScheduleEditor";
 import ResetDay from "@features/schedule/components/ResetDay";
 import PageTitle from "@ui/PageTitle";
+import NotificationSettings from "@features/notifications/components/NotificationSettings";
 
 export default function Settings() {
   return (
@@ -12,6 +13,8 @@ export default function Settings() {
       />
 
       <ScheduleEditor />
+
+      <NotificationSettings />
 
       <ResetDay />
     </div>

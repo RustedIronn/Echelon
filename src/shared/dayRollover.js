@@ -1,5 +1,7 @@
 import { getToday } from "./date.js";
 
+export const DAY_ROLLOVER_EVENT = "echelon:day-rollover";
+
 export function hasLocalDayChanged(previousDay, now = new Date()) {
   return previousDay !== getToday(now);
 }

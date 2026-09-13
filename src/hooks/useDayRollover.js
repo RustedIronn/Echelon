@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { getToday } from "@/shared/date";
 import {
+  DAY_ROLLOVER_EVENT,
   getMillisecondsUntilNextLocalDay,
   hasLocalDayChanged,
 } from "@/shared/dayRollover";
@@ -34,6 +35,7 @@ export default function useDayRollover() {
           useToday.getState().rolloverDay(),
           useHabits.getState().rolloverDay(),
         ]).catch(() => useSync.getState().setSyncError());
+        window.dispatchEvent(new Event(DAY_ROLLOVER_EVENT));
       }
 
       scheduleNextCheck(now);
