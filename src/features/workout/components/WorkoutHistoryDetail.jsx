@@ -81,7 +81,14 @@ export default function WorkoutHistoryDetail() {
                         className="tracked-history-exercise"
                         key={exercise.exerciseId}
                       >
-                        <h4>{exercise.name}</h4>
+                        <h4>
+                          <Link
+                            className="workout-text-link"
+                            to={`/workouts/progress/exercise/${encodeURIComponent(exercise.exerciseId)}`}
+                          >
+                            {exercise.name}
+                          </Link>
+                        </h4>
                         {exercise.notes ? (
                           <p className="tracked-history-note">{exercise.notes}</p>
                         ) : null}

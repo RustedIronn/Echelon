@@ -59,6 +59,16 @@ import {
   sortWorkoutHistory,
 } from "../src/features/workout/history.js";
 import {
+  compareLatestExerciseSessions,
+  computeExercisePRs,
+  extractTrackedSessions,
+  getExercisePerformance,
+  getTrackedProgressSummary,
+  getWeekStartDayKey,
+  getWeeklyTrackedAggregates,
+  groupTrackedPerformanceByExercise,
+} from "../src/features/workout/insights.js";
+import {
   getTodayFocusTime,
   mergeFocusSessions,
 } from "../src/features/focus/utils.js";
@@ -1198,6 +1208,329 @@ test("workout navigation helpers tolerate invalid and empty history", () => {
   });
   assert.deepEqual(getCalendarMonth(2026, 12), []);
   assert.deepEqual(getCalendarMonth(Number.NaN, 0), []);
+});
+
+const trackedInsightSession = ({
+  id,
+  date,
+  exerciseId = "exercise:press",
+  name = "Press",
+  sets,
+  notes = "",
+  startedAt = `${date}T10:00:00.000Z`,
+}) => ({
+  id,
+  workout: "Tracked Strength",
+  date,
+  duration: 1200,
+  tracking: {
+    version: 2,
+    startedAt,
+    exercises: [
+      {
+        exerciseId,
+        name,
+        notes,
+        sets: sets.map((set, index) => ({
+          id: `${exerciseId}:set:${index + 1}`,
+          reps: set.reps,
+          weight: set.weight ?? null,
+          completed: set.completed !== false,
+          completedAt:
+            set.completed === false ? null : `${date}T10:05:00.000Z`,
+          isExtra: false,
+        })),
+      },
+    ],
+  },
+});
+
+test("tracked insights extract v2 history only and keep legacy in overall totals", () => {
+  const tracked = trackedInsightSession({
+    id: "tracked",
+    date: "2026-01-02",
+    sets: [{ reps: 10, weight: 12 }],
+  });
+  const legacy = {
+    id: "legacy",
+    workout: "Legacy",
+    date: "2026-01-01",
+    duration: 600,
+  };
+  const malformed = { ...tracked, id: "bad", tracking: { version: 2 } };
+
+  assert.deepEqual(
+    extractTrackedSessions([legacy, malformed, tracked]).map(
+      (session) => session.id,
+    ),
+    ["tracked"],
+  );
+  assert.equal(getWorkoutStats([legacy, tracked]).totalWorkouts, 2);
+  assert.equal(
+    getTrackedProgressSummary(
+      [legacy, tracked],
+      new Date(2026, 0, 2, 12),
+    ).trackedSessions,
+    1,
+  );
+});
+
+test("exercise grouping uses stable IDs and the latest retained name", () => {
+  const older = trackedInsightSession({
+    id: "older",
+    date: "2026-01-01",
+    exerciseId: "exercise:press",
+    name: "Old Press Name",
+    sets: [{ reps: 8, weight: 10 }],
+  });
+  const latest = trackedInsightSession({
+    id: "latest",
+    date: "2026-01-03",
+    exerciseId: "exercise:press",
+    name: "Standing Press",
+    sets: [{ reps: 9, weight: 10 }],
+  });
+  const groups = groupTrackedPerformanceByExercise([older, latest]);
+
+  assert.equal(groups.size, 1);
+  assert.equal(groups.get("exercise:press").name, "Standing Press");
+  assert.deepEqual(
+    groups.get("exercise:press").occurrences.map((item) => item.date),
+    ["2026-01-03", "2026-01-01"],
+  );
+});
+
+test("exercise PRs derive weight, reps, set volume, and session volume", () => {
+  const sessions = [
+    trackedInsightSession({
+      id: "one",
+      date: "2026-01-01",
+      sets: [
+        { reps: 10, weight: 12.5 },
+        { reps: 8, weight: 12.5 },
+      ],
+    }),
+    trackedInsightSession({
+      id: "two",
+      date: "2026-01-03",
+      sets: [
+        { reps: 6, weight: 15 },
+        { reps: 12, weight: 10 },
+      ],
+    }),
+  ];
+  const performance = getExercisePerformance(sessions, "exercise:press");
+  const prs = computeExercisePRs(performance.occurrences);
+
+  assert.equal(prs.heaviestWeight.value, 15);
+  assert.equal(prs.mostReps.value, 12);
+  assert.equal(prs.bestSetVolume.value, 125);
+  assert.equal(prs.bestSessionVolume.value, 225);
+});
+
+test("bodyweight exercise PRs remain rep-based without weight PRs", () => {
+  const session = trackedInsightSession({
+    id: "bodyweight",
+    date: "2026-01-01",
+    sets: [{ reps: 12 }, { reps: 15 }],
+  });
+  const prs = computeExercisePRs(
+    getExercisePerformance([session], "exercise:press").occurrences,
+  );
+
+  assert.equal(prs.heaviestWeight, null);
+  assert.equal(prs.bestSetVolume, null);
+  assert.equal(prs.bestSessionVolume, null);
+  assert.equal(prs.mostReps.value, 15);
+});
+
+test("tied PRs prefer the earliest achievement date", () => {
+  const earliest = trackedInsightSession({
+    id: "earliest",
+    date: "2026-01-01",
+    sets: [{ reps: 10, weight: 20 }],
+  });
+  const later = trackedInsightSession({
+    id: "later",
+    date: "2026-01-05",
+    sets: [{ reps: 10, weight: 20 }],
+  });
+  const prs = computeExercisePRs(
+    getExercisePerformance([later, earliest], "exercise:press").occurrences,
+  );
+
+  assert.equal(prs.heaviestWeight.date, "2026-01-01");
+  assert.equal(prs.mostReps.date, "2026-01-01");
+  assert.equal(prs.bestSetVolume.date, "2026-01-01");
+  assert.equal(prs.bestSessionVolume.date, "2026-01-01");
+});
+
+test("tracked insights exclude malformed and incomplete sets", () => {
+  const session = trackedInsightSession({
+    id: "partial",
+    date: "2026-01-01",
+    sets: [
+      { reps: 10, weight: 5 },
+      { reps: 99, weight: 99, completed: false },
+      { reps: -2, weight: 10 },
+    ],
+  });
+  const occurrence = getExercisePerformance(
+    [session],
+    "exercise:press",
+  ).occurrences[0];
+
+  assert.equal(occurrence.totalSets, 1);
+  assert.equal(occurrence.totalReps, 10);
+  assert.equal(occurrence.weightedVolume, 50);
+});
+
+test("latest versus previous comparison is factual and newest-first", () => {
+  const older = trackedInsightSession({
+    id: "older",
+    date: "2026-01-01",
+    sets: [{ reps: 8, weight: 12 }, { reps: 8, weight: 12 }],
+  });
+  const latest = trackedInsightSession({
+    id: "latest",
+    date: "2026-01-03",
+    sets: [{ reps: 10, weight: 12 }, { reps: 9, weight: 12 }],
+  });
+  const performance = getExercisePerformance(
+    [latest, older],
+    "exercise:press",
+  );
+  const comparison = compareLatestExerciseSessions(performance.occurrences);
+
+  assert.equal(comparison.latest.date, "2026-01-03");
+  assert.equal(comparison.previous.date, "2026-01-01");
+  assert.equal(comparison.totalRepsDelta, 3);
+  assert.equal(comparison.weightedVolumeDelta, 36);
+});
+
+test("weekly tracked aggregates preserve local week boundaries across years", () => {
+  const sessions = [
+    trackedInsightSession({
+      id: "december",
+      date: "2025-12-31",
+      sets: [{ reps: 3, weight: 2.5 }],
+    }),
+    trackedInsightSession({
+      id: "january",
+      date: "2026-01-01",
+      sets: [{ reps: 4, weight: 2.5 }],
+    }),
+    trackedInsightSession({
+      id: "next-week",
+      date: "2026-01-05",
+      sets: [{ reps: 5, weight: 2.5 }],
+    }),
+  ];
+
+  assert.equal(getWeekStartDayKey("2026-01-01"), "2025-12-29");
+  assert.deepEqual(getWeeklyTrackedAggregates(sessions), [
+    {
+      week: "2025-12-29",
+      workouts: 2,
+      totalSets: 2,
+      totalReps: 7,
+      weightedVolume: 17.5,
+    },
+    {
+      week: "2026-01-05",
+      workouts: 1,
+      totalSets: 1,
+      totalReps: 5,
+      weightedVolume: 12.5,
+    },
+  ]);
+});
+
+test("decimal volume is rounded consistently per set and aggregate", () => {
+  const session = trackedInsightSession({
+    id: "decimal",
+    date: "2026-01-01",
+    sets: [{ reps: 3, weight: 1.111 }, { reps: 2, weight: 2.222 }],
+  });
+  const occurrence = getExercisePerformance(
+    [session],
+    "exercise:press",
+  ).occurrences[0];
+  const prs = computeExercisePRs([occurrence]);
+
+  assert.equal(occurrence.weightedVolume, 7.78);
+  assert.equal(prs.bestSetVolume.value, 4.44);
+  assert.equal(prs.bestSessionVolume.value, 7.78);
+});
+
+test("empty and single-session histories do not fabricate comparisons", () => {
+  assert.equal(getExercisePerformance([], "exercise:press"), null);
+  assert.equal(compareLatestExerciseSessions([]), null);
+
+  const session = trackedInsightSession({
+    id: "single",
+    date: "2026-01-01",
+    sets: [{ reps: 5, weight: 0 }],
+  });
+  const occurrence = getExercisePerformance(
+    [session],
+    "exercise:press",
+  ).occurrences;
+
+  assert.equal(compareLatestExerciseSessions(occurrence), null);
+  assert.equal(computeExercisePRs(occurrence).heaviestWeight.value, 0);
+});
+
+test("multiple tracked workouts on one date remain distinct in aggregates", () => {
+  const first = trackedInsightSession({
+    id: "same-day-one",
+    date: "2026-01-06",
+    sets: [{ reps: 5, weight: 10 }],
+    startedAt: "2026-01-06T08:00:00.000Z",
+  });
+  const second = trackedInsightSession({
+    id: "same-day-two",
+    date: "2026-01-06",
+    sets: [{ reps: 8, weight: 10 }],
+    startedAt: "2026-01-06T18:00:00.000Z",
+  });
+  const summary = getTrackedProgressSummary(
+    [first, second],
+    new Date(2026, 0, 6, 20),
+  );
+  const weekly = getWeeklyTrackedAggregates([first, second]);
+  const exercise = getExercisePerformance(
+    [first, second],
+    "exercise:press",
+  );
+
+  assert.equal(summary.trackedSessions, 2);
+  assert.equal(summary.totalSets, 2);
+  assert.equal(summary.totalReps, 13);
+  assert.equal(summary.weightedVolume, 130);
+  assert.equal(weekly[0].workouts, 2);
+  assert.equal(exercise.occurrences.length, 2);
+  assert.equal(exercise.occurrences[0].startedAt, second.tracking.startedAt);
+});
+
+test("workout insight derivation does not mutate persisted history", () => {
+  const session = trackedInsightSession({
+    id: "immutable",
+    date: "2026-01-07",
+    sets: [{ reps: "6", weight: "7.5" }],
+  });
+  const before = structuredClone(session);
+
+  const extracted = extractTrackedSessions([session]);
+  getTrackedProgressSummary([session], new Date(2026, 0, 7, 12));
+  getWeeklyTrackedAggregates([session]);
+  computeExercisePRs(
+    getExercisePerformance([session], "exercise:press").occurrences,
+  );
+
+  assert.deepEqual(session, before);
+  assert.notEqual(extracted[0], session);
+  assert.notEqual(extracted[0].tracking, session.tracking);
 });
 
 test("analytics sanitizes partial histories without NaN or Infinity", () => {

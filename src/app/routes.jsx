@@ -13,6 +13,7 @@ import WorkoutCalendar from "@features/workout/components/WorkoutCalendar";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
 import WorkoutHistoryDetail from "@features/workout/components/WorkoutHistoryDetail";
 import WorkoutProgress from "@features/workout/components/WorkoutProgress";
+import WorkoutExerciseProgress from "@features/workout/components/WorkoutExerciseProgress";
 import WorkoutPlans from "@features/workout/components/WorkoutPlans";
 
 export const router = createBrowserRouter([
@@ -75,6 +76,10 @@ export const router = createBrowserRouter([
           {
             path: "progress",
             element: <WorkoutProgress />,
+          },
+          {
+            path: "progress/exercise/:exerciseId",
+            element: <WorkoutExerciseProgress />,
           },
           {
             path: "plans",
