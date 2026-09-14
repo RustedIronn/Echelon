@@ -1,39 +1,65 @@
-import { Card } from "@ui";
+import { Link } from "react-router-dom";
 
+import { Card, EmptyState } from "@ui";
 import { useWorkout } from "@features/workout/store";
+import {
+  formatWorkoutDate,
+  formatWorkoutDuration,
+  getRecordedExercises,
+  sortWorkoutHistory,
+} from "../history";
 
 export default function WorkoutHistory() {
-  const workouts = useWorkout((state) => state.sessions);
+  const sessions = useWorkout((state) => state.sessions);
+  const history = sortWorkoutHistory(sessions);
 
   return (
-    <Card>
+    <div className="stack">
       <div className="section-header">
-        <h2>Recent Workouts</h2>
-
-        <p>Your training consistency.</p>
+        <h2>Workout History</h2>
+        <p>Your completed sessions, newest first.</p>
       </div>
 
-      <div className="workout-history">
-        {workouts.length === 0 ? (
-          <p>No workouts completed yet.</p>
-        ) : (
-          workouts
-            .slice(-5)
-            .reverse()
-            .map((item, index) => (
-              <div className="history-item" key={index}>
-                <strong>{item.workout}</strong>
+      {history.length === 0 ? (
+        <Card>
+          <EmptyState
+            title="No completed workouts yet"
+            description="Finish a workout and it will appear here."
+          />
+        </Card>
+      ) : (
+        <div className="workout-history-list">
+          {history.map((session, index) => {
+            const exerciseCount = getRecordedExercises(session).length;
+            const duration = formatWorkoutDuration(session.duration);
 
-                <span>{item.date}</span>
+            return (
+              <Link
+                className="workout-history-link"
+                key={session.id ?? `${session.workout}-${session.date}-${session.duration}-${index}`}
+                to={`/workouts/history/${session.date}`}
+              >
+                <Card className="workout-history-card">
+                  <div>
+                    <strong>{session.workout}</strong>
+                    <span>{formatWorkoutDate(session.date)}</span>
+                  </div>
 
-                <span>
-                  {Math.floor(item.duration / 60)}
-                  min
-                </span>
-              </div>
-            ))
-        )}
-      </div>
-    </Card>
+                  <div className="workout-history-meta">
+                    {duration ? <span>{duration}</span> : null}
+                    {exerciseCount ? (
+                      <span>
+                        {exerciseCount} exercise{exerciseCount === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                    <span>Completed</span>
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

@@ -18,7 +18,7 @@ export default function WorkoutPlan() {
 
           <Button
             onClick={() => {
-              navigate("/workouts");
+              navigate("/workouts/today");
             }}
           >
             View Workout

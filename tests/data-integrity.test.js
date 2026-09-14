@@ -34,6 +34,13 @@ import {
   createCompletedSession,
 } from "../src/features/workout/state.js";
 import {
+  getAdjacentWorkoutDates,
+  getCalendarMonth,
+  groupWorkoutHistoryByDate,
+  shiftCalendarMonth,
+  sortWorkoutHistory,
+} from "../src/features/workout/history.js";
+import {
   getTodayFocusTime,
   mergeFocusSessions,
 } from "../src/features/focus/utils.js";
@@ -453,6 +460,97 @@ test("workout streak ignores duplicate dates and malformed entries", () => {
   ];
 
   assert.equal(getWorkoutStreak(workouts), 2);
+});
+
+test("workout history sorts valid local dates and ignores malformed entries", () => {
+  const history = [
+    { id: "middle", workout: "Pull", date: "2026-03-15", duration: 20 },
+    { id: "newest", workout: "Legs", date: "2026-04-01", duration: 30 },
+    { id: "invalid", workout: "Bad", date: "2026-02-30", duration: 40 },
+    { id: "oldest", workout: "Push", date: "2025-12-31", duration: 10 },
+  ];
+
+  assert.deepEqual(
+    sortWorkoutHistory(history).map((session) => session.id),
+    ["newest", "middle", "oldest"],
+  );
+  assert.deepEqual(
+    sortWorkoutHistory(history, "asc").map((session) => session.id),
+    ["oldest", "middle", "newest"],
+  );
+});
+
+test("workout history groups dates while safely deduplicating legacy entries", () => {
+  const duplicate = {
+    workout: "Push",
+    date: "2026-01-02",
+    duration: 600,
+  };
+  const groups = groupWorkoutHistoryByDate([
+    duplicate,
+    duplicate,
+    { id: "second", workout: "Core", date: "2026-01-02", duration: 300 },
+    { workout: "Invalid", date: "not-a-date", duration: 10 },
+  ]);
+
+  assert.deepEqual(Object.keys(groups), ["2026-01-02"]);
+  assert.equal(groups["2026-01-02"].length, 2);
+});
+
+test("workout history finds previous and next completed dates", () => {
+  const history = [
+    { workout: "A", date: "2026-01-01", duration: 1 },
+    { workout: "B", date: "2026-01-03", duration: 1 },
+    { workout: "C", date: "2026-01-03", duration: 2 },
+    { workout: "D", date: "2026-02-01", duration: 1 },
+  ];
+
+  assert.deepEqual(getAdjacentWorkoutDates(history, "2026-01-03"), {
+    previous: "2026-01-01",
+    next: "2026-02-01",
+  });
+  assert.deepEqual(getAdjacentWorkoutDates(history, "2026-01-02"), {
+    previous: null,
+    next: null,
+  });
+});
+
+test("calendar month derivation preserves month boundaries", () => {
+  const january = getCalendarMonth(2026, 0);
+
+  assert.equal(january.length, 42);
+  assert.equal(january[4].date, "2026-01-01");
+  assert.equal(january[34].date, "2026-01-31");
+  assert.equal(january[35], null);
+  assert.deepEqual(shiftCalendarMonth({ year: 2026, month: 0 }, -1), {
+    year: 2025,
+    month: 11,
+  });
+  assert.deepEqual(shiftCalendarMonth({ year: 2026, month: 11 }, 1), {
+    year: 2027,
+    month: 0,
+  });
+});
+
+test("calendar month derivation handles leap years", () => {
+  const leapFebruary = getCalendarMonth(2024, 1).filter(Boolean);
+  const commonFebruary = getCalendarMonth(2025, 1).filter(Boolean);
+
+  assert.equal(leapFebruary.length, 29);
+  assert.equal(leapFebruary.at(-1).date, "2024-02-29");
+  assert.equal(commonFebruary.length, 28);
+  assert.equal(commonFebruary.at(-1).date, "2025-02-28");
+});
+
+test("workout navigation helpers tolerate invalid and empty history", () => {
+  assert.deepEqual(sortWorkoutHistory(null), []);
+  assert.deepEqual(groupWorkoutHistoryByDate([]), {});
+  assert.deepEqual(getAdjacentWorkoutDates([], "2026-01-01"), {
+    previous: null,
+    next: null,
+  });
+  assert.deepEqual(getCalendarMonth(2026, 12), []);
+  assert.deepEqual(getCalendarMonth(Number.NaN, 0), []);
 });
 
 test("analytics sanitizes partial histories without NaN or Infinity", () => {
