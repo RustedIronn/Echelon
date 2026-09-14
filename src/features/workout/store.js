@@ -9,27 +9,46 @@ import {
   clearProgress,
   mergeWorkoutHistories,
   normalizeWorkoutProgress,
+  progressFields,
 } from "./workoutStorage";
 import { getToday } from "@/shared/date";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
-import { advanceExercise, createCompletedSession } from "./state";
+import {
+  advanceExercise,
+  completeTrackedSetState,
+  continueTrackedWorkoutState,
+  createCompletedSession,
+  restartTrackedRestState,
+  skipTrackedRestState,
+} from "./state";
+import {
+  addTrackingSet,
+  initializeWorkoutTracking,
+  removeTrackingSet,
+  reopenTrackingSet,
+  updateTrackingNotes,
+  updateTrackingSetValue,
+  WORKOUT_TRACKING_VERSION,
+} from "./tracking";
 import { subscribeStorageOwner } from "@/shared/storage";
 
-// The fields that make up a resumable in-progress session. Persisted after
-// every meaningful change (tick, pause, exercise complete, stop) so a closed
-// tab, a "Stop Workout", or an accidental refresh doesn't lose progress.
-// Kept separate from `sessions`, which is completed-workout history.
-const progressFields = (state) => ({
-  workout: state.workout,
-  startedAt: state.startedAt,
-  elapsed: state.elapsed,
-  round: state.round,
-  exerciseIndex: state.exerciseIndex,
-  phase: state.phase,
-  seconds: state.seconds,
-});
-
 const savedProgress = getProgress();
+
+const applyTrackingUpdate = (state, update) => {
+  if (
+    !state.active ||
+    state.paused ||
+    state.tracking?.version !== WORKOUT_TRACKING_VERSION
+  ) {
+    return state;
+  }
+
+  const tracking = update(state.tracking);
+  if (tracking === state.tracking) return state;
+
+  saveProgress(progressFields({ ...state, tracking }));
+  return { tracking };
+};
 
 export const useWorkout = create((set) => ({
   active: false,
@@ -42,6 +61,7 @@ export const useWorkout = create((set) => ({
   exerciseIndex: 0,
   phase: "idle",
   seconds: 0,
+  tracking: null,
 
   // A saved-but-not-active session, if one exists on load or after
   // stopWorkout. The Workouts page uses this to offer "Continue" instead of
@@ -74,16 +94,18 @@ export const useWorkout = create((set) => ({
       return;
     }
 
+    const startedAt = new Date();
     const next = {
       active: true,
       paused: false,
       workout,
-      startedAt: new Date(),
+      startedAt,
       elapsed: 0,
       round: 1,
       exerciseIndex: 0,
       phase: "prepare",
       seconds: 5,
+      tracking: initializeWorkoutTracking(workout, startedAt),
     };
 
     set(next);
@@ -143,6 +165,78 @@ export const useWorkout = create((set) => ({
       return next;
     }),
 
+  updateTrackedSet: (exerciseId, setId, field, value) =>
+    set((state) =>
+      applyTrackingUpdate(state, (tracking) =>
+        updateTrackingSetValue(tracking, exerciseId, setId, field, value),
+      ),
+    ),
+
+  completeTrackedSet: (exerciseId, setId) =>
+    set((state) => {
+      const next = completeTrackedSetState(state, exerciseId, setId);
+
+      if (next === state) return state;
+
+      saveProgress(progressFields(next));
+      return next;
+    }),
+
+  reopenTrackedSet: (exerciseId, setId) =>
+    set((state) =>
+      applyTrackingUpdate(state, (tracking) =>
+        reopenTrackingSet(tracking, exerciseId, setId),
+      ),
+    ),
+
+  addTrackedSet: (exerciseId) =>
+    set((state) =>
+      applyTrackingUpdate(state, (tracking) =>
+        addTrackingSet(tracking, exerciseId),
+      ),
+    ),
+
+  removeTrackedSet: (exerciseId, setId) =>
+    set((state) =>
+      applyTrackingUpdate(state, (tracking) =>
+        removeTrackingSet(tracking, exerciseId, setId),
+      ),
+    ),
+
+  updateTrackedNotes: (exerciseId, notes) =>
+    set((state) =>
+      applyTrackingUpdate(state, (tracking) =>
+        updateTrackingNotes(tracking, exerciseId, notes),
+      ),
+    ),
+
+  skipTrackedRest: () =>
+    set((state) => {
+      const next = skipTrackedRestState(state);
+      if (next === state) return state;
+
+      saveProgress(progressFields(next));
+      return next;
+    }),
+
+  restartTrackedRest: () =>
+    set((state) => {
+      const next = restartTrackedRestState(state);
+      if (next === state) return state;
+
+      saveProgress(progressFields(next));
+      return next;
+    }),
+
+  continueTrackedWorkout: () =>
+    set((state) => {
+      const next = continueTrackedWorkoutState(state);
+      if (next === state) return state;
+
+      saveProgress(progressFields(next));
+      return next;
+    }),
+
   // was `async`, and `await saveWorkoutCloud(...)` — completeWorkout no longer
   // waits on the network, matching how every other store's cloud sync behaves
   // (fire-and-forget via syncToCloud). If a caller was relying on awaiting
@@ -167,6 +261,7 @@ export const useWorkout = create((set) => ({
       workout: null,
       sessions: updated,
       savedProgress: null,
+      tracking: null,
     });
   },
 
@@ -184,6 +279,11 @@ export const useWorkout = create((set) => ({
 
       if (state.seconds > 0) {
         next = { seconds: state.seconds - 1, elapsed: state.elapsed + 1 };
+      } else if (
+        state.tracking?.version === WORKOUT_TRACKING_VERSION &&
+        (state.phase === "exercise" || state.phase === "rest")
+      ) {
+        return state;
       } else {
         const exercise = state.workout.exercises[state.exerciseIndex];
 
@@ -235,6 +335,7 @@ export const useWorkout = create((set) => ({
       phase: "idle",
       seconds: 0,
       savedProgress: null,
+      tracking: null,
     });
   },
 }));
@@ -252,5 +353,6 @@ subscribeStorageOwner(() => {
     phase: "idle",
     seconds: 0,
     savedProgress: getProgress(),
+    tracking: null,
   });
 });

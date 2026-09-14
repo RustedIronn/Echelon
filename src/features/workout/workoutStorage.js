@@ -1,4 +1,9 @@
 import { saveData, loadData, removeData } from "../../shared/storage.js";
+import {
+  isWorkoutTrackingComplete,
+  normalizeWorkoutTracking,
+  WORKOUT_TRACKING_VERSION,
+} from "./tracking.js";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";
@@ -105,7 +110,7 @@ export function normalizeWorkoutProgress(progress) {
     return null;
   }
 
-  return {
+  const normalized = {
     workout,
     startedAt,
     elapsed,
@@ -114,6 +119,43 @@ export function normalizeWorkoutProgress(progress) {
     phase: progress.phase,
     seconds,
   };
+
+  const tracking = normalizeWorkoutTracking(
+    progress.tracking,
+    workout,
+    startedAt,
+  );
+
+  if (
+    progress.tracking !== null &&
+    progress.tracking !== undefined &&
+    (progress.tracking.version !== WORKOUT_TRACKING_VERSION || !tracking)
+  ) {
+    return null;
+  }
+
+  if (
+    progress.phase === "finished" &&
+    tracking &&
+    !isWorkoutTrackingComplete(tracking)
+  ) {
+    return null;
+  }
+
+  return tracking ? { ...normalized, tracking } : normalized;
+}
+
+export function progressFields(state) {
+  return normalizeWorkoutProgress({
+    workout: state?.workout,
+    startedAt: state?.startedAt,
+    elapsed: state?.elapsed,
+    round: state?.round,
+    exerciseIndex: state?.exerciseIndex,
+    phase: state?.phase,
+    seconds: state?.seconds,
+    tracking: state?.tracking,
+  });
 }
 
 export function saveWorkout(sessions) {

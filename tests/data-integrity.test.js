@@ -28,11 +28,29 @@ import {
 import {
   mergeWorkoutHistories,
   normalizeWorkoutProgress,
+  progressFields,
 } from "../src/features/workout/workoutStorage.js";
 import {
   advanceExercise,
+  completeTrackedSetState,
+  continueTrackedWorkoutState,
   createCompletedSession,
+  restartTrackedRestState,
+  skipTrackedRestState,
 } from "../src/features/workout/state.js";
+import {
+  addTrackingSet,
+  completeTrackingSet,
+  deriveCurrentExerciseState,
+  derivePreviousPerformance,
+  getTrackingMetrics,
+  initializeWorkoutTracking,
+  normalizeWorkoutTracking,
+  removeTrackingSet,
+  reopenTrackingSet,
+  updateTrackingNotes,
+  updateTrackingSetValue,
+} from "../src/features/workout/tracking.js";
 import {
   getAdjacentWorkoutDates,
   getCalendarMonth,
@@ -449,6 +467,635 @@ test("workout completion transitions are idempotent", () => {
   assert.deepEqual(first, repeated);
   assert.deepEqual(mergeWorkoutHistories([first], [repeated]), [first]);
   assert.equal(createCompletedSession(state, "2026-01-02"), null);
+});
+
+const trackedWorkout = {
+  title: "Tracked Strength",
+  rounds: 3,
+  exercises: [
+    { name: "Press", duration: 30, rest: 20 },
+    { name: "Row", duration: 40, rest: 30, sets: 2 },
+  ],
+};
+
+const trackedStartedAt = "2026-01-02T10:00:00.000Z";
+
+test("new workout tracking initializes stable per-exercise set identities", () => {
+  const first = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const repeated = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+
+  assert.deepEqual(first, repeated);
+  assert.equal(first.version, 2);
+  assert.equal(first.exercises[0].sets.length, 3);
+  assert.equal(first.exercises[1].sets.length, 2);
+  assert.equal(first.exercises[0].exerciseId, "exercise:1:press");
+  assert.deepEqual(
+    first.exercises[0].sets.map((set) => set.id),
+    [
+      "exercise:1:press:set:1",
+      "exercise:1:press:set:2",
+      "exercise:1:press:set:3",
+    ],
+  );
+});
+
+test("tracking normalization repairs partial v2 data without creating v2 from legacy", () => {
+  const partial = {
+    version: 2,
+    startedAt: trackedStartedAt,
+    exercises: [
+      {
+        exerciseId: "exercise:1:press",
+        name: "Press",
+        notes: 42,
+        sets: [
+          { id: "duplicate", reps: -1, weight: "bad", completed: true },
+          { id: "duplicate", reps: "8", weight: "12.5", completed: true },
+        ],
+      },
+    ],
+  };
+  const normalized = normalizeWorkoutTracking(
+    partial,
+    trackedWorkout,
+    trackedStartedAt,
+  );
+
+  assert.equal(normalized.exercises.length, 2);
+  assert.equal(normalized.exercises[0].notes, "");
+  assert.equal(normalized.exercises[0].sets.length, 3);
+  assert.equal(normalized.exercises[0].sets[0].reps, null);
+  assert.equal(normalized.exercises[0].sets[0].completed, false);
+  assert.equal(normalized.exercises[0].sets[1].reps, 8);
+  assert.equal(normalized.exercises[0].sets[1].weight, 12.5);
+  assert.equal(new Set(normalized.exercises[0].sets.map((set) => set.id)).size, 3);
+  assert.equal(
+    normalizeWorkoutTracking({ version: 1 }, trackedWorkout, trackedStartedAt),
+    null,
+  );
+
+  const shifted = normalizeWorkoutTracking(
+    {
+      version: 2,
+      startedAt: trackedStartedAt,
+      exercises: [
+        {
+          exerciseId: "exercise:2:row",
+          name: "Row",
+          notes: "Keep with row",
+          sets: [{ id: "row-set", reps: 9, completed: false }],
+        },
+      ],
+    },
+    trackedWorkout,
+    trackedStartedAt,
+  );
+  assert.equal(shifted.exercises[0].sets[0].reps, null);
+  assert.equal(shifted.exercises[1].sets[0].reps, 9);
+});
+
+test("tracked reps and weight updates are forgiving and immutable", () => {
+  const tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  const set = exercise.sets[0];
+  const withReps = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    set.id,
+    "reps",
+    "10",
+  );
+  const withWeight = updateTrackingSetValue(
+    withReps,
+    exercise.exerciseId,
+    set.id,
+    "weight",
+    "12.5",
+  );
+
+  assert.equal(tracking.exercises[0].sets[0].reps, null);
+  assert.equal(withWeight.exercises[0].sets[0].reps, 10);
+  assert.equal(withWeight.exercises[0].sets[0].weight, 12.5);
+  assert.equal(
+    updateTrackingSetValue(withWeight, exercise.exerciseId, set.id, "reps", -1),
+    withWeight,
+  );
+  assert.equal(
+    completeTrackingSet(tracking, exercise.exerciseId, set.id, trackedStartedAt),
+    tracking,
+  );
+});
+
+test("completing and reopening a tracked set are idempotent", () => {
+  const tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  const set = exercise.sets[0];
+  const entered = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    set.id,
+    "reps",
+    10,
+  );
+  const completed = completeTrackingSet(
+    entered,
+    exercise.exerciseId,
+    set.id,
+    trackedStartedAt,
+  );
+
+  assert.equal(completed.exercises[0].sets[0].completed, true);
+  assert.equal(
+    completeTrackingSet(completed, exercise.exerciseId, set.id, trackedStartedAt),
+    completed,
+  );
+
+  const reopened = reopenTrackingSet(completed, exercise.exerciseId, set.id);
+  assert.equal(reopened.exercises[0].sets[0].completed, false);
+  assert.equal(reopenTrackingSet(reopened, exercise.exerciseId, set.id), reopened);
+});
+
+test("extra tracked sets can be added and only removed while incomplete", () => {
+  const tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  const added = addTrackingSet(tracking, exercise.exerciseId);
+  const extra = added.exercises[0].sets.at(-1);
+
+  assert.equal(extra.isExtra, true);
+  assert.equal(added.exercises[0].sets.length, 4);
+  assert.equal(
+    removeTrackingSet(added, exercise.exerciseId, exercise.sets[0].id),
+    added,
+  );
+
+  const entered = updateTrackingSetValue(
+    added,
+    exercise.exerciseId,
+    extra.id,
+    "reps",
+    5,
+  );
+  const completed = completeTrackingSet(
+    entered,
+    exercise.exerciseId,
+    extra.id,
+    trackedStartedAt,
+  );
+  assert.equal(
+    removeTrackingSet(completed, exercise.exerciseId, extra.id),
+    completed,
+  );
+
+  const removed = removeTrackingSet(added, exercise.exerciseId, extra.id);
+  assert.equal(removed.exercises[0].sets.length, 3);
+});
+
+test("tracked exercise notes and current-set derivation persist", () => {
+  const tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  const noted = updateTrackingNotes(
+    tracking,
+    exercise.exerciseId,
+    "Shoulder felt strong",
+  );
+  const current = deriveCurrentExerciseState(noted, 0);
+
+  assert.equal(current.exercise.notes, "Shoulder felt strong");
+  assert.equal(current.currentSet.id, exercise.sets[0].id);
+  assert.equal(current.allSetsComplete, false);
+});
+
+test("rich tracking survives pause, stop, refresh, and resume snapshots", () => {
+  let tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  tracking = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    10,
+  );
+  tracking = updateTrackingNotes(tracking, exercise.exerciseId, "Persist me");
+
+  const activeState = {
+    workout: trackedWorkout,
+    startedAt: trackedStartedAt,
+    elapsed: 12,
+    round: 1,
+    exerciseIndex: 0,
+    phase: "exercise",
+    seconds: 18,
+    tracking,
+  };
+  const pausedSnapshot = progressFields({
+    ...activeState,
+    paused: true,
+  });
+  const stoppedSnapshot = progressFields(pausedSnapshot);
+  const refreshed = normalizeWorkoutProgress(
+    JSON.parse(JSON.stringify(stoppedSnapshot)),
+  );
+  const resumed = normalizeWorkoutProgress(refreshed);
+
+  assert.deepEqual(resumed.tracking, tracking);
+  assert.equal(resumed.tracking.exercises[0].notes, "Persist me");
+  assert.equal(resumed.tracking.exercises[0].sets[0].id, exercise.sets[0].id);
+});
+
+test("legacy active snapshots remain legacy after normalization", () => {
+  const legacy = {
+    workout: trackedWorkout,
+    startedAt: trackedStartedAt,
+    elapsed: 12,
+    round: 1,
+    exerciseIndex: 0,
+    phase: "exercise",
+    seconds: 18,
+  };
+
+  assert.deepEqual(normalizeWorkoutProgress(legacy), legacy);
+  assert.equal("tracking" in progressFields(legacy), false);
+  assert.equal(
+    normalizeWorkoutProgress({ ...legacy, tracking: { version: 1 } }),
+    null,
+  );
+});
+
+test("final tracked set uses persisted rest and finishes explicitly", () => {
+  const workout = {
+    title: "One Set",
+    rounds: 1,
+    exercises: [{ name: "Squat", duration: 30, rest: 15 }],
+  };
+  let tracking = initializeWorkoutTracking(workout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  tracking = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    8,
+  );
+  const state = {
+    active: true,
+    paused: false,
+    workout,
+    startedAt: trackedStartedAt,
+    elapsed: 30,
+    round: 1,
+    exerciseIndex: 0,
+    phase: "exercise",
+    seconds: 0,
+    tracking,
+  };
+  const completedSet = completeTrackedSetState(
+    state,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    trackedStartedAt,
+  );
+
+  assert.equal(completedSet.phase, "rest");
+  assert.equal(completedSet.seconds, 15);
+  const persistedRest = normalizeWorkoutProgress(
+    progressFields(completedSet),
+  );
+  assert.equal(persistedRest.phase, "rest");
+  assert.equal(persistedRest.seconds, 15);
+  assert.deepEqual(persistedRest.tracking, completedSet.tracking);
+  const skipped = skipTrackedRestState(completedSet);
+  assert.equal(skipped.seconds, 0);
+  assert.equal(skipTrackedRestState(skipped), skipped);
+  const restarted = restartTrackedRestState(skipped);
+  assert.equal(restarted.seconds, 15);
+  assert.equal(restartTrackedRestState(restarted), restarted);
+  assert.equal(
+    completeTrackedSetState(
+      completedSet,
+      exercise.exerciseId,
+      exercise.sets[0].id,
+      trackedStartedAt,
+    ),
+    completedSet,
+  );
+
+  const reopenedTracking = reopenTrackingSet(
+    completedSet.tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+  );
+  assert.equal(
+    deriveCurrentExerciseState(reopenedTracking, 0).currentSet.id,
+    exercise.sets[0].id,
+  );
+
+  const reopenedState = { ...completedSet, tracking: reopenedTracking };
+  const resumedSet = continueTrackedWorkoutState(
+    skipTrackedRestState(reopenedState),
+  );
+  assert.equal(resumedSet.phase, "exercise");
+  const reCompleted = completeTrackedSetState(
+    resumedSet,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    trackedStartedAt,
+  );
+  const rested = skipTrackedRestState(reCompleted);
+  const finished = continueTrackedWorkoutState(rested);
+  assert.equal(finished.phase, "finished");
+  assert.equal(finished.active, false);
+  assert.equal(continueTrackedWorkoutState(finished), finished);
+
+  const trackingBeforeCompletion = JSON.stringify(finished.tracking);
+  const first = createCompletedSession(finished, "2026-01-02");
+  const repeated = createCompletedSession(finished, "2026-01-02");
+  assert.equal(first.id, `${trackedStartedAt}|One Set`);
+  assert.deepEqual(first, repeated);
+  assert.deepEqual(first.tracking, finished.tracking);
+  assert.equal(JSON.stringify(finished.tracking), trackingBeforeCompletion);
+  assert.deepEqual(mergeWorkoutHistories([first], [repeated]), [first]);
+  assert.equal(first.tracking.version, 2);
+});
+
+test("tracked sessions cannot advance while the current exercise has open sets", () => {
+  const workout = {
+    title: "Two Sets",
+    rounds: 2,
+    exercises: [{ name: "Squat", duration: 30, rest: 10 }],
+  };
+  let tracking = initializeWorkoutTracking(workout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  tracking = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    8,
+  );
+  const state = {
+    active: true,
+    paused: false,
+    workout,
+    startedAt: trackedStartedAt,
+    elapsed: 30,
+    round: 1,
+    exerciseIndex: 0,
+    phase: "exercise",
+    seconds: 0,
+    tracking,
+  };
+  const firstSet = completeTrackedSetState(
+    state,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    trackedStartedAt,
+  );
+  const continued = continueTrackedWorkoutState(
+    skipTrackedRestState(firstSet),
+  );
+
+  assert.equal(continued.active, true);
+  assert.equal(continued.phase, "exercise");
+  assert.equal(continued.exerciseIndex, 0);
+  assert.equal(
+    deriveCurrentExerciseState(continued.tracking, 0).currentSet.id,
+    exercise.sets[1].id,
+  );
+});
+
+test("tracked next-exercise transitions cannot be applied twice", () => {
+  const workout = {
+    title: "Two Exercises",
+    rounds: 1,
+    exercises: [
+      { name: "Press", duration: 30, rest: 10 },
+      { name: "Row", duration: 30, rest: 10 },
+    ],
+  };
+  let tracking = initializeWorkoutTracking(workout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  tracking = updateTrackingSetValue(
+    tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    8,
+  );
+  const completed = completeTrackedSetState(
+    {
+      active: true,
+      paused: false,
+      workout,
+      startedAt: trackedStartedAt,
+      elapsed: 30,
+      round: 1,
+      exerciseIndex: 0,
+      phase: "exercise",
+      seconds: 0,
+      tracking,
+    },
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    trackedStartedAt,
+  );
+  const nextExercise = continueTrackedWorkoutState(
+    skipTrackedRestState(completed),
+  );
+
+  assert.equal(nextExercise.exerciseIndex, 1);
+  assert.equal(nextExercise.phase, "prepare");
+  assert.equal(continueTrackedWorkoutState(nextExercise), nextExercise);
+});
+
+test("tracked sessions recover earlier incomplete exercises before finishing", () => {
+  const workout = {
+    title: "Corrupt Recovery",
+    rounds: 1,
+    exercises: [
+      { name: "Press", duration: 30, rest: 10 },
+      { name: "Row", duration: 30, rest: 10 },
+    ],
+  };
+  let tracking = initializeWorkoutTracking(workout, trackedStartedAt);
+  const finalExercise = tracking.exercises[1];
+  tracking = updateTrackingSetValue(
+    tracking,
+    finalExercise.exerciseId,
+    finalExercise.sets[0].id,
+    "reps",
+    8,
+  );
+  tracking = completeTrackingSet(
+    tracking,
+    finalExercise.exerciseId,
+    finalExercise.sets[0].id,
+    trackedStartedAt,
+  );
+
+  const recovered = continueTrackedWorkoutState({
+    active: true,
+    paused: false,
+    workout,
+    startedAt: trackedStartedAt,
+    elapsed: 30,
+    round: 1,
+    exerciseIndex: 1,
+    phase: "rest",
+    seconds: 0,
+    tracking,
+  });
+
+  assert.equal(recovered.active, true);
+  assert.equal(recovered.phase, "prepare");
+  assert.equal(recovered.exerciseIndex, 0);
+
+  const corruptFinished = {
+    ...recovered,
+    active: false,
+    exerciseIndex: 1,
+    phase: "finished",
+    seconds: 0,
+  };
+  assert.equal(normalizeWorkoutProgress(corruptFinished), null);
+  assert.equal(createCompletedSession(corruptFinished, "2026-01-02"), null);
+});
+
+test("previous performance and metrics use tracked sessions only", () => {
+  let older = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = older.exercises[0];
+  older = updateTrackingSetValue(
+    older,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    10,
+  );
+  older = updateTrackingSetValue(
+    older,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "weight",
+    12,
+  );
+  older = completeTrackingSet(
+    older,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    trackedStartedAt,
+  );
+  const trackedSession = {
+    id: "tracked",
+    workout: trackedWorkout.title,
+    date: "2026-01-02",
+    duration: 30,
+    tracking: older,
+  };
+  const previous = derivePreviousPerformance(
+    [
+      trackedSession,
+      { workout: "Legacy", date: "2026-01-03", duration: 30 },
+    ],
+    exercise.exerciseId,
+  );
+
+  assert.equal(previous.date, "2026-01-02");
+  assert.equal(previous.sets[0].reps, 10);
+  assert.deepEqual(getTrackingMetrics(older), {
+    totalSets: 1,
+    totalReps: 10,
+    totalVolume: 120,
+  });
+  assert.deepEqual(
+    mergeWorkoutHistories([trackedSession], [trackedSession])[0].tracking,
+    older,
+  );
+});
+
+test("previous performance selects the latest valid completed tracked sets", () => {
+  const exerciseId = "exercise:1:press";
+  const buildSession = (startedAt, date, reps) => {
+    let tracking = initializeWorkoutTracking(trackedWorkout, startedAt);
+    const setId = tracking.exercises[0].sets[0].id;
+    tracking = updateTrackingSetValue(
+      tracking,
+      exerciseId,
+      setId,
+      "reps",
+      reps,
+    );
+    tracking = completeTrackingSet(
+      tracking,
+      exerciseId,
+      setId,
+      startedAt,
+    );
+
+    return {
+      workout: trackedWorkout.title,
+      date,
+      duration: 30,
+      tracking,
+    };
+  };
+  const older = buildSession("2026-01-02T10:00:00.000Z", "2026-01-02", 8);
+  const latest = buildSession("2026-01-04T10:00:00.000Z", "2026-01-04", 10);
+  const malformedNewer = {
+    ...buildSession("2026-01-05T10:00:00.000Z", "2026-01-05", 12),
+  };
+  malformedNewer.tracking.exercises[0].sets[0] = {
+    ...malformedNewer.tracking.exercises[0].sets[0],
+    completed: false,
+    completedAt: null,
+  };
+
+  const previous = derivePreviousPerformance(
+    [older, malformedNewer, latest],
+    exerciseId,
+  );
+
+  assert.equal(previous.date, "2026-01-04");
+  assert.equal(previous.sets[0].reps, 10);
+});
+
+test("tracking volume handles null, zero, and decimal weight exactly", () => {
+  let tracking = initializeWorkoutTracking(trackedWorkout, trackedStartedAt);
+  const exercise = tracking.exercises[0];
+  const inputs = [
+    { reps: 10, weight: null },
+    { reps: 5, weight: 0 },
+    { reps: 3, weight: 0.1 },
+  ];
+
+  exercise.sets.forEach((set, index) => {
+    tracking = updateTrackingSetValue(
+      tracking,
+      exercise.exerciseId,
+      set.id,
+      "reps",
+      inputs[index].reps,
+    );
+    if (inputs[index].weight !== null) {
+      tracking = updateTrackingSetValue(
+        tracking,
+        exercise.exerciseId,
+        set.id,
+        "weight",
+        inputs[index].weight,
+      );
+    }
+    tracking = completeTrackingSet(
+      tracking,
+      exercise.exerciseId,
+      set.id,
+      trackedStartedAt,
+    );
+  });
+
+  assert.deepEqual(getTrackingMetrics(tracking), {
+    totalSets: 3,
+    totalReps: 18,
+    totalVolume: 0.3,
+  });
 });
 
 test("workout streak ignores duplicate dates and malformed entries", () => {

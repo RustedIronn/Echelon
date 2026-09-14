@@ -1,5 +1,6 @@
 import { getToday } from "../../shared/date.js";
 import { mergeWorkoutHistories } from "./workoutStorage.js";
+import { normalizeCompletedTracking } from "./tracking.js";
 
 export function sortWorkoutHistory(sessions, direction = "desc") {
   const safeSessions = mergeWorkoutHistories(sessions, []);
@@ -81,6 +82,9 @@ export function formatWorkoutDate(date) {
 }
 
 export function getRecordedExercises(session) {
+  const tracking = normalizeCompletedTracking(session?.tracking);
+  if (tracking) return tracking.exercises.map((exercise) => exercise.name);
+
   if (!Array.isArray(session?.exercises)) return [];
 
   return session.exercises

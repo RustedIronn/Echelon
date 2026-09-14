@@ -3,6 +3,11 @@ import { useEffect } from "react";
 import { useWorkout } from "@features/workout/store";
 
 import { Card, Button } from "@ui";
+import TrackedWorkoutSession from "./TrackedWorkoutSession";
+import {
+  getTrackingMetrics,
+  WORKOUT_TRACKING_VERSION,
+} from "../tracking";
 
 export default function WorkoutSession() {
   const {
@@ -18,6 +23,7 @@ export default function WorkoutSession() {
     seconds,
     tick,
     stopWorkout,
+    tracking,
   } = useWorkout();
 
   useEffect(() => {
@@ -32,6 +38,8 @@ export default function WorkoutSession() {
 
   if (phase === "finished") {
     const minutes = Math.floor(useWorkout.getState().elapsed / 60);
+    const metrics = getTrackingMetrics(tracking);
+    const isTracked = tracking?.version === WORKOUT_TRACKING_VERSION;
 
     return (
       <Card>
@@ -42,13 +50,15 @@ export default function WorkoutSession() {
 
           <div className="completion-stats">
             <div>
-              <strong>{workout.exercises.length}</strong>
-              <span>Exercises</span>
+              <strong>
+                {isTracked ? metrics.totalSets : workout.exercises.length}
+              </strong>
+              <span>{isTracked ? "Sets" : "Exercises"}</span>
             </div>
 
             <div>
-              <strong>{workout.rounds}</strong>
-              <span>Rounds</span>
+              <strong>{isTracked ? metrics.totalReps : workout.rounds}</strong>
+              <span>{isTracked ? "Reps" : "Rounds"}</span>
             </div>
 
             <div>
@@ -61,6 +71,10 @@ export default function WorkoutSession() {
         </div>
       </Card>
     );
+  }
+
+  if (tracking?.version === WORKOUT_TRACKING_VERSION) {
+    return <TrackedWorkoutSession />;
   }
 
   const exercise = workout.exercises[exerciseIndex];

@@ -6,12 +6,24 @@ import { getTodayWorkout, getWorkoutDuration } from "@features/workout/utils";
 import ExerciseList from "./ExerciseList";
 import WorkoutSession from "./WorkoutSession";
 import WorkoutStats from "./WorkoutStats";
+import {
+  deriveCurrentExerciseState,
+  WORKOUT_TRACKING_VERSION,
+} from "../tracking";
 
 export default function WorkoutToday() {
   const workout = getTodayWorkout();
   const duration = getWorkoutDuration(workout);
   const { active, phase, startWorkout, savedProgress, continueWorkout, reset } =
     useWorkout();
+  const savedTracking = savedProgress?.tracking;
+  const savedExercise =
+    savedTracking?.version === WORKOUT_TRACKING_VERSION
+      ? deriveCurrentExerciseState(
+          savedTracking,
+          savedProgress.exerciseIndex,
+        ).exercise
+      : null;
 
   if (!workout) return null;
 
@@ -33,9 +45,22 @@ export default function WorkoutToday() {
                 <h2>Resume {savedProgress.workout.title}</h2>
 
                 <div className="workout-stats">
-                  <span>
-                    Round {savedProgress.round}/{savedProgress.workout.rounds}
-                  </span>
+                  {savedExercise ? (
+                    <>
+                      <span>
+                        Exercise {savedProgress.exerciseIndex + 1}/
+                        {savedTracking.exercises.length}
+                      </span>
+                      <span>
+                        {savedExercise.sets.filter((set) => set.completed).length}/
+                        {savedExercise.sets.length} sets complete
+                      </span>
+                    </>
+                  ) : (
+                    <span>
+                      Round {savedProgress.round}/{savedProgress.workout.rounds}
+                    </span>
+                  )}
 
                   <span>{Math.floor(savedProgress.elapsed / 60)}m elapsed</span>
                 </div>

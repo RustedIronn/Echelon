@@ -9,6 +9,10 @@ import {
   getRecordedExercises,
   groupWorkoutHistoryByDate,
 } from "../history";
+import {
+  getTrackingMetrics,
+  normalizeCompletedTracking,
+} from "../tracking";
 
 export default function WorkoutHistoryDetail() {
   const { date } = useParams();
@@ -44,6 +48,8 @@ export default function WorkoutHistoryDetail() {
         daySessions.map((session, index) => {
           const exercises = getRecordedExercises(session);
           const duration = formatWorkoutDuration(session.duration);
+          const tracking = normalizeCompletedTracking(session.tracking);
+          const metrics = getTrackingMetrics(tracking);
 
           return (
             <Card
@@ -55,7 +61,53 @@ export default function WorkoutHistoryDetail() {
                 <p>{duration ? `${duration} · ` : ""}Completed</p>
               </div>
 
-              {exercises.length ? (
+              {tracking ? (
+                <div className="tracked-history">
+                  <div className="tracked-history-summary">
+                    <span>{metrics.totalSets} sets</span>
+                    <span>{metrics.totalReps} reps</span>
+                    {metrics.totalVolume > 0 ? (
+                      <span>{metrics.totalVolume} kg volume</span>
+                    ) : null}
+                  </div>
+
+                  {tracking.exercises.map((exercise) => {
+                    const completedSets = exercise.sets.filter(
+                      (set) => set.completed,
+                    );
+
+                    return (
+                      <section
+                        className="tracked-history-exercise"
+                        key={exercise.exerciseId}
+                      >
+                        <h4>{exercise.name}</h4>
+                        {exercise.notes ? (
+                          <p className="tracked-history-note">{exercise.notes}</p>
+                        ) : null}
+                        {completedSets.length ? (
+                          <ol className="tracked-history-sets">
+                            {completedSets.map((set, setIndex) => (
+                              <li key={set.id}>
+                                <span>Set {setIndex + 1}</span>
+                                <strong>
+                                  {set.weight === null
+                                    ? `${set.reps} reps`
+                                    : `${set.weight} kg × ${set.reps}`}
+                                </strong>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <p className="workout-detail-note">
+                            No completed set data was recorded.
+                          </p>
+                        )}
+                      </section>
+                    );
+                  })}
+                </div>
+              ) : exercises.length ? (
                 <div>
                   <h4>Exercises</h4>
                   <ol className="workout-detail-exercises">
