@@ -1,11 +1,56 @@
 import {
   completeTrackingSet,
   deriveCurrentExerciseState,
+  initializeWorkoutTracking,
   isWorkoutTrackingComplete,
   normalizeWorkoutTracking,
   WORKOUT_TRACKING_VERSION,
   DEFAULT_REST_SECONDS,
 } from "./tracking.js";
+import {
+  getDefaultWorkoutPlanDate,
+  isValidWorkoutPlanDate,
+} from "./utils.js";
+
+export function createWorkoutStartState(
+  state,
+  workout,
+  planDate,
+  startedAt = new Date(),
+) {
+  if (
+    state?.active ||
+    state?.savedProgress?.workout ||
+    !workout ||
+    !Array.isArray(workout.exercises) ||
+    workout.exercises.length === 0 ||
+    !Number.isInteger(workout.rounds) ||
+    workout.rounds < 1
+  ) {
+    return state;
+  }
+
+  const tracking = initializeWorkoutTracking(workout, startedAt);
+  const resolvedPlanDate =
+    planDate ?? getDefaultWorkoutPlanDate(startedAt);
+
+  if (!tracking || !isValidWorkoutPlanDate(resolvedPlanDate)) return state;
+
+  return {
+    ...state,
+    active: true,
+    paused: false,
+    workout,
+    planDate: resolvedPlanDate,
+    startedAt,
+    elapsed: 0,
+    round: 1,
+    exerciseIndex: 0,
+    phase: "prepare",
+    seconds: 5,
+    tracking,
+  };
+}
 
 export function advanceExercise(state) {
   if (
@@ -190,6 +235,10 @@ export function createCompletedSession(state, date) {
     date,
     duration: state.elapsed,
   };
+
+  if (isValidWorkoutPlanDate(state.planDate)) {
+    completed.planDate = state.planDate;
+  }
 
   const tracking = normalizeWorkoutTracking(
     state.tracking,

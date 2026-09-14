@@ -47,6 +47,29 @@
   color: var(--color-text-muted);
 }
 
+.workout-plan-schedule-label {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-focus);
+  font-family: var(--font-mono);
+}
+
+.workout-plan-date-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.workout-plan-date-nav > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  text-align: center;
+}
+
 .workout-session {
   text-align: center;
   padding: var(--space-5);
@@ -724,6 +747,21 @@
 
   .workout-calendar-card {
     padding: var(--space-4);
+  }
+
+  .workout-plan-date-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workout-plan-date-nav > div {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .workout-plan-date-nav > button {
+    width: 100%;
   }
 
   .workout-calendar {

@@ -4,6 +4,7 @@ import {
   normalizeWorkoutTracking,
   WORKOUT_TRACKING_VERSION,
 } from "./tracking.js";
+import { isValidWorkoutPlanDate } from "./utils.js";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";
@@ -120,6 +121,10 @@ export function normalizeWorkoutProgress(progress) {
     seconds,
   };
 
+  if (isValidWorkoutPlanDate(progress.planDate)) {
+    normalized.planDate = progress.planDate;
+  }
+
   const tracking = normalizeWorkoutTracking(
     progress.tracking,
     workout,
@@ -154,6 +159,7 @@ export function progressFields(state) {
     exerciseIndex: state?.exerciseIndex,
     phase: state?.phase,
     seconds: state?.seconds,
+    planDate: state?.planDate,
     tracking: state?.tracking,
   });
 }

@@ -17,13 +17,13 @@ import {
   advanceExercise,
   completeTrackedSetState,
   continueTrackedWorkoutState,
+  createWorkoutStartState,
   createCompletedSession,
   restartTrackedRestState,
   skipTrackedRestState,
 } from "./state";
 import {
   addTrackingSet,
-  initializeWorkoutTracking,
   removeTrackingSet,
   reopenTrackingSet,
   updateTrackingNotes,
@@ -54,6 +54,7 @@ export const useWorkout = create((set) => ({
   active: false,
   paused: false,
   workout: null,
+  planDate: null,
   startedAt: null,
   elapsed: 0,
   sessions: getWorkouts(),
@@ -83,34 +84,19 @@ export const useWorkout = create((set) => ({
       },
     ),
 
-  startWorkout: (workout) => {
-    if (
-      !workout ||
-      !Array.isArray(workout.exercises) ||
-      workout.exercises.length === 0 ||
-      !Number.isInteger(workout.rounds) ||
-      workout.rounds < 1
-    ) {
-      return;
-    }
+  startWorkout: (workout, planDate) =>
+    set((state) => {
+      const next = createWorkoutStartState(
+        state,
+        workout,
+        planDate,
+        new Date(),
+      );
 
-    const startedAt = new Date();
-    const next = {
-      active: true,
-      paused: false,
-      workout,
-      startedAt,
-      elapsed: 0,
-      round: 1,
-      exerciseIndex: 0,
-      phase: "prepare",
-      seconds: 5,
-      tracking: initializeWorkoutTracking(workout, startedAt),
-    };
-
-    set(next);
-    saveProgress(progressFields(next));
-  },
+      if (next === state) return state;
+      saveProgress(progressFields(next));
+      return next;
+    }),
 
   togglePause: () =>
     set((state) => {
@@ -259,6 +245,7 @@ export const useWorkout = create((set) => ({
       phase: "idle",
       seconds: 0,
       workout: null,
+      planDate: null,
       sessions: updated,
       savedProgress: null,
       tracking: null,
@@ -328,6 +315,7 @@ export const useWorkout = create((set) => ({
       active: false,
       paused: false,
       workout: null,
+      planDate: null,
       startedAt: null,
       elapsed: 0,
       round: 0,
@@ -345,6 +333,7 @@ subscribeStorageOwner(() => {
     active: false,
     paused: false,
     workout: null,
+    planDate: null,
     startedAt: null,
     elapsed: 0,
     sessions: getWorkouts(),

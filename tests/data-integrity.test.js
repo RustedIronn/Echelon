@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -27,6 +28,7 @@ import {
 } from "../src/features/workout/analyzer.js";
 import {
   mergeWorkoutHistories,
+  normalizeWorkoutHistory,
   normalizeWorkoutProgress,
   progressFields,
 } from "../src/features/workout/workoutStorage.js";
@@ -35,6 +37,7 @@ import {
   completeTrackedSetState,
   continueTrackedWorkoutState,
   createCompletedSession,
+  createWorkoutStartState,
   restartTrackedRestState,
   skipTrackedRestState,
 } from "../src/features/workout/state.js";
@@ -58,6 +61,11 @@ import {
   shiftCalendarMonth,
   sortWorkoutHistory,
 } from "../src/features/workout/history.js";
+import {
+  getDefaultWorkoutPlanDate,
+  getWorkoutForDate,
+  shiftWorkoutPlanDate,
+} from "../src/features/workout/utils.js";
 import {
   compareLatestExerciseSessions,
   computeExercisePRs,
@@ -1531,6 +1539,149 @@ test("workout insight derivation does not mutate persisted history", () => {
   assert.deepEqual(session, before);
   assert.notEqual(extracted[0], session);
   assert.notEqual(extracted[0].tracking, session.tracking);
+});
+
+test("workout plan selection defaults to the current local day", () => {
+  const localDate = new Date(2026, 8, 14, 23, 30);
+
+  assert.equal(getDefaultWorkoutPlanDate(localDate), "2026-09-14");
+  assert.equal(getWorkoutForDate("2026-09-14")?.day, "MON");
+});
+
+test("workout plan date navigation crosses month and year boundaries locally", () => {
+  assert.equal(shiftWorkoutPlanDate("2026-03-01", -1), "2026-02-28");
+  assert.equal(shiftWorkoutPlanDate("2026-12-31", 1), "2027-01-01");
+  assert.equal(shiftWorkoutPlanDate("2026-01-01", -1), "2025-12-31");
+  assert.equal(shiftWorkoutPlanDate("bad-date", 1), null);
+});
+
+test("selecting yesterday resolves its prescribed workout including recovery", () => {
+  const today = getDefaultWorkoutPlanDate(new Date(2026, 8, 14, 12));
+  const yesterday = shiftWorkoutPlanDate(today, -1);
+
+  assert.equal(yesterday, "2026-09-13");
+  assert.equal(getWorkoutForDate(yesterday)?.title, "Recovery");
+  assert.equal(getWorkoutForDate(yesterday)?.day, "SUN");
+  assert.equal(getWorkoutForDate("not-a-date"), null);
+});
+
+test("selected plan origin survives progress and keeps actual completion date", () => {
+  const performedDate = getToday();
+  const planDate = shiftWorkoutPlanDate(performedDate, -1);
+  const workout = {
+    title: "Selected Plan",
+    rounds: 1,
+    exercises: [{ name: "Press", duration: 30, rest: 10, sets: 1 }],
+  };
+  const startedAt = new Date();
+  const initial = {
+    active: false,
+    savedProgress: null,
+    sessions: [],
+  };
+  let started = createWorkoutStartState(
+    initial,
+    workout,
+    planDate,
+    startedAt,
+  );
+  const exercise = started.tracking.exercises[0];
+  let tracking = updateTrackingSetValue(
+    started.tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    "reps",
+    8,
+  );
+  tracking = completeTrackingSet(
+    tracking,
+    exercise.exerciseId,
+    exercise.sets[0].id,
+    startedAt,
+  );
+  started = { ...started, active: false, phase: "finished", tracking };
+
+  const persisted = progressFields(started);
+  const restored = normalizeWorkoutProgress(persisted);
+  const completed = createCompletedSession(started, performedDate);
+
+  assert.equal(restored.planDate, planDate);
+  assert.equal(completed.date, performedDate);
+  assert.equal(completed.planDate, planDate);
+  assert.equal(getWorkoutStats([completed]).completedToday, true);
+  assert.equal(getWorkoutStreak([completed]), 1);
+});
+
+test("an active or resumable workout cannot be replaced by another plan", () => {
+  const workout = getWorkoutForDate("2026-09-14");
+  const replacement = getWorkoutForDate("2026-09-15");
+  const active = createWorkoutStartState(
+    { active: false, savedProgress: null },
+    workout,
+    "2026-09-14",
+    new Date(2026, 8, 14, 8),
+  );
+  const blockedActive = createWorkoutStartState(
+    active,
+    replacement,
+    "2026-09-15",
+    new Date(2026, 8, 14, 9),
+  );
+  const resumable = {
+    active: false,
+    savedProgress: progressFields(active),
+  };
+
+  assert.equal(blockedActive, active);
+  assert.equal(
+    createWorkoutStartState(
+      resumable,
+      replacement,
+      "2026-09-15",
+      new Date(2026, 8, 14, 9),
+    ),
+    resumable,
+  );
+});
+
+test("legacy workout completions remain valid without plan origin metadata", () => {
+  const legacy = {
+    id: "legacy-no-plan-date",
+    workout: "Legacy",
+    date: "2026-09-14",
+    duration: 600,
+  };
+
+  assert.deepEqual(normalizeWorkoutHistory([legacy]), [legacy]);
+});
+
+test("workout store imports only authoritative workoutStorage exports", () => {
+  const storeSource = readFileSync(
+    new URL("../src/features/workout/store.js", import.meta.url),
+    "utf8",
+  );
+  const storageSource = readFileSync(
+    new URL("../src/features/workout/workoutStorage.js", import.meta.url),
+    "utf8",
+  );
+  const storageImport = storeSource.match(
+    /import\s*{([^}]*)}\s*from\s*["']\.\/workoutStorage(?:\.js)?["'];/,
+  );
+
+  assert.ok(storageImport);
+  const importedNames = storageImport[1]
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  importedNames.forEach((name) => {
+    assert.match(
+      storageSource,
+      new RegExp(`export\\s+(?:function|const|class)\\s+${name}\\b`),
+    );
+  });
+  assert.equal(storeSource.includes("createWorkoutProgressSnapshot"), false);
+  assert.equal(storageSource.includes("createWorkoutProgressSnapshot"), false);
 });
 
 test("analytics sanitizes partial histories without NaN or Infinity", () => {

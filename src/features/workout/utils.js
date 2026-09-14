@@ -1,11 +1,43 @@
-import { workouts } from "./constants";
+import { workouts } from "./constants.js";
+import { getToday } from "../../shared/date.js";
 
-export function getTodayWorkout() {
-  const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-  const today = days[new Date().getDay()];
+const parseLocalDayKey = (dayKey) => {
+  if (typeof dayKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) {
+    return null;
+  }
 
-  return workouts.find((workout) => workout.day === today);
+  const [year, month, day] = dayKey.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return getToday(date) === dayKey ? date : null;
+};
+
+export function isValidWorkoutPlanDate(dayKey) {
+  return parseLocalDayKey(dayKey) !== null;
+}
+
+export function getDefaultWorkoutPlanDate(now = new Date()) {
+  return getToday(now);
+}
+
+export function shiftWorkoutPlanDate(dayKey, offset) {
+  const date = parseLocalDayKey(dayKey);
+  if (!date || !Number.isInteger(offset)) return null;
+
+  date.setDate(date.getDate() + offset);
+  return getToday(date);
+}
+
+export function getWorkoutForDate(dayKey) {
+  const date = parseLocalDayKey(dayKey);
+  if (!date) return null;
+
+  return workouts.find((workout) => workout.day === DAYS[date.getDay()]) ?? null;
+}
+
+export function getTodayWorkout(now = new Date()) {
+  return getWorkoutForDate(getDefaultWorkoutPlanDate(now));
 }
 
 export function getWorkoutDuration(workout) {
