@@ -7,7 +7,12 @@ import {
 import { addCustomCategory, deleteCustomCategory } from "./categories.js";
 import { deleteBudget, setMonthlyBudget } from "./budgets.js";
 import { addGoal, createGoal, deleteGoal, editGoal } from "./goals.js";
-import { loadMoneyDocument, saveMoneyDocument } from "./storage.js";
+import {
+  createNextMoneyDocument,
+  loadMoneyDocument,
+  saveMoneyDocument,
+} from "./storage.js";
+import { queueMoneyMutation } from "./syncRuntime.js";
 import {
   addTransaction,
   createMoneyId,
@@ -24,9 +29,23 @@ const getOwnedData = (get) => {
   return owner && state.owner === owner ? state.data : null;
 };
 
+const commit = (set, current, changes, now = new Date()) => {
+  const data = persist(
+    createNextMoneyDocument({ ...current, ...changes }, current, now),
+  );
+  if (!data) return false;
+
+  const owner = getStorageOwner();
+  set({ data, syncStatus: "pending", syncError: null });
+  queueMoneyMutation(owner, data);
+  return true;
+};
+
 export const useMoney = create((set, get) => ({
   owner: getStorageOwner(),
   data: loadMoneyDocument(),
+  syncStatus: "idle",
+  syncError: null,
 
   addTransaction: (input, metadata = {}) => {
     const current = getOwnedData(get);
@@ -38,10 +57,7 @@ export const useMoney = create((set, get) => ({
     const transactions = addTransaction(current.transactions, transaction);
     if (transactions === current.transactions) return false;
 
-    const data = persist({ ...current, transactions });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { transactions }, metadata.now);
   },
 
   editTransaction: (id, patch, now = new Date()) => {
@@ -56,10 +72,7 @@ export const useMoney = create((set, get) => ({
     );
     if (transactions === current.transactions) return false;
 
-    const data = persist({ ...current, transactions });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { transactions }, now);
   },
 
   deleteTransaction: (id) => {
@@ -67,10 +80,7 @@ export const useMoney = create((set, get) => ({
     if (!current) return false;
     const transactions = deleteTransaction(current.transactions, id);
     if (transactions === current.transactions) return false;
-    const data = persist({ ...current, transactions });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { transactions });
   },
 
   addCategory: (input, id = createMoneyId("category")) => {
@@ -78,10 +88,7 @@ export const useMoney = create((set, get) => ({
     if (!current) return false;
     const categories = addCustomCategory(current.categories, input, id);
     if (categories === current.categories) return false;
-    const data = persist({ ...current, categories });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { categories });
   },
 
   deleteCategory: (id) => {
@@ -94,10 +101,7 @@ export const useMoney = create((set, get) => ({
       current.budgets,
     );
     if (categories === current.categories) return false;
-    const data = persist({ ...current, categories });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { categories });
   },
 
   setBudget: (categoryId, amount) => {
@@ -110,10 +114,7 @@ export const useMoney = create((set, get) => ({
       current.categories,
     );
     if (budgets === current.budgets) return false;
-    const data = persist({ ...current, budgets });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { budgets });
   },
 
   deleteBudget: (id) => {
@@ -121,10 +122,7 @@ export const useMoney = create((set, get) => ({
     if (!current) return false;
     const budgets = deleteBudget(current.budgets, id);
     if (budgets === current.budgets) return false;
-    const data = persist({ ...current, budgets });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { budgets });
   },
 
   addGoal: (input, metadata = {}) => {
@@ -136,10 +134,7 @@ export const useMoney = create((set, get) => ({
     });
     const goals = addGoal(current.goals, goal);
     if (goals === current.goals) return false;
-    const data = persist({ ...current, goals });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { goals }, metadata.now);
   },
 
   editGoal: (id, patch, now = new Date()) => {
@@ -147,10 +142,7 @@ export const useMoney = create((set, get) => ({
     if (!current) return false;
     const goals = editGoal(current.goals, id, patch, now);
     if (goals === current.goals) return false;
-    const data = persist({ ...current, goals });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { goals }, now);
   },
 
   deleteGoal: (id) => {
@@ -158,16 +150,39 @@ export const useMoney = create((set, get) => ({
     if (!current) return false;
     const goals = deleteGoal(current.goals, id);
     if (goals === current.goals) return false;
-    const data = persist({ ...current, goals });
-    if (!data) return false;
-    set({ data });
-    return true;
+    return commit(set, current, { goals });
   },
 }));
+
+export function getOwnedMoneyDocument(uid) {
+  const state = useMoney.getState();
+  return getStorageOwner() === uid && state.owner === uid ? state.data : null;
+}
+
+export function applyMoneyCloudDocument(uid, document) {
+  if (!getOwnedMoneyDocument(uid)) return false;
+  const data = persist(document);
+  if (!data || getStorageOwner() !== uid || useMoney.getState().owner !== uid) {
+    return false;
+  }
+  useMoney.setState({ data, syncStatus: "synced", syncError: null });
+  return true;
+}
+
+export function setMoneySyncStatus(uid, syncStatus, error = null) {
+  if (!getOwnedMoneyDocument(uid)) return false;
+  useMoney.setState({
+    syncStatus,
+    syncError: error instanceof Error ? error.message : null,
+  });
+  return true;
+}
 
 subscribeStorageOwner(() => {
   useMoney.setState({
     owner: getStorageOwner(),
     data: loadMoneyDocument(),
+    syncStatus: "idle",
+    syncError: null,
   });
 });

@@ -8,6 +8,11 @@ import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
 import { useWorkout } from "@features/workout/store";
+import {
+  bindMoneyBackgroundRecovery,
+  startMoneyBackgroundSync,
+  stopMoneyBackgroundSync,
+} from "@features/money/backgroundSync";
 
 export default function useEchelonSync() {
   const { user } = useAuth();
@@ -19,6 +24,7 @@ export default function useEchelonSync() {
     }
 
     let cancelled = false;
+    const unbindMoneyRecovery = bindMoneyBackgroundRecovery(user.uid);
 
     const sync = async () => {
       useSync.getState().setSyncing();
@@ -30,6 +36,7 @@ export default function useEchelonSync() {
           useFocus.getState().loadFromCloud(),
           useSchedule.getState().loadFromCloud(),
           useWorkout.getState().loadFromCloud(),
+          startMoneyBackgroundSync(user.uid),
         ]);
 
         if (
@@ -52,6 +59,8 @@ export default function useEchelonSync() {
 
     return () => {
       cancelled = true;
+      unbindMoneyRecovery();
+      stopMoneyBackgroundSync(user.uid);
     };
   }, [user]);
 }

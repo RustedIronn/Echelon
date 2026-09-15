@@ -147,11 +147,18 @@ import {
   spendingByCategory,
 } from "../src/features/money/analytics.js";
 import {
+  createNextMoneyDocument,
   createEmptyMoneyDocument,
   loadMoneyDocument,
+  normalizeMoneyCloudDocument,
   normalizeMoneyDocument,
   saveMoneyDocument,
+  selectMoneySource,
 } from "../src/features/money/storage.js";
+import {
+  bindMoneyRecoveryEvents,
+  createMoneySyncController,
+} from "../src/features/money/syncController.js";
 
 const memory = new Map();
 
@@ -2298,6 +2305,8 @@ test("money document normalization isolates malformed slices and strips unknown 
 
   assert.deepEqual(Object.keys(normalized), [
     "version",
+    "revision",
+    "updatedAt",
     "transactions",
     "categories",
     "budgets",
@@ -2415,6 +2424,7 @@ test("mounted money store switches all slices atomically across owners", async (
     true,
   );
   const ownerA = structuredClone(useMoney.getState().data);
+  assert.equal(ownerA.revision, 4);
 
   setStorageOwner(null);
   assert.equal(useMoney.getState().owner, null);
@@ -2431,6 +2441,7 @@ test("mounted money store switches all slices atomically across owners", async (
     true,
   );
   const ownerB = structuredClone(useMoney.getState().data);
+  assert.equal(ownerB.revision, 1);
 
   useMoney.setState({ owner: "mounted-money-a", data: ownerA });
   assert.equal(useMoney.getState().deleteGoal("goal:owner-a"), false);
@@ -2467,4 +2478,395 @@ test("empty ledger and deterministic same-day ordering stay stable", () => {
     sortTransactions([early, lateB, lateA]).map((item) => item.id),
     ["transaction:a", "transaction:b", "transaction:early"],
   );
+});
+
+const versionedMoneyDocument = (revision, label = "") => ({
+  ...createEmptyMoneyDocument(),
+  revision,
+  updatedAt:
+    revision > 0 ? `2026-09-15T10:00:${String(revision).padStart(2, "0")}.000Z` : null,
+  goals: label
+    ? [
+        createMoneyGoal(
+          { name: label, targetAmount: "100", savedAmount: "0" },
+          {
+            id: `goal:${label.toLowerCase().replaceAll(" ", "-")}`,
+            now: "2026-09-15T10:00:00.000Z",
+          },
+        ),
+      ]
+    : [],
+});
+
+function createMoneySyncHarness({
+  uid = "money-sync-user",
+  local = versionedMoneyDocument(1, "Local"),
+  cloud = structuredClone(local),
+} = {}) {
+  const state = {
+    context: { authUid: uid, storeOwner: uid },
+    local,
+    cloud,
+    offline: false,
+    writes: [],
+    loads: 0,
+    statuses: [],
+    timers: new Map(),
+  };
+  let timerId = 0;
+
+  const controller = createMoneySyncController({
+    getContext: () => state.context,
+    getLocalDocument: (operationUid) =>
+      state.context.storeOwner === operationUid ? state.local : null,
+    applyCloudDocument: (operationUid, document) => {
+      if (state.context.storeOwner === operationUid) {
+        state.local = structuredClone(document);
+        return true;
+      }
+      return false;
+    },
+    setStatus: (operationUid, status) => {
+      state.statuses.push({ uid: operationUid, status });
+    },
+    loadCloudDocument: async () => {
+      state.loads += 1;
+      if (state.offline) throw new Error("offline");
+      return structuredClone(state.cloud);
+    },
+    saveCloudDocument: async (operationUid, document) => {
+      if (state.offline) throw new Error("offline");
+      if (state.cloud && state.cloud.revision > document.revision) {
+        return { written: false, document: structuredClone(state.cloud) };
+      }
+      state.writes.push({ uid: operationUid, document: structuredClone(document) });
+      state.cloud = structuredClone(document);
+      return { written: true, document: structuredClone(document) };
+    },
+    normalizeCloudDocument: normalizeMoneyCloudDocument,
+    selectContent: selectMoneySource,
+    schedule: (callback) => {
+      const id = ++timerId;
+      state.timers.set(id, callback);
+      return id;
+    },
+    cancel: (id) => state.timers.delete(id),
+  });
+
+  return { controller, state, uid };
+}
+
+test("money revisions preserve the exact persisted source boundary", () => {
+  const legacy = normalizeMoneyDocument({
+    ...createEmptyMoneyDocument(),
+    revision: undefined,
+    updatedAt: undefined,
+    dashboardTotal: 123,
+  });
+  const next = createNextMoneyDocument(
+    { ...legacy, analytics: { shouldNotPersist: true } },
+    legacy,
+    new Date("2026-09-15T12:00:00.000Z"),
+  );
+
+  assert.equal(legacy.revision, 0);
+  assert.equal(legacy.updatedAt, null);
+  assert.equal(next.revision, 1);
+  assert.equal(next.updatedAt, "2026-09-15T12:00:00.000Z");
+  assert.deepEqual(Object.keys(next), [
+    "version",
+    "revision",
+    "updatedAt",
+    "transactions",
+    "categories",
+    "budgets",
+    "goals",
+  ]);
+  assert.equal(
+    normalizeMoneyCloudDocument({
+      ...next,
+      transactions: "malformed",
+    }),
+    null,
+  );
+});
+
+test("Money document revisions increment once and timestamps stay monotonic", () => {
+  const current = versionedMoneyDocument(4, "Current");
+  current.updatedAt = "2026-09-15T12:00:00.000Z";
+  const next = createNextMoneyDocument(
+    current,
+    current,
+    new Date("2026-09-15T11:00:00.000Z"),
+  );
+  const afterInvalidClock = createNextMoneyDocument(next, next, "not-a-date");
+
+  assert.equal(next.revision, 5);
+  assert.equal(next.updatedAt, "2026-09-15T12:00:00.001Z");
+  assert.equal(afterInvalidClock.revision, 6);
+  assert.equal(Number.isNaN(Date.parse(afterInvalidClock.updatedAt)), false);
+  assert.ok(Date.parse(afterInvalidClock.updatedAt) > Date.parse(next.updatedAt));
+});
+
+test("offline Money mutation stays local and reconnect uploads the latest revision", async () => {
+  const harness = createMoneySyncHarness();
+  await harness.controller.activate(harness.uid);
+  harness.state.offline = true;
+  harness.state.local = versionedMoneyDocument(2, "Offline edit");
+  harness.controller.enqueue(harness.uid, harness.state.local);
+
+  await assert.rejects(harness.controller.flush(harness.uid), /offline/);
+  assert.equal(harness.state.local.revision, 2);
+  assert.deepEqual(
+    harness.state.statuses.slice(-3).map(({ status }) => status),
+    ["pending", "syncing", "error"],
+  );
+
+  harness.state.offline = false;
+  await harness.controller.recover(harness.uid);
+  assert.equal(harness.state.cloud.revision, 2);
+  assert.equal(harness.state.cloud.goals[0].name, "Offline edit");
+  assert.equal(harness.state.statuses.at(-1).status, "synced");
+});
+
+test("rapid Money mutations coalesce and send only the newest revision", async () => {
+  const harness = createMoneySyncHarness();
+  await harness.controller.activate(harness.uid);
+
+  harness.state.local = versionedMoneyDocument(2, "First edit");
+  harness.controller.enqueue(harness.uid, harness.state.local);
+  harness.state.local = versionedMoneyDocument(3, "Newest edit");
+  harness.controller.enqueue(harness.uid, harness.state.local);
+
+  assert.equal(harness.state.timers.size, 1);
+  await harness.controller.flush(harness.uid);
+  assert.deepEqual(harness.state.writes.map(({ document }) => document.revision), [3]);
+  assert.equal(harness.state.cloud.goals[0].name, "Newest edit");
+});
+
+test("a stale Money write cannot overwrite a newer cloud revision", async () => {
+  const harness = createMoneySyncHarness();
+  await harness.controller.activate(harness.uid);
+
+  harness.state.cloud = versionedMoneyDocument(5, "Newer cloud");
+  harness.state.local = versionedMoneyDocument(2, "Stale local");
+  harness.controller.enqueue(harness.uid, harness.state.local);
+  await harness.controller.flush(harness.uid);
+
+  assert.equal(harness.state.writes.length, 0);
+  assert.equal(harness.state.cloud.revision, 5);
+  assert.equal(harness.state.local.goals[0].name, "Newer cloud");
+});
+
+test("Money equal-revision reconciliation follows content and timestamp policy", async () => {
+  const equal = createMoneySyncHarness();
+  await equal.controller.activate(equal.uid);
+  assert.equal(equal.state.writes.length, 0);
+
+  const local = versionedMoneyDocument(2, "Local tie");
+  const newerCloud = versionedMoneyDocument(2, "Cloud tie");
+  newerCloud.updatedAt = "2026-09-15T10:00:03.000Z";
+  const cloudWins = createMoneySyncHarness({ local, cloud: newerCloud });
+  await cloudWins.controller.activate(cloudWins.uid);
+  assert.equal(cloudWins.state.local.goals[0].name, "Cloud tie");
+  assert.equal(cloudWins.state.writes.length, 0);
+
+  const legacyLocal = versionedMoneyDocument(0, "Legacy local");
+  const legacyCloud = versionedMoneyDocument(0, "Legacy cloud");
+  const localWins = createMoneySyncHarness({
+    local: legacyLocal,
+    cloud: legacyCloud,
+  });
+  await localWins.controller.activate(localWins.uid);
+  assert.equal(localWins.state.writes.length, 1);
+  assert.equal(localWins.state.cloud.goals[0].name, "Legacy local");
+});
+
+test("Money background activation reconciles without mounting a Money route", async () => {
+  const harness = createMoneySyncHarness({ cloud: null });
+
+  await harness.controller.activate(harness.uid);
+
+  assert.equal(harness.state.loads, 1);
+  assert.equal(harness.state.writes.length, 1);
+  assert.equal(harness.state.cloud.revision, 1);
+});
+
+test("Money reconciliation waits for the local-winning upload before syncing", async () => {
+  let finishWrite;
+  const local = versionedMoneyDocument(2, "Local winner");
+  const cloud = versionedMoneyDocument(1, "Cloud older");
+  const statuses = [];
+  const controller = createMoneySyncController({
+    getContext: () => ({ authUid: "owner", storeOwner: "owner" }),
+    getLocalDocument: () => local,
+    applyCloudDocument: () => true,
+    setStatus: (_uid, status) => statuses.push(status),
+    loadCloudDocument: async () => cloud,
+    saveCloudDocument: (_uid, document) =>
+      new Promise((resolve) => {
+        finishWrite = () => resolve({ written: true, document });
+      }),
+    normalizeCloudDocument: normalizeMoneyCloudDocument,
+    selectContent: selectMoneySource,
+  });
+
+  const activation = controller.activate("owner");
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(statuses.includes("synced"), false);
+  finishWrite();
+  assert.equal(await activation, true);
+  assert.equal(statuses.at(-1), "synced");
+});
+
+test("a failed cloud-winner apply is never reported as synced", async () => {
+  const local = versionedMoneyDocument(1, "Local older");
+  const cloud = versionedMoneyDocument(2, "Cloud winner");
+  const statuses = [];
+  const controller = createMoneySyncController({
+    getContext: () => ({ authUid: "owner", storeOwner: "owner" }),
+    getLocalDocument: () => local,
+    applyCloudDocument: () => false,
+    setStatus: (_uid, status) => statuses.push(status),
+    loadCloudDocument: async () => cloud,
+    saveCloudDocument: async (_uid, document) => ({ written: true, document }),
+    normalizeCloudDocument: normalizeMoneyCloudDocument,
+    selectContent: selectMoneySource,
+  });
+
+  await assert.rejects(controller.activate("owner"), /Unable to persist/);
+  assert.equal(statuses.at(-1), "error");
+});
+
+test("focus and visible-page recovery retry Money sync without polling", async () => {
+  const listeners = { window: new Map(), document: new Map() };
+  const windowTarget = {
+    addEventListener: (name, listener) => listeners.window.set(name, listener),
+    removeEventListener: (name) => listeners.window.delete(name),
+  };
+  const documentTarget = {
+    visibilityState: "hidden",
+    addEventListener: (name, listener) => listeners.document.set(name, listener),
+    removeEventListener: (name) => listeners.document.delete(name),
+  };
+  const recovered = [];
+  const unbind = bindMoneyRecoveryEvents(
+    "recovery-user",
+    async (uid) => recovered.push(uid),
+    { windowTarget, documentTarget },
+  );
+
+  listeners.window.get("focus")();
+  listeners.window.get("online")();
+  listeners.document.get("visibilitychange")();
+  documentTarget.visibilityState = "visible";
+  listeners.document.get("visibilitychange")();
+  await Promise.resolve();
+
+  assert.deepEqual(recovered, ["recovery-user", "recovery-user", "recovery-user"]);
+  unbind();
+  assert.equal(listeners.window.size, 0);
+  assert.equal(listeners.document.size, 0);
+});
+
+test("account switch invalidates a pending User A Money read", async () => {
+  let resolveUserA;
+  const documents = {
+    A: versionedMoneyDocument(1, "A local"),
+    B: versionedMoneyDocument(1, "B local"),
+  };
+  const context = { authUid: "A", storeOwner: "A" };
+  const applied = [];
+  const controller = createMoneySyncController({
+    getContext: () => context,
+    getLocalDocument: (uid) => documents[uid],
+    applyCloudDocument: (uid, document) => {
+      applied.push(uid);
+      documents[uid] = document;
+      return true;
+    },
+    setStatus: () => {},
+    loadCloudDocument: (uid) =>
+      uid === "A"
+        ? new Promise((resolve) => {
+            resolveUserA = resolve;
+          })
+        : Promise.resolve(versionedMoneyDocument(2, "B cloud")),
+    saveCloudDocument: async (_uid, document) => ({ written: true, document }),
+    normalizeCloudDocument: normalizeMoneyCloudDocument,
+    selectContent: selectMoneySource,
+  });
+
+  const userAOperation = controller.activate("A");
+  context.authUid = "B";
+  context.storeOwner = "B";
+  controller.deactivate("A");
+  await controller.activate("B");
+  resolveUserA(versionedMoneyDocument(9, "A cloud"));
+
+  assert.equal(await userAOperation, false);
+  assert.deepEqual(applied, ["B"]);
+  assert.equal(documents.B.goals[0].name, "B cloud");
+  assert.equal(documents.A.goals[0].name, "A local");
+});
+
+test("account switch prevents a pending User A Money write from touching B status", async () => {
+  let resolveUserAWrite;
+  const documents = {
+    A: versionedMoneyDocument(1, "A local"),
+    B: versionedMoneyDocument(1, "B local"),
+  };
+  const context = { authUid: "A", storeOwner: "A" };
+  const statuses = [];
+  const controller = createMoneySyncController({
+    getContext: () => context,
+    getLocalDocument: (uid) => documents[uid],
+    applyCloudDocument: (uid, document) => {
+      documents[uid] = document;
+      return true;
+    },
+    setStatus: (uid, status) => statuses.push({ uid, status }),
+    loadCloudDocument: async (uid) => structuredClone(documents[uid]),
+    saveCloudDocument: (uid, document) =>
+      uid === "A"
+        ? new Promise((resolve) => {
+            resolveUserAWrite = () =>
+              resolve({ written: true, document: structuredClone(document) });
+          })
+        : Promise.resolve({ written: true, document }),
+    normalizeCloudDocument: normalizeMoneyCloudDocument,
+    selectContent: selectMoneySource,
+  });
+
+  await controller.activate("A");
+  documents.A = versionedMoneyDocument(2, "A pending");
+  controller.enqueue("A", documents.A);
+  const userAWrite = controller.flush("A");
+
+  context.authUid = "B";
+  context.storeOwner = "B";
+  controller.deactivate("A");
+  await controller.activate("B");
+  const statusCountBeforeAResolution = statuses.length;
+  resolveUserAWrite();
+
+  assert.equal(await userAWrite, false);
+  assert.equal(statuses.length, statusCountBeforeAResolution);
+  assert.equal(documents.B.goals[0].name, "B local");
+});
+
+test("logout cancels a queued Money timer and clears pending runtime work", async () => {
+  const harness = createMoneySyncHarness();
+  await harness.controller.activate(harness.uid);
+  harness.state.local = versionedMoneyDocument(2, "Queued before logout");
+  harness.controller.enqueue(harness.uid, harness.state.local);
+
+  assert.equal(harness.state.timers.size, 1);
+  harness.state.context = { authUid: null, storeOwner: null };
+  harness.controller.deactivate(harness.uid);
+
+  assert.equal(harness.state.timers.size, 0);
+  assert.equal(harness.controller.isPending(), false);
+  assert.equal(harness.state.writes.length, 0);
 });
