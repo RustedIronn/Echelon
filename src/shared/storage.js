@@ -9,6 +9,7 @@ const USER_DATA_KEYS = new Set([
   "echelon_workout_progress",
   "echelon_notification_settings",
   "echelon_notification_history",
+  "echelon_money_v1",
 ]);
 
 const LEGACY_OWNER_KEY = "echelon:legacy-owner";

@@ -110,6 +110,48 @@ import {
   DEFAULT_NOTIFICATION_SETTINGS,
   REMINDER_GRACE_MS,
 } from "../src/features/notifications/constants.js";
+import {
+  DEFAULT_CATEGORIES,
+  MONEY_STORAGE_KEY,
+} from "../src/features/money/constants.js";
+import {
+  addTransaction as addMoneyTransaction,
+  createTransaction,
+  deleteTransaction as deleteMoneyTransaction,
+  editTransaction as editMoneyTransaction,
+  filterTransactions,
+  formatInr,
+  parseMoneyToMinor,
+  sortTransactions,
+} from "../src/features/money/transactions.js";
+import {
+  addCustomCategory,
+  deleteCustomCategory,
+  getCategoryDeletionState,
+  normalizeCategories,
+} from "../src/features/money/categories.js";
+import {
+  calculateBudgetUsage,
+  setMonthlyBudget,
+} from "../src/features/money/budgets.js";
+import {
+  addGoal as addMoneyGoal,
+  createGoal as createMoneyGoal,
+  deleteGoal as deleteMoneyGoal,
+  editGoal as editMoneyGoal,
+  getGoalProgress,
+} from "../src/features/money/goals.js";
+import {
+  aggregateLedger,
+  monthlyLedger,
+  spendingByCategory,
+} from "../src/features/money/analytics.js";
+import {
+  createEmptyMoneyDocument,
+  loadMoneyDocument,
+  normalizeMoneyDocument,
+  saveMoneyDocument,
+} from "../src/features/money/storage.js";
 
 const memory = new Map();
 
@@ -1938,5 +1980,491 @@ test("permission boundaries handle unsupported and denied without reprompting", 
       false,
     ),
     false,
+  );
+});
+
+const moneyTransaction = ({
+  id,
+  type = "expense",
+  amount = "100",
+  categoryId = type === "expense" ? "expense:food" : "income:salary",
+  date = "2026-09-14",
+  now = "2026-09-14T10:00:00.000Z",
+  description = "",
+} = {}) =>
+  createTransaction(
+    { type, amount, categoryId, date, description, recurring: false },
+    DEFAULT_CATEGORIES,
+    { id, now },
+  );
+
+test("money parsing uses exact integer minor units", () => {
+  assert.equal(parseMoneyToMinor("0.1"), 10);
+  assert.equal(parseMoneyToMinor("10.01"), 1001);
+  assert.equal(parseMoneyToMinor("999.99"), 99999);
+  assert.equal(parseMoneyToMinor("337.50"), 33750);
+  assert.equal(parseMoneyToMinor("0.01"), 1);
+  assert.equal(parseMoneyToMinor("337"), 33700);
+  assert.equal(parseMoneyToMinor("90071992547409.91"), Number.MAX_SAFE_INTEGER);
+  assert.equal(parseMoneyToMinor("90071992547409.92"), null);
+  assert.equal(parseMoneyToMinor("1.234"), null);
+  assert.equal(parseMoneyToMinor("0"), 0);
+  assert.equal(parseMoneyToMinor("-2"), null);
+  assert.equal(parseMoneyToMinor(Number.NaN), null);
+  assert.equal(parseMoneyToMinor(Number.POSITIVE_INFINITY), null);
+  assert.equal(formatInr(33750).includes("337.50"), true);
+});
+
+test("transaction creation validates required fields and positive amounts", () => {
+  const transaction = moneyTransaction({
+    id: "transaction:one",
+    amount: "337.50",
+    description: "Lunch",
+  });
+
+  assert.equal(transaction.amountMinor, 33750);
+  assert.equal(transaction.description, "Lunch");
+  assert.equal(moneyTransaction({ id: "bad", amount: "0" }), null);
+  assert.equal(moneyTransaction({ id: "bad type", amount: "1" }), null);
+  assert.equal(moneyTransaction({ id: "bad-date", date: "2026-02-30" }), null);
+  assert.equal(
+    moneyTransaction({
+      id: "bad-category",
+      type: "income",
+      categoryId: "expense:food",
+    }),
+    null,
+  );
+});
+
+test("transaction edits reject an incompatible category when type changes", () => {
+  const original = moneyTransaction({ id: "transaction:type-change" });
+  const rejected = editMoneyTransaction(
+    [original],
+    original.id,
+    { type: "income" },
+    DEFAULT_CATEGORIES,
+    new Date("2026-09-14T11:00:00.000Z"),
+  );
+  const accepted = editMoneyTransaction(
+    [original],
+    original.id,
+    { type: "income", categoryId: "income:salary" },
+    DEFAULT_CATEGORIES,
+    new Date("2026-09-14T11:00:00.000Z"),
+  );
+
+  assert.equal(rejected[0], original);
+  assert.equal(accepted[0].id, original.id);
+  assert.equal(accepted[0].type, "income");
+  assert.equal(accepted[0].categoryId, "income:salary");
+});
+
+test("transaction add is idempotent and edit preserves identity", () => {
+  const original = moneyTransaction({ id: "transaction:stable", amount: "10" });
+  const once = addMoneyTransaction([], original);
+  const repeated = addMoneyTransaction(once, original);
+  const edited = editMoneyTransaction(
+    repeated,
+    original.id,
+    { amount: "12.75", description: "Updated" },
+    DEFAULT_CATEGORIES,
+    new Date("2026-09-14T11:00:00.000Z"),
+  );
+
+  assert.equal(repeated, once);
+  assert.equal(edited[0].id, original.id);
+  assert.equal(edited[0].createdAt, original.createdAt);
+  assert.equal(edited[0].amountMinor, 1275);
+  assert.equal(edited[0].description, "Updated");
+});
+
+test("transaction deletion removes only the requested identity", () => {
+  const first = moneyTransaction({ id: "transaction:first" });
+  const second = moneyTransaction({ id: "transaction:second" });
+  const transactions = [first, second];
+
+  assert.deepEqual(deleteMoneyTransaction(transactions, first.id), [second]);
+  assert.equal(deleteMoneyTransaction(transactions, "missing"), transactions);
+});
+
+test("ledger aggregates income and expense without signed stored amounts", () => {
+  const transactions = [
+    moneyTransaction({ id: "income:one", type: "income", amount: "7000" }),
+    moneyTransaction({ id: "expense:one", amount: "2380" }),
+  ];
+
+  assert.deepEqual(aggregateLedger(transactions), {
+    incomeMinor: 700000,
+    expenseMinor: 238000,
+    netMinor: 462000,
+  });
+  assert.equal(transactions.every((item) => item.amountMinor > 0), true);
+});
+
+test("money month filtering and analytics cross year boundaries", () => {
+  const transactions = [
+    moneyTransaction({ id: "december", date: "2025-12-31", amount: "10" }),
+    moneyTransaction({ id: "january", date: "2026-01-01", amount: "20" }),
+    moneyTransaction({
+      id: "january-income",
+      type: "income",
+      date: "2026-01-02",
+      amount: "50",
+    }),
+  ];
+
+  assert.deepEqual(
+    filterTransactions(transactions, { month: "2025-12" }).map(
+      (item) => item.id,
+    ),
+    ["december"],
+  );
+  assert.deepEqual(monthlyLedger(transactions), [
+    {
+      month: "2025-12",
+      incomeMinor: 0,
+      expenseMinor: 1000,
+      netMinor: -1000,
+    },
+    {
+      month: "2026-01",
+      incomeMinor: 5000,
+      expenseMinor: 2000,
+      netMinor: 3000,
+    },
+  ]);
+});
+
+test("category totals and filters use transaction source data", () => {
+  const transactions = [
+    moneyTransaction({ id: "food-one", amount: "10" }),
+    moneyTransaction({ id: "food-two", amount: "5.50" }),
+    moneyTransaction({
+      id: "transport",
+      amount: "20",
+      categoryId: "expense:transport",
+    }),
+  ];
+
+  assert.deepEqual(spendingByCategory(transactions), [
+    { categoryId: "expense:transport", amountMinor: 2000 },
+    { categoryId: "expense:food", amountMinor: 1550 },
+  ]);
+  assert.equal(
+    filterTransactions(transactions, { categoryId: "expense:food" }).length,
+    2,
+  );
+});
+
+test("custom category deletion is blocked while referenced", () => {
+  const categories = addCustomCategory(
+    normalizeCategories([]),
+    { name: "Coffee", type: "expense" },
+    "category:coffee",
+  );
+  const transaction = createTransaction(
+    {
+      type: "expense",
+      amount: "100",
+      categoryId: "category:coffee",
+      date: "2026-09-14",
+    },
+    categories,
+    { id: "coffee-transaction", now: "2026-09-14T10:00:00.000Z" },
+  );
+
+  assert.equal(categories.at(-1).name, "Coffee");
+  assert.equal(
+    getCategoryDeletionState("category:coffee", [transaction]).allowed,
+    false,
+  );
+  assert.equal(
+    deleteCustomCategory(categories, "category:coffee", [transaction], []),
+    categories,
+  );
+  assert.equal(
+    deleteCustomCategory(categories, "category:coffee", [], []).some(
+      (item) => item.id === "category:coffee",
+    ),
+    false,
+  );
+});
+
+test("monthly budgets derive normal, warning, and over states", () => {
+  const budgets = setMonthlyBudget(
+    [],
+    "expense:food",
+    "100",
+    DEFAULT_CATEGORIES,
+  );
+  const atSeventy = moneyTransaction({ id: "seventy", amount: "70" });
+  const atNinety = moneyTransaction({ id: "ninety", amount: "90" });
+  const over = moneyTransaction({ id: "over", amount: "110" });
+
+  assert.equal(calculateBudgetUsage(budgets[0], [atSeventy], "2026-09").status, "normal");
+  assert.equal(calculateBudgetUsage(budgets[0], [atNinety], "2026-09").status, "warning");
+  const overUsage = calculateBudgetUsage(budgets[0], [over], "2026-09");
+  assert.equal(overUsage.status, "over");
+  assert.equal(overUsage.remainingMinor, -1000);
+});
+
+test("budget thresholds and transaction edits are derived at exact boundaries", () => {
+  const budgets = setMonthlyBudget([], "expense:food", "100", DEFAULT_CATEGORIES);
+  const budget = budgets[0];
+  const usage = (amount) =>
+    calculateBudgetUsage(
+      budget,
+      [moneyTransaction({ id: `transaction:${amount.replace(".", "-")}`, amount })],
+      "2026-09",
+    );
+
+  assert.equal(usage("79.99").status, "normal");
+  assert.equal(usage("80").status, "warning");
+  assert.equal(usage("100").status, "warning");
+  assert.equal(usage("100.01").status, "over");
+  assert.equal(setMonthlyBudget(budgets, "expense:food", "0", DEFAULT_CATEGORIES), budgets);
+  assert.equal(setMonthlyBudget(budgets, "income:salary", "100", DEFAULT_CATEGORIES), budgets);
+
+  const original = moneyTransaction({ id: "transaction:budget-edit", amount: "80" });
+  const edited = editMoneyTransaction(
+    [original],
+    original.id,
+    { amount: "20" },
+    DEFAULT_CATEGORIES,
+    new Date("2026-09-14T11:00:00.000Z"),
+  );
+  assert.equal(calculateBudgetUsage(budget, [original], "2026-09").status, "warning");
+  assert.equal(calculateBudgetUsage(budget, edited, "2026-09").status, "normal");
+  assert.equal(calculateBudgetUsage(budget, [], "2026-09").spentMinor, 0);
+});
+
+test("savings goals are manual, editable, and visually cap over target", () => {
+  const goal = createMoneyGoal(
+    { name: "Microwave", targetAmount: "8000", savedAmount: "4620" },
+    { id: "goal:microwave", now: "2026-09-14T10:00:00.000Z" },
+  );
+  const once = addMoneyGoal([], goal);
+  const repeated = addMoneyGoal(once, goal);
+  const edited = editMoneyGoal(
+    repeated,
+    goal.id,
+    { savedAmount: "9000" },
+    new Date("2026-09-15T10:00:00.000Z"),
+  );
+  const progress = getGoalProgress(edited[0]);
+
+  assert.equal(repeated, once);
+  assert.equal(progress.percent, 113);
+  assert.equal(progress.visualPercent, 100);
+  assert.equal(edited[0].id, goal.id);
+  assert.deepEqual(deleteMoneyGoal(edited, goal.id), []);
+  assert.equal(deleteMoneyGoal(edited, "missing"), edited);
+});
+
+test("malformed persisted money records are ignored safely", () => {
+  const valid = moneyTransaction({ id: "transaction:valid" });
+  const document = normalizeMoneyDocument({
+    version: 1,
+    categories: DEFAULT_CATEGORIES,
+    transactions: [
+      valid,
+      { ...valid, id: "bad amount", amountMinor: -1 },
+      { ...valid, id: "transaction:bad-date", date: "2026-02-30" },
+      { ...valid, id: "transaction:missing-category", categoryId: "missing" },
+    ],
+    budgets: [{ id: "bad", categoryId: "missing", monthlyLimitMinor: 1 }],
+    goals: [{ id: "bad" }],
+  });
+
+  assert.deepEqual(document.transactions, [valid]);
+  assert.deepEqual(document.budgets, []);
+  assert.deepEqual(document.goals, []);
+  assert.deepEqual(normalizeMoneyDocument(null), createEmptyMoneyDocument());
+});
+
+test("money document normalization isolates malformed slices and strips unknown fields", () => {
+  const valid = moneyTransaction({ id: "transaction:mixed" });
+  const normalized = normalizeMoneyDocument({
+    version: 1,
+    transactions: [valid],
+    categories: [...DEFAULT_CATEGORIES, null, { id: "bad category" }],
+    budgets: "corrupt",
+    goals: null,
+    availableMinor: 999999,
+    analytics: { trusted: true },
+    unknown: "discard me",
+  });
+
+  assert.deepEqual(Object.keys(normalized), [
+    "version",
+    "transactions",
+    "categories",
+    "budgets",
+    "goals",
+  ]);
+  assert.deepEqual(normalized.transactions, [valid]);
+  assert.deepEqual(normalized.categories, DEFAULT_CATEGORIES);
+  assert.deepEqual(normalized.budgets, []);
+  assert.deepEqual(normalized.goals, []);
+});
+
+test("money analytics derive immutably from source transactions", () => {
+  const transactions = [
+    moneyTransaction({ id: "transaction:immutable-expense", amount: "10.01" }),
+    moneyTransaction({
+      id: "transaction:immutable-income",
+      type: "income",
+      amount: "20.02",
+    }),
+  ];
+  const before = structuredClone(transactions);
+
+  aggregateLedger(transactions);
+  monthlyLedger(transactions);
+  spendingByCategory(transactions);
+  filterTransactions(transactions, { month: "2026-09" });
+
+  assert.deepEqual(transactions, before);
+});
+
+test("money storage is isolated across account switches", () => {
+  memory.clear();
+  setStorageOwner(null);
+  const userA = {
+    version: 1,
+    transactions: [{ owner: "A" }],
+    categories: [{ owner: "A" }],
+    budgets: [{ owner: "A" }],
+    goals: [{ owner: "A" }],
+  };
+  const userB = {
+    version: 1,
+    transactions: [{ owner: "B" }],
+    categories: [{ owner: "B" }],
+    budgets: [{ owner: "B" }],
+    goals: [{ owner: "B" }],
+  };
+
+  setStorageOwner("money-user-a");
+  saveData(MONEY_STORAGE_KEY, userA);
+  setStorageOwner(null);
+  assert.equal(loadData(MONEY_STORAGE_KEY, null), null);
+  setStorageOwner("money-user-b");
+  assert.equal(loadData(MONEY_STORAGE_KEY, null), null);
+  saveData(MONEY_STORAGE_KEY, userB);
+  assert.deepEqual(loadData(MONEY_STORAGE_KEY, null), userB);
+  setStorageOwner(null);
+  setStorageOwner("money-user-a");
+  assert.deepEqual(loadData(MONEY_STORAGE_KEY, null), userA);
+});
+
+test("money persistence rejects unauthenticated writes and recovers from malformed JSON", () => {
+  memory.clear();
+  setStorageOwner(null);
+  const document = createEmptyMoneyDocument();
+
+  assert.equal(saveMoneyDocument(document), null);
+  assert.equal(memory.has(MONEY_STORAGE_KEY), false);
+
+  setStorageOwner("money-corrupt");
+  const scopedKey = getUserStorageKey("money-corrupt", MONEY_STORAGE_KEY);
+  memory.set(scopedKey, "{not-json");
+  const originalWarn = console.warn;
+  console.warn = () => {};
+
+  try {
+    assert.deepEqual(loadMoneyDocument(), document);
+    assert.equal(memory.get(scopedKey), "{not-json");
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("mounted money store switches all slices atomically across owners", async () => {
+  memory.clear();
+  setStorageOwner(null);
+  const { useMoney } = await import("../src/features/money/store.js");
+
+  setStorageOwner("mounted-money-a");
+  assert.equal(
+    useMoney.getState().addTransaction(
+      {
+        type: "expense",
+        amount: "10",
+        categoryId: "expense:food",
+        date: "2026-09-14",
+      },
+      { id: "transaction:owner-a", now: "2026-09-14T10:00:00.000Z" },
+    ),
+    true,
+  );
+  assert.equal(
+    useMoney.getState().addCategory(
+      { name: "Owner A category", type: "expense" },
+      "category:owner-a",
+    ),
+    true,
+  );
+  assert.equal(useMoney.getState().setBudget("expense:food", "100"), true);
+  assert.equal(
+    useMoney.getState().addGoal(
+      { name: "Owner A goal", targetAmount: "100", savedAmount: "10" },
+      { id: "goal:owner-a", now: "2026-09-14T10:00:00.000Z" },
+    ),
+    true,
+  );
+  const ownerA = structuredClone(useMoney.getState().data);
+
+  setStorageOwner(null);
+  assert.equal(useMoney.getState().owner, null);
+  assert.deepEqual(useMoney.getState().data, createEmptyMoneyDocument());
+
+  setStorageOwner("mounted-money-b");
+  assert.equal(useMoney.getState().owner, "mounted-money-b");
+  assert.deepEqual(useMoney.getState().data, createEmptyMoneyDocument());
+  assert.equal(
+    useMoney.getState().addGoal(
+      { name: "Owner B goal", targetAmount: "50", savedAmount: "5" },
+      { id: "goal:owner-b", now: "2026-09-14T10:00:00.000Z" },
+    ),
+    true,
+  );
+  const ownerB = structuredClone(useMoney.getState().data);
+
+  useMoney.setState({ owner: "mounted-money-a", data: ownerA });
+  assert.equal(useMoney.getState().deleteGoal("goal:owner-a"), false);
+  assert.deepEqual(loadMoneyDocument(), ownerB);
+
+  setStorageOwner(null);
+  setStorageOwner("mounted-money-a");
+  assert.equal(useMoney.getState().owner, "mounted-money-a");
+  assert.deepEqual(useMoney.getState().data, ownerA);
+});
+
+test("empty ledger and deterministic same-day ordering stay stable", () => {
+  assert.deepEqual(aggregateLedger([]), {
+    incomeMinor: 0,
+    expenseMinor: 0,
+    netMinor: 0,
+  });
+  assert.deepEqual(monthlyLedger([]), []);
+
+  const early = moneyTransaction({
+    id: "transaction:early",
+    now: "2026-09-14T08:00:00.000Z",
+  });
+  const lateB = moneyTransaction({
+    id: "transaction:b",
+    now: "2026-09-14T09:00:00.000Z",
+  });
+  const lateA = moneyTransaction({
+    id: "transaction:a",
+    now: "2026-09-14T09:00:00.000Z",
+  });
+
+  assert.deepEqual(
+    sortTransactions([early, lateB, lateA]).map((item) => item.id),
+    ["transaction:a", "transaction:b", "transaction:early"],
   );
 });

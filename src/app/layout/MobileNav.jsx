@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Home, CalendarDays, Timer, CheckSquare } from "lucide-react";
+import { Home, CalendarDays, Timer, CheckSquare, WalletCards } from "lucide-react";
 
 const links = [
   ["Today", "/", Home],
   ["Schedule", "/schedule", CalendarDays],
   ["Focus", "/focus", Timer],
   ["Habits", "/habits", CheckSquare],
+  ["Money", "/money", WalletCards],
 ];
 
 export default function MobileNav() {

@@ -8,6 +8,11 @@ import Settings from "../pages/Settings";
 import Schedule from "../pages/Schedule";
 import Analytics from "../pages/Analytics";
 import Workouts from "@pages/Workouts";
+import Money from "@pages/Money";
+import MoneyOverview from "@features/money/components/MoneyOverview";
+import MoneyTransactions from "@features/money/components/MoneyTransactions";
+import MoneyBudgets from "@features/money/components/MoneyBudgets";
+import MoneyGoals from "@features/money/components/MoneyGoals";
 import WorkoutToday from "@features/workout/components/WorkoutToday";
 import WorkoutCalendar from "@features/workout/components/WorkoutCalendar";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
@@ -85,6 +90,16 @@ export const router = createBrowserRouter([
             path: "plans",
             element: <WorkoutPlans />,
           },
+        ],
+      },
+      {
+        path: "money",
+        element: <Money />,
+        children: [
+          { index: true, element: <MoneyOverview /> },
+          { path: "transactions", element: <MoneyTransactions /> },
+          { path: "budgets", element: <MoneyBudgets /> },
+          { path: "goals", element: <MoneyGoals /> },
         ],
       },
     ],
