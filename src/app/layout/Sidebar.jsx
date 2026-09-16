@@ -10,6 +10,7 @@ import {
   Settings,
   BarChart3,
   WalletCards,
+  Wrench,
 } from "lucide-react";
 
 import { useSync } from "@/ui/useSync";
@@ -27,6 +28,7 @@ const links = [
   ["Analytics", "/analytics", BarChart3],
   ["Workouts", "/workouts", Dumbbell],
   ["Money", "/money", WalletCards],
+  ["Tools", "/tools", Wrench],
 ];
 
 export default function Sidebar() {

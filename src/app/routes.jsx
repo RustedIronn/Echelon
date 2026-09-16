@@ -13,6 +13,13 @@ import MoneyOverview from "@features/money/components/MoneyOverview";
 import MoneyTransactions from "@features/money/components/MoneyTransactions";
 import MoneyBudgets from "@features/money/components/MoneyBudgets";
 import MoneyGoals from "@features/money/components/MoneyGoals";
+import Tools from "@pages/Tools";
+import ToolsOverview from "@features/tools/components/ToolsOverview";
+import NowNextLater from "@features/tools/components/NowNextLater";
+import BrainDump from "@features/tools/components/BrainDump";
+import TaskBreakdown from "@features/tools/components/TaskBreakdown";
+import TimeBlindnessTimer from "@features/tools/components/TimeBlindnessTimer";
+import ResetMode from "@features/tools/components/ResetMode";
 import WorkoutToday from "@features/workout/components/WorkoutToday";
 import WorkoutCalendar from "@features/workout/components/WorkoutCalendar";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
@@ -100,6 +107,18 @@ export const router = createBrowserRouter([
           { path: "transactions", element: <MoneyTransactions /> },
           { path: "budgets", element: <MoneyBudgets /> },
           { path: "goals", element: <MoneyGoals /> },
+        ],
+      },
+      {
+        path: "tools",
+        element: <Tools />,
+        children: [
+          { index: true, element: <ToolsOverview /> },
+          { path: "now", element: <NowNextLater /> },
+          { path: "brain-dump", element: <BrainDump /> },
+          { path: "breakdown", element: <TaskBreakdown /> },
+          { path: "timer", element: <TimeBlindnessTimer /> },
+          { path: "reset", element: <ResetMode /> },
         ],
       },
     ],

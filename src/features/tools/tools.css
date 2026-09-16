@@ -1,0 +1,338 @@
+.tools-subnav {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 100%;
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-2);
+  overflow-x: auto;
+}
+
+.tools-subnav a {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-round);
+}
+
+.tools-subnav a:hover,
+.tools-subnav a.active {
+  transform: none;
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+}
+
+.tools-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.tools-overview-card {
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.tools-overview-card h2,
+.tools-overview-card p {
+  margin: 0;
+}
+
+.tools-overview-card p {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.tools-text-link {
+  color: var(--color-focus);
+  font-weight: var(--weight-medium);
+}
+
+.tools-timer-link {
+  align-self: flex-start;
+}
+
+.tools-add-form,
+.tools-inline-edit {
+  display: flex;
+  align-items: end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.tools-add-form label,
+.tools-inline-edit label,
+.tools-textarea-label,
+.tools-custom-duration,
+.tools-breakdown-heading label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.tools-grow {
+  flex: 1 1 18rem;
+}
+
+.tools-add-form input,
+.tools-add-form select,
+.tools-inline-edit input,
+.tools-textarea-label textarea,
+.tools-custom-duration input,
+.tools-breakdown-heading input,
+.tools-reset-edit input {
+  width: 100%;
+  min-width: 0;
+}
+
+.tools-textarea-label {
+  margin-bottom: var(--space-4);
+}
+
+.tools-textarea-label textarea {
+  resize: vertical;
+}
+
+.tools-form-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.tools-lane {
+  margin-bottom: 0;
+}
+
+.tools-lane-now {
+  border-color: var(--color-focus);
+}
+
+.tools-task-list,
+.tools-step-list,
+.tools-reset-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tools-task-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tools-task-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.tools-task-row > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tools-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tools-secondary,
+.tools-icon-button {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.tools-icon-button {
+  min-width: 2.75rem;
+  padding-inline: var(--space-3);
+}
+
+.tools-danger {
+  background: var(--color-danger);
+}
+
+.tools-promote-button {
+  align-self: flex-start;
+}
+
+.tools-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-color: var(--color-focus);
+}
+
+.tools-choice p,
+.tools-muted {
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+}
+
+.tools-breakdown-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tools-breakdown-heading h2,
+.tools-breakdown-heading p {
+  margin: 0;
+}
+
+.tools-breakdown-heading p {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.tools-step-list {
+  margin: var(--space-5) 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tools-step;
+}
+
+.tools-step-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  counter-increment: tools-step;
+}
+
+.tools-step-list label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.tools-step-list label::before {
+  content: counter(tools-step) ".";
+  color: var(--color-text-muted);
+}
+
+.tools-step-list .is-complete span {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.tools-breakdown-actions {
+  margin-top: var(--space-5);
+}
+
+.tools-duration-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.tools-custom-duration {
+  max-width: 12rem;
+  margin-bottom: var(--space-4);
+}
+
+.tools-timer-card {
+  margin-bottom: 0;
+}
+
+.tools-timer-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.tools-timer-grid > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tools-timer-grid span {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.tools-timer-grid strong {
+  font-size: var(--text-xl);
+  white-space: nowrap;
+}
+
+.tools-timer-status {
+  margin: var(--space-6) 0;
+  color: var(--color-text-muted);
+}
+
+.tools-reset-list {
+  margin-bottom: var(--space-6);
+}
+
+.tools-reset-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.7fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tools-reset-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tools-app .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 760px) {
+  .tools-overview-grid,
+  .tools-timer-grid,
+  .tools-reset-list > div,
+  .tools-step-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tools-task-row,
+  .tools-choice,
+  .tools-breakdown-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tools-task-row .tools-actions,
+  .tools-choice .tools-actions {
+    width: 100%;
+  }
+
+  .tools-timer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tools-app .card {
+    padding: var(--space-5);
+  }
+}

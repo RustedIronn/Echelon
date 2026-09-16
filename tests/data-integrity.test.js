@@ -161,6 +161,46 @@ import {
   bindMoneyRecoveryEvents,
   createMoneySyncController,
 } from "../src/features/money/syncController.js";
+import {
+  addToolTask,
+  completeToolTask,
+  createToolTask,
+  getLaneTasks,
+  getNowTask,
+  moveToolTask,
+  normalizeToolTasks,
+  reorderLaneTask,
+} from "../src/features/tools/tasks.js";
+import {
+  addBrainDumpItems,
+  createBrainDumpItems,
+  promoteBrainDumpItem,
+} from "../src/features/tools/brainDump.js";
+import {
+  addBreakdown,
+  addBreakdownStep,
+  createBreakdown,
+  firstIncompleteStep,
+  removeBreakdownStep,
+  reorderBreakdownStep,
+  sendBreakdownStepToLane,
+  toggleBreakdownStep,
+} from "../src/features/tools/breakdowns.js";
+import {
+  deriveAwarenessTimer,
+  finishAwarenessTimer,
+  IDLE_TIMER,
+  pauseAwarenessTimer,
+  resumeAwarenessTimer,
+  startAwarenessTimer,
+} from "../src/features/tools/timer.js";
+import {
+  createEmptyToolsDocument,
+  loadToolsDocument,
+  normalizeToolsDocument,
+  saveToolsDocument,
+} from "../src/features/tools/storage.js";
+import { TOOLS_STORAGE_KEY } from "../src/features/tools/constants.js";
 
 const memory = new Map();
 
@@ -2914,4 +2954,357 @@ test("logout cancels a queued Money timer and clears pending runtime work", asyn
   assert.equal(harness.state.timers.size, 0);
   assert.equal(harness.controller.isPending(), false);
   assert.equal(harness.state.writes.length, 0);
+});
+
+const toolTask = ({
+  id,
+  text = "Open the book",
+  lane = "next",
+  now = "2026-09-15T10:00:00.000Z",
+} = {}) => createToolTask({ text, lane }, { id, now });
+
+test("tool tasks enforce one Now item without silently replacing it", () => {
+  const current = toolTask({ id: "task:current", lane: "now" });
+  const candidate = toolTask({ id: "task:candidate", lane: "next" });
+  const tasks = [current, candidate];
+  const currentOnly = [current];
+
+  assert.equal(addToolTask(currentOnly, toolTask({ id: "task:other", lane: "now" })), currentOnly);
+  assert.equal(moveToolTask(tasks, candidate.id, "now"), tasks);
+
+  const moved = moveToolTask(tasks, candidate.id, "now", {
+    occupiedNow: "move-to-next",
+    now: new Date("2026-09-15T11:00:00.000Z"),
+  });
+  assert.equal(getNowTask(moved).id, candidate.id);
+  assert.equal(moved.find((task) => task.id === current.id).lane, "next");
+});
+
+test("tool task movement, completion, and ordering are deterministic", () => {
+  const now = toolTask({ id: "task:now", lane: "now" });
+  const nextA = toolTask({ id: "task:next-a" });
+  const nextB = toolTask({ id: "task:next-b" });
+  const tasks = [now, nextA, nextB];
+
+  const movedNow = moveToolTask(tasks, now.id, "later");
+  assert.equal(getNowTask(movedNow), null);
+  assert.equal(getLaneTasks(movedNow, "later")[0].id, now.id);
+
+  const reordered = reorderLaneTask(tasks, "next", nextB.id, -1);
+  assert.deepEqual(getLaneTasks(reordered, "next").map((task) => task.id), [nextB.id, nextA.id]);
+  assert.equal(reorderLaneTask(reordered, "next", nextB.id, -1), reordered);
+
+  const completed = completeToolTask(tasks, now.id, {
+    promoteNext: true,
+    now: new Date("2026-09-15T12:00:00.000Z"),
+  });
+  assert.equal(getNowTask(completed).id, nextA.id);
+  assert.equal(completed.find((task) => task.id === now.id).completedAt, "2026-09-15T12:00:00.000Z");
+  assert.equal(completeToolTask(completed, now.id, { promoteNext: true }), completed);
+});
+
+test("tool task normalization rejects malformed lanes, text, duplicates, and extra Now items", () => {
+  const now = toolTask({ id: "task:valid-now", lane: "now" });
+  const next = toolTask({ id: "task:valid-next" });
+  assert.deepEqual(
+    normalizeToolTasks([
+      now,
+      { ...now, id: "task:extra-now" },
+      next,
+      { ...next },
+      { ...next, id: "task:bad-lane", lane: "urgent" },
+      { ...next, id: "task:blank", text: " " },
+    ]),
+    [now, next],
+  );
+});
+
+test("Brain Dump supports multiline capture and idempotent promotion without copies", () => {
+  const additions = createBrainDumpItems("reply to professor\nphysics revision\nreply to professor\n", {
+    batchId: "brain:batch",
+    now: "2026-09-15T10:00:00.000Z",
+  });
+  assert.deepEqual(additions.map((item) => item.text), ["reply to professor", "physics revision"]);
+  const once = addBrainDumpItems([], additions);
+  assert.equal(addBrainDumpItems(once, additions), once);
+
+  const promoted = promoteBrainDumpItem([], once, additions[0].id, "next", {
+    now: new Date("2026-09-15T11:00:00.000Z"),
+  });
+  assert.equal(promoted.changed, true);
+  assert.equal(promoted.tasks.length, 1);
+  assert.equal(promoted.brainDump.length, 1);
+  assert.equal(promoted.tasks[0].id, `task:brain:${additions[0].id}`);
+
+  const repeated = promoteBrainDumpItem(promoted.tasks, once, additions[0].id, "next");
+  assert.equal(repeated.changed, false);
+  assert.equal(repeated.tasks, promoted.tasks);
+});
+
+test("Brain Dump promotion respects an occupied Now lane", () => {
+  const now = toolTask({ id: "task:occupied", lane: "now" });
+  const item = createBrainDumpItems("new priority", {
+    batchId: "brain:priority",
+    now: "2026-09-15T10:00:00.000Z",
+  })[0];
+  const blocked = promoteBrainDumpItem([now], [item], item.id, "now");
+  assert.equal(blocked.changed, false);
+
+  const promoted = promoteBrainDumpItem([now], [item], item.id, "now", {
+    occupiedNow: "move-to-next",
+    now: new Date("2026-09-15T11:00:00.000Z"),
+  });
+  assert.equal(getNowTask(promoted.tasks).text, "new priority");
+  assert.equal(promoted.tasks.find((task) => task.id === now.id).lane, "next");
+  assert.deepEqual(promoted.brainDump, []);
+});
+
+const breakdownFixture = () => {
+  const breakdown = createBreakdown("Prepare Physics", {
+    id: "breakdown:physics",
+    now: "2026-09-15T10:00:00.000Z",
+  });
+  let items = addBreakdown([], breakdown);
+  items = addBreakdownStep(items, breakdown.id, {
+    id: "step:syllabus",
+    text: "Open syllabus",
+    completed: false,
+  });
+  items = addBreakdownStep(items, breakdown.id, {
+    id: "step:chapter",
+    text: "Pick one chapter",
+    completed: false,
+  });
+  return items;
+};
+
+test("breakdown steps add, toggle, reorder, and remove safely", () => {
+  const items = breakdownFixture();
+  assert.equal(firstIncompleteStep(items[0]).id, "step:syllabus");
+  const toggled = toggleBreakdownStep(items, items[0].id, "step:syllabus");
+  assert.equal(firstIncompleteStep(toggled[0]).id, "step:chapter");
+  const reordered = reorderBreakdownStep(toggled, items[0].id, "step:chapter", -1);
+  assert.deepEqual(reordered[0].steps.map((step) => step.id), ["step:chapter", "step:syllabus"]);
+  const removed = removeBreakdownStep(reordered, items[0].id, "step:syllabus");
+  assert.deepEqual(removed[0].steps.map((step) => step.id), ["step:chapter"]);
+  assert.equal(removeBreakdownStep(removed, items[0].id, "missing"), removed);
+});
+
+test("breakdown promotion sends only the first incomplete step and stays idempotent", () => {
+  const breakdown = breakdownFixture()[0];
+  const sent = sendBreakdownStepToLane([], breakdown, "now", {
+    now: new Date("2026-09-15T11:00:00.000Z"),
+  });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].text, "Open syllabus");
+  assert.equal(sendBreakdownStepToLane(sent, breakdown, "now"), sent);
+});
+
+test("breakdown occupied-Now resolution preserves both tasks", () => {
+  const currentNow = toolTask({ id: "task:current-now", lane: "now" });
+  const breakdown = breakdownFixture()[0];
+  const blockedTasks = [currentNow];
+
+  assert.equal(
+    sendBreakdownStepToLane(blockedTasks, breakdown, "now"),
+    blockedTasks,
+  );
+
+  const resolved = sendBreakdownStepToLane(
+    blockedTasks,
+    breakdown,
+    "now",
+    {
+      occupiedNow: "move-to-next",
+      now: new Date("2026-09-15T11:00:00.000Z"),
+    },
+  );
+
+  assert.equal(resolved.length, 2);
+  assert.equal(getNowTask(resolved).text, "Open syllabus");
+  assert.equal(getLaneTasks(resolved, "next")[0].id, currentNow.id);
+  assert.equal(
+    sendBreakdownStepToLane(resolved, breakdown, "now", {
+      occupiedNow: "move-to-next",
+    }),
+    resolved,
+  );
+});
+
+test("awareness timer derives elapsed, remaining, and target end from timestamps", () => {
+  const timer = startAwarenessTimer(25, new Date("2026-09-15T10:00:00.000Z"));
+  assert.deepEqual(deriveAwarenessTimer(timer, new Date("2026-09-15T10:07:00.000Z")), {
+    elapsedMs: 420000,
+    remainingMs: 1080000,
+    targetEnd: "2026-09-15T10:25:00.000Z",
+    finished: false,
+  });
+  const delayed = deriveAwarenessTimer(timer, new Date("2026-09-15T10:40:00.000Z"));
+  assert.equal(delayed.elapsedMs, 1500000);
+  assert.equal(delayed.remainingMs, 0);
+  assert.equal(delayed.targetEnd, "2026-09-15T10:25:00.000Z");
+  assert.equal(delayed.finished, true);
+});
+
+test("awareness timer pause and resume exclude paused time", () => {
+  const timer = startAwarenessTimer(10, new Date("2026-09-15T10:00:00.000Z"));
+  const paused = pauseAwarenessTimer(timer, new Date("2026-09-15T10:03:00.000Z"));
+  assert.equal(deriveAwarenessTimer(paused, new Date("2026-09-15T10:08:00.000Z")).elapsedMs, 180000);
+  const resumed = resumeAwarenessTimer(paused, new Date("2026-09-15T10:08:00.000Z"));
+  const derived = deriveAwarenessTimer(resumed, new Date("2026-09-15T10:10:00.000Z"));
+  assert.equal(derived.elapsedMs, 300000);
+  assert.equal(derived.remainingMs, 300000);
+  assert.equal(derived.targetEnd, "2026-09-15T10:15:00.000Z");
+  const finished = finishAwarenessTimer(resumed, new Date("2026-09-15T10:10:00.000Z"));
+  assert.equal(finished.status, "finished");
+  assert.equal(finishAwarenessTimer(finished), finished);
+});
+
+test("awareness timer pause and resume remain correct after long suspension", () => {
+  const timer = startAwarenessTimer(
+    60,
+    new Date("2026-09-15T10:00:00.000Z"),
+  );
+  const paused = pauseAwarenessTimer(
+    timer,
+    new Date("2026-09-15T10:05:00.000Z"),
+  );
+  const resumed = resumeAwarenessTimer(
+    paused,
+    new Date("2026-09-16T10:05:00.000Z"),
+  );
+  const derived = deriveAwarenessTimer(
+    resumed,
+    new Date("2026-09-16T10:15:00.000Z"),
+  );
+
+  assert.equal(derived.elapsedMs, 15 * 60_000);
+  assert.equal(derived.remainingMs, 45 * 60_000);
+  assert.equal(derived.targetEnd, "2026-09-16T11:00:00.000Z");
+});
+
+test("awareness timer rejects invalid duration", () => {
+  assert.equal(startAwarenessTimer(0), IDLE_TIMER);
+  assert.equal(startAwarenessTimer(-5), IDLE_TIMER);
+  assert.equal(startAwarenessTimer(1.5), IDLE_TIMER);
+  assert.equal(startAwarenessTimer(Number.NaN), IDLE_TIMER);
+});
+
+test("tools persistence rejects unsupported versions and isolates malformed slices", () => {
+  assert.deepEqual(normalizeToolsDocument({ version: 2, tasks: [{}] }), createEmptyToolsDocument());
+  const task = toolTask({ id: "task:persisted" });
+  const breakdown = breakdownFixture()[0];
+  const normalized = normalizeToolsDocument({
+    version: 1,
+    tasks: [task, null],
+    brainDump: "bad",
+    breakdowns: [
+      {
+        ...breakdown,
+        steps: [
+          breakdown.steps[0],
+          null,
+          breakdown.steps[0],
+          { id: "step:blank", text: " ", completed: false },
+        ],
+      },
+      null,
+    ],
+    resetPreferences: { steps: [null] },
+    counts: { now: 50 },
+  });
+  assert.deepEqual(Object.keys(normalized), ["version", "tasks", "brainDump", "breakdowns", "resetPreferences"]);
+  assert.deepEqual(normalized.tasks, [task]);
+  assert.deepEqual(normalized.brainDump, []);
+  assert.equal(normalized.breakdowns.length, 1);
+  assert.deepEqual(normalized.breakdowns[0].steps, [breakdown.steps[0]]);
+  assert.equal(normalized.resetPreferences.steps.length > 0, true);
+});
+
+test("Reset Mode checkmarks remain runtime-only and are never persisted", () => {
+  memory.clear();
+  setStorageOwner("tools-reset-runtime");
+  const document = {
+    ...createEmptyToolsDocument(),
+    resetPreferences: {
+      steps: [
+        {
+          id: "reset:water",
+          text: "Drink some water",
+          checked: true,
+        },
+      ],
+    },
+    resetSession: { checkedIds: ["reset:water"] },
+  };
+
+  const saved = saveToolsDocument(document);
+  const stored = JSON.parse(
+    memory.get(getUserStorageKey("tools-reset-runtime", TOOLS_STORAGE_KEY)),
+  );
+
+  assert.deepEqual(Object.keys(saved), [
+    "version",
+    "tasks",
+    "brainDump",
+    "breakdowns",
+    "resetPreferences",
+  ]);
+  assert.deepEqual(saved.resetPreferences.steps, [
+    { id: "reset:water", text: "Drink some water" },
+  ]);
+  assert.equal("resetSession" in stored, false);
+  assert.equal("checked" in stored.resetPreferences.steps[0], false);
+});
+
+test("tools persistence rejects pre-auth writes and malformed scoped JSON", () => {
+  memory.clear();
+  setStorageOwner(null);
+  const empty = createEmptyToolsDocument();
+  assert.equal(saveToolsDocument(empty), null);
+
+  setStorageOwner("tools-corrupt");
+  const key = getUserStorageKey("tools-corrupt", TOOLS_STORAGE_KEY);
+  memory.set(key, "{not-json");
+  const originalWarn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.deepEqual(loadToolsDocument(), empty);
+    assert.equal(memory.get(key), "{not-json");
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("mounted tools store switches every persisted slice across accounts", async () => {
+  memory.clear();
+  setStorageOwner(null);
+  const { useTools } = await import("../src/features/tools/store.js");
+
+  assert.equal(useTools.getState().addTask({ text: "No owner", lane: "now" }), false);
+
+  setStorageOwner("tools-owner-a");
+  assert.equal(useTools.getState().addTask({ text: "A task", lane: "now" }, { id: "task:owner-a" }), true);
+  assert.equal(useTools.getState().captureBrainDump("A thought", { batchId: "brain:owner-a" }), true);
+  assert.equal(useTools.getState().addBreakdown("A breakdown", { id: "breakdown:owner-a" }), true);
+  assert.equal(useTools.getState().editResetStep("reset:water", "A water reminder"), true);
+  const ownerA = structuredClone(useTools.getState().data);
+
+  setStorageOwner(null);
+  assert.equal(useTools.getState().owner, null);
+  assert.deepEqual(useTools.getState().data, createEmptyToolsDocument());
+
+  setStorageOwner("tools-owner-b");
+  assert.deepEqual(useTools.getState().data, createEmptyToolsDocument());
+  assert.equal(useTools.getState().addTask({ text: "B task", lane: "later" }, { id: "task:owner-b" }), true);
+  const ownerB = structuredClone(useTools.getState().data);
+
+  useTools.setState({ owner: "tools-owner-a", data: ownerA });
+  assert.equal(useTools.getState().deleteTask("task:owner-a"), false);
+  assert.deepEqual(loadToolsDocument(), ownerB);
+
+  setStorageOwner(null);
+  setStorageOwner("tools-owner-a");
+  assert.deepEqual(useTools.getState().data, ownerA);
+  assert.equal(useTools.getState().timer, IDLE_TIMER);
 });
