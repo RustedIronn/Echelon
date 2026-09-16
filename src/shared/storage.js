@@ -5,6 +5,7 @@ const USER_DATA_KEYS = new Set([
   "echelon_schedule",
   "echelon_history",
   "echelon_reviews",
+  "echelon_composure_v1",
   "echelon_workouts",
   "echelon_workout_progress",
   "echelon_notification_settings",

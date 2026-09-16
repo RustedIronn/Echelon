@@ -4,6 +4,8 @@ import Today from "../pages/Today";
 import Focus from "../pages/Focus";
 import Habits from "../pages/Habits";
 import Review from "../pages/Review";
+import DailyReview from "@features/review/components/DailyReview";
+import ComposureReview from "@features/review/components/ComposureReview";
 import Settings from "../pages/Settings";
 import Schedule from "../pages/Schedule";
 import Analytics from "../pages/Analytics";
@@ -48,6 +50,10 @@ export const router = createBrowserRouter([
       {
         path: "review",
         element: <Review />,
+        children: [
+          { index: true, element: <DailyReview /> },
+          { path: "composure", element: <ComposureReview /> },
+        ],
       },
       {
         path: "settings",

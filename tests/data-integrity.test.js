@@ -84,6 +84,30 @@ import { generateReview } from "../src/features/review/analyzer.js";
 import { computeReviewBreakdown } from "../src/features/review/breakdown.js";
 import { mergeReviews } from "../src/features/review/reviewStorage.js";
 import {
+  averageChecklistCompletion,
+  averageComposureRating,
+  countComposureChecks,
+  createEmptyComposureChecks,
+  filterComposureWeek,
+  getComposureWeeklyMetrics,
+  normalizeComposureChecks,
+  normalizeComposureNote,
+  normalizeComposureRating,
+  normalizeComposureReviews,
+  sortComposureHistory,
+  upsertComposureReview,
+} from "../src/features/review/composure.js";
+import {
+  createEmptyComposureDocument,
+  loadComposureDocument,
+  normalizeComposureDocument,
+  saveComposureDocument,
+} from "../src/features/review/composureStorage.js";
+import {
+  COMPOSURE_CHECKLIST,
+  COMPOSURE_STORAGE_KEY,
+} from "../src/features/review/composureConstants.js";
+import {
   normalizeDailyTasks,
   normalizeSchedule,
   schedule as defaultSchedule,
@@ -3307,4 +3331,268 @@ test("mounted tools store switches every persisted slice across accounts", async
   setStorageOwner("tools-owner-a");
   assert.deepEqual(useTools.getState().data, ownerA);
   assert.equal(useTools.getState().timer, IDLE_TIMER);
+});
+
+const composureInput = (date, overrides = {}) => ({
+  date,
+  checks: {
+    ...createEmptyComposureChecks(),
+    calmVoice: true,
+  },
+  composureRating: 4,
+  tomorrowNote: "Explain once, then leave.",
+  ...overrides,
+});
+
+const composureRecord = (date, overrides = {}) =>
+  upsertComposureReview(
+    [],
+    composureInput(date, overrides),
+    new Date(`${date}T12:00:00.000Z`),
+  )[0];
+
+test("Composure creates today and updates the same local day without duplication", () => {
+  const date = getToday(new Date(2026, 8, 16, 23, 45));
+  const created = upsertComposureReview(
+    [],
+    composureInput(date),
+    new Date("2026-09-16T10:00:00.000Z"),
+  );
+  const updated = upsertComposureReview(
+    created,
+    composureInput(date, {
+      composureRating: 2,
+      tomorrowNote: "Pause before answering.",
+    }),
+    new Date("2026-09-16T11:00:00.000Z"),
+  );
+
+  assert.equal(updated.length, 1);
+  assert.equal(updated[0].id, `composure:${date}`);
+  assert.equal(updated[0].createdAt, created[0].createdAt);
+  assert.equal(updated[0].composureRating, 2);
+  assert.equal(updated[0].tomorrowNote, "Pause before answering.");
+});
+
+test("Composure keeps records separate across the local midnight boundary", () => {
+  const beforeMidnight = new Date(2026, 11, 31, 23, 59, 59);
+  const afterMidnight = new Date(2027, 0, 1, 0, 0, 1);
+  const firstDate = getToday(beforeMidnight);
+  const secondDate = getToday(afterMidnight);
+  let reviews = upsertComposureReview(
+    [],
+    composureInput(firstDate),
+    beforeMidnight,
+  );
+  reviews = upsertComposureReview(
+    reviews,
+    composureInput(secondDate),
+    afterMidnight,
+  );
+
+  assert.equal(firstDate, "2026-12-31");
+  assert.equal(secondDate, "2027-01-01");
+  assert.deepEqual(reviews.map((review) => review.date), [
+    "2027-01-01",
+    "2026-12-31",
+  ]);
+});
+
+test("Composure checklist and rating normalization ignore unsupported values", () => {
+  const checks = normalizeComposureChecks({
+    calmVoice: true,
+    noOverExplaining: "yes",
+    ratesOtherPerson: true,
+  });
+
+  assert.equal(Object.keys(checks).length, COMPOSURE_CHECKLIST.length);
+  assert.equal(checks.calmVoice, true);
+  assert.equal(checks.noOverExplaining, false);
+  assert.equal("ratesOtherPerson" in checks, false);
+  assert.equal(normalizeComposureRating(1), 1);
+  assert.equal(normalizeComposureRating(5), 5);
+  assert.equal(normalizeComposureRating("5"), null);
+  assert.equal(normalizeComposureRating(0), null);
+  assert.equal(normalizeComposureRating(6), null);
+  assert.equal(normalizeComposureRating(3.5), null);
+  assert.equal(normalizeComposureRating("bad"), null);
+  assert.equal(normalizeComposureNote("x".repeat(300)).length, 240);
+  assert.equal(normalizeComposureNote(null), "");
+});
+
+test("Composure history is newest-first and duplicate dates keep the latest update", () => {
+  const older = composureRecord("2026-09-15", { composureRating: 2 });
+  const original = composureRecord("2026-09-16", { composureRating: 3 });
+  const replacement = {
+    ...original,
+    composureRating: 5,
+    updatedAt: "2026-09-16T13:00:00.000Z",
+  };
+  const malformedLater = {
+    ...replacement,
+    id: "not-the-deterministic-id",
+    composureRating: 1,
+    updatedAt: "2026-09-16T14:00:00.000Z",
+  };
+  const reviews = normalizeComposureReviews([
+    original,
+    older,
+    null,
+    replacement,
+    malformedLater,
+  ]);
+
+  assert.deepEqual(reviews.map((review) => review.date), [
+    "2026-09-16",
+    "2026-09-15",
+  ]);
+  assert.equal(reviews[0].composureRating, 5);
+  assert.deepEqual(sortComposureHistory(reviews), reviews);
+});
+
+test("Composure weekly filtering uses local Monday boundaries across years", () => {
+  const reviews = [
+    composureRecord("2025-12-28"),
+    composureRecord("2025-12-29"),
+    composureRecord("2025-12-31"),
+    composureRecord("2026-01-04"),
+    composureRecord("2026-01-05"),
+  ];
+  const weekly = filterComposureWeek(
+    reviews,
+    new Date(2026, 0, 1, 12, 0),
+  );
+
+  assert.deepEqual(weekly.map((review) => review.date), [
+    "2026-01-04",
+    "2025-12-31",
+    "2025-12-29",
+  ]);
+});
+
+test("Composure averages keep ratings and checklist completion separate", () => {
+  const allChecked = Object.fromEntries(
+    COMPOSURE_CHECKLIST.map(({ id }) => [id, true]),
+  );
+  const reviews = [
+    composureRecord("2026-09-15", {
+      checks: allChecked,
+      composureRating: 5,
+    }),
+    composureRecord("2026-09-16", {
+      checks: createEmptyComposureChecks(),
+      composureRating: null,
+    }),
+  ];
+
+  assert.equal(countComposureChecks(reviews[0]), COMPOSURE_CHECKLIST.length);
+  assert.equal(averageComposureRating(reviews), 5);
+  assert.equal(averageChecklistCompletion(reviews), 50);
+  assert.deepEqual(
+    getComposureWeeklyMetrics(reviews, new Date(2026, 8, 16, 12, 0)),
+    {
+      reviewsCompleted: 2,
+      averageRating: 5,
+      averageChecklistCompletion: 50,
+    },
+  );
+  assert.equal(averageComposureRating([]), null);
+  assert.equal(averageChecklistCompletion([]), null);
+});
+
+test("Composure persistence isolates malformed data and unsupported versions", () => {
+  const valid = composureRecord("2026-09-16");
+  const normalized = normalizeComposureDocument({
+    version: 1,
+    reviews: [
+      valid,
+      { ...valid, id: "bad-id", date: "2026-09-17" },
+      { ...valid, id: "composure:2026-02-30", date: "2026-02-30" },
+    ],
+    averageRating: 5,
+    noteDraft: "must not persist",
+  });
+
+  assert.deepEqual(Object.keys(normalized), ["version", "reviews"]);
+  assert.deepEqual(normalized.reviews, [valid]);
+  assert.deepEqual(
+    normalizeComposureDocument({ version: 2, reviews: [valid] }),
+    createEmptyComposureDocument(),
+  );
+  assert.deepEqual(
+    normalizeComposureDocument({ version: 1, reviews: "bad" }),
+    createEmptyComposureDocument(),
+  );
+});
+
+test("Composure persistence rejects pre-auth writes and preserves malformed JSON", () => {
+  memory.clear();
+  setStorageOwner(null);
+  assert.equal(saveComposureDocument(createEmptyComposureDocument()), null);
+
+  setStorageOwner("composure-corrupt");
+  const key = getUserStorageKey(
+    "composure-corrupt",
+    COMPOSURE_STORAGE_KEY,
+  );
+  memory.set(key, "{not-json");
+  const originalWarn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.deepEqual(loadComposureDocument(), createEmptyComposureDocument());
+    assert.equal(memory.get(key), "{not-json");
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("mounted Composure store isolates A to B to A account transitions", async () => {
+  memory.clear();
+  setStorageOwner(null);
+  const { useComposure } = await import(
+    "../src/features/review/composureStore.js"
+  );
+  assert.equal(useComposure.getState().saveToday(composureInput("2026-09-16")), false);
+
+  setStorageOwner("composure-owner-a");
+  assert.equal(useComposure.getState().saveToday(
+    composureInput("2026-09-16", { tomorrowNote: "A note" }),
+    new Date("2026-09-16T10:00:00.000Z"),
+  ), true);
+  const ownerA = structuredClone(useComposure.getState().data);
+
+  setStorageOwner(null);
+  assert.deepEqual(useComposure.getState().data, createEmptyComposureDocument());
+  setStorageOwner("composure-owner-b");
+  assert.deepEqual(useComposure.getState().data, createEmptyComposureDocument());
+  assert.equal(useComposure.getState().saveToday(
+    composureInput("2026-09-16", { tomorrowNote: "B note" }),
+    new Date("2026-09-16T11:00:00.000Z"),
+  ), true);
+
+  useComposure.setState({ owner: "composure-owner-a", data: ownerA });
+  assert.equal(useComposure.getState().saveToday(
+    composureInput("2026-09-17"),
+  ), false);
+
+  setStorageOwner(null);
+  setStorageOwner("composure-owner-a");
+  assert.deepEqual(useComposure.getState().data, ownerA);
+});
+
+test("Composure data never changes execution review scoring", () => {
+  const input = {
+    tasks: [{ done: true }],
+    habits: [{ done: true }],
+    sessions: [],
+    workoutStats: {},
+    scheduledWorkout: null,
+  };
+  const baseline = generateReview(input);
+  const withComposure = generateReview({
+    ...input,
+    composureReviews: [composureRecord(getToday())],
+  });
+
+  assert.deepEqual(withComposure, baseline);
 });
