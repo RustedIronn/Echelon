@@ -135,6 +135,29 @@ export function selectMoneySource(document) {
   };
 }
 
+export function hasMoneySourceData(value) {
+  const document = normalizeMoneyDocument(value);
+  const hasCustomCategories =
+    document.categories.length !== DEFAULT_CATEGORIES.length ||
+    document.categories.some((category, index) => {
+      const defaultCategory = DEFAULT_CATEGORIES[index];
+      return (
+        category.id !== defaultCategory?.id ||
+        category.name !== defaultCategory?.name ||
+        category.type !== defaultCategory?.type
+      );
+    });
+
+  return (
+    document.revision > 0 ||
+    document.updatedAt !== null ||
+    document.transactions.length > 0 ||
+    document.budgets.length > 0 ||
+    document.goals.length > 0 ||
+    hasCustomCategories
+  );
+}
+
 export function createNextMoneyDocument(document, current, now = new Date()) {
   return normalizeMoneyDocument(
     createNextRevision(
@@ -147,6 +170,14 @@ export function createNextMoneyDocument(document, current, now = new Date()) {
 
 export function loadMoneyDocument() {
   return normalizeMoneyDocument(loadData(MONEY_STORAGE_KEY, null));
+}
+
+export function loadMoneyDocumentForSync() {
+  const value = loadData(MONEY_STORAGE_KEY, null);
+  if (!value) return null;
+
+  const document = normalizeMoneyDocument(value);
+  return hasMoneySourceData(document) ? document : null;
 }
 
 export function saveMoneyDocument(value) {

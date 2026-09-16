@@ -10,6 +10,7 @@ import { addGoal, createGoal, deleteGoal, editGoal } from "./goals.js";
 import {
   createNextMoneyDocument,
   loadMoneyDocument,
+  loadMoneyDocumentForSync,
   saveMoneyDocument,
 } from "./storage.js";
 import { queueMoneyMutation } from "./syncRuntime.js";
@@ -156,11 +157,15 @@ export const useMoney = create((set, get) => ({
 
 export function getOwnedMoneyDocument(uid) {
   const state = useMoney.getState();
-  return getStorageOwner() === uid && state.owner === uid ? state.data : null;
+  return getStorageOwner() === uid && state.owner === uid
+    ? loadMoneyDocumentForSync()
+    : null;
 }
 
 export function applyMoneyCloudDocument(uid, document) {
-  if (!getOwnedMoneyDocument(uid)) return false;
+  if (getStorageOwner() !== uid || useMoney.getState().owner !== uid) {
+    return false;
+  }
   const data = persist(document);
   if (!data || getStorageOwner() !== uid || useMoney.getState().owner !== uid) {
     return false;
@@ -170,7 +175,9 @@ export function applyMoneyCloudDocument(uid, document) {
 }
 
 export function setMoneySyncStatus(uid, syncStatus, error = null) {
-  if (!getOwnedMoneyDocument(uid)) return false;
+  if (getStorageOwner() !== uid || useMoney.getState().owner !== uid) {
+    return false;
+  }
   useMoney.setState({
     syncStatus,
     syncError: error instanceof Error ? error.message : null,

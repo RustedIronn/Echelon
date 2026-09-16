@@ -149,7 +149,9 @@ import {
 import {
   createNextMoneyDocument,
   createEmptyMoneyDocument,
+  hasMoneySourceData,
   loadMoneyDocument,
+  loadMoneyDocumentForSync,
   normalizeMoneyCloudDocument,
   normalizeMoneyDocument,
   saveMoneyDocument,
@@ -2390,6 +2392,24 @@ test("money persistence rejects unauthenticated writes and recovers from malform
   }
 });
 
+test("untouched Money defaults are not treated as syncable local source data", () => {
+  memory.clear();
+  setStorageOwner("money-empty-client");
+  const empty = createEmptyMoneyDocument();
+
+  assert.equal(hasMoneySourceData(empty), false);
+  assert.ok(saveMoneyDocument(empty));
+  assert.equal(loadMoneyDocumentForSync(), null);
+
+  const legacyWithData = {
+    ...empty,
+    transactions: [moneyTransaction({ id: "transaction:legacy-source" })],
+  };
+  assert.equal(hasMoneySourceData(legacyWithData), true);
+  assert.ok(saveMoneyDocument(legacyWithData));
+  assert.equal(loadMoneyDocumentForSync().transactions.length, 1);
+});
+
 test("mounted money store switches all slices atomically across owners", async () => {
   memory.clear();
   setStorageOwner(null);
@@ -2690,6 +2710,31 @@ test("Money background activation reconciles without mounting a Money route", as
   assert.equal(harness.state.loads, 1);
   assert.equal(harness.state.writes.length, 1);
   assert.equal(harness.state.cloud.revision, 1);
+});
+
+test("empty new clients cannot seed or overwrite legacy revision-zero Money", async () => {
+  const untouchedClient = createMoneySyncHarness({ local: null, cloud: null });
+  await untouchedClient.controller.activate(untouchedClient.uid);
+  assert.equal(untouchedClient.state.writes.length, 0);
+  assert.equal(untouchedClient.state.cloud, null);
+
+  const legacyDesktop = versionedMoneyDocument(0, "Desktop legacy data");
+  const emptyCloud = createEmptyMoneyDocument();
+  const desktop = createMoneySyncHarness({
+    local: legacyDesktop,
+    cloud: emptyCloud,
+  });
+  await desktop.controller.activate(desktop.uid);
+  assert.equal(desktop.state.writes.length, 1);
+  assert.equal(desktop.state.cloud.goals[0].name, "Desktop legacy data");
+
+  const cleanMobile = createMoneySyncHarness({
+    local: null,
+    cloud: structuredClone(desktop.state.cloud),
+  });
+  await cleanMobile.controller.activate(cleanMobile.uid);
+  assert.equal(cleanMobile.state.writes.length, 0);
+  assert.equal(cleanMobile.state.local.goals[0].name, "Desktop legacy data");
 });
 
 test("Money reconciliation waits for the local-winning upload before syncing", async () => {
