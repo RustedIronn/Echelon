@@ -1,15 +1,12 @@
 import { useHabits } from "@features/habits/store";
-import { habits as defaultHabits } from "@features/habits/constants";
+import { createHabits } from "@features/habits/habits";
 
 export default function HabitList() {
   const { habits, toggleHabit } = useHabits();
 
   const list = habits.length
     ? habits
-    : defaultHabits.map((name) => ({
-        name,
-        done: false,
-      }));
+    : createHabits();
 
   return (
     <div className="card">
@@ -19,12 +16,12 @@ export default function HabitList() {
         {list.map((habit) => (
           <label
             className={`habit-item ${habit.done ? "completed" : ""}`}
-            key={habit.name}
+            key={habit.id}
           >
             <input
               type="checkbox"
               checked={habit.done}
-              onChange={() => toggleHabit(habit.name)}
+              onChange={() => toggleHabit(habit.id)}
             />
 
             <span>{habit.name}</span>

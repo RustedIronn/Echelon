@@ -17,6 +17,7 @@ import {
   migrateStorage,
   saveData,
   setStorageOwner,
+  subscribeStorageOwner,
 } from "../src/shared/storage.js";
 import {
   reconcileVersionedState,
@@ -96,6 +97,17 @@ import {
 } from "../src/features/focus/runtime.js";
 import { hasMatchingOwnership } from "../src/core/auth/ownership.js";
 import { createAuthTransitionController } from "../src/core/auth/transition.js";
+import { HABIT_DEFINITIONS } from "../src/features/habits/constants.js";
+import {
+  createHabits,
+  normalizeHabitDocument,
+  normalizeHabitRecords,
+  toggleHabitById,
+} from "../src/features/habits/habits.js";
+import {
+  loadHabitDocument,
+  saveHabitDocument,
+} from "../src/features/habits/storage.js";
 import { generateReview } from "../src/features/review/analyzer.js";
 import { computeReviewBreakdown } from "../src/features/review/breakdown.js";
 import { mergeReviews } from "../src/features/review/reviewStorage.js";
@@ -564,6 +576,259 @@ test("legacy mutation ownership requires matching auth, storage, and store UIDs"
   assert.equal(hasMatchingOwnership("A", "B", "B"), false);
   assert.equal(hasMatchingOwnership("A", "A", "B"), false);
   assert.equal(hasMatchingOwnership(null, "A", "A"), false);
+});
+
+test("legacy name-only habits normalize to stable built-in IDs", () => {
+  const normalized = normalizeHabitRecords([
+    { name: "Exercise", done: true },
+    { name: "Focused Work", done: false },
+  ]);
+
+  assert.deepEqual(
+    normalized.map(({ id }) => id),
+    [
+      "exercise",
+      "focused-work",
+      "eat-healthy",
+      "no-doom-scrolling",
+      "sleep-on-time",
+    ],
+  );
+  assert.equal(normalized.find(({ id }) => id === "exercise").done, true);
+  assert.equal(normalized.find(({ id }) => id === "focused-work").done, false);
+  assert.equal(normalized.find(({ id }) => id === "eat-healthy").done, false);
+});
+
+test("duplicate legacy habits keep the first valid occurrence", () => {
+  const normalized = normalizeHabitRecords([
+    { name: "Exercise", done: false },
+    { name: "Exercise", done: true },
+    { id: 123, name: "Eat Healthy", done: true },
+    { name: "Eat Healthy", done: true },
+    { name: "Focused Work", done: "yes" },
+    { name: "Focused Work", done: true },
+  ]);
+
+  assert.equal(normalized.find(({ id }) => id === "exercise").done, false);
+  assert.equal(normalized.find(({ id }) => id === "eat-healthy").done, true);
+  assert.equal(normalized.find(({ id }) => id === "focused-work").done, true);
+  assert.equal(normalized.length, HABIT_DEFINITIONS.length);
+});
+
+test("malformed and unknown habits cannot become runtime records", () => {
+  assert.equal(normalizeHabitRecords([
+    null,
+    {},
+    { name: "Unknown", done: true },
+    { id: "custom-habit", name: "Exercise", done: true },
+  ]), null);
+
+  const normalized = normalizeHabitRecords([
+    { name: "Exercise", done: true },
+    { name: "", done: true },
+    { done: true },
+  ]);
+  assert.equal(normalized.length, HABIT_DEFINITIONS.length);
+  assert.equal(normalized.filter(({ done }) => done).length, 1);
+});
+
+test("habit toggles target one stable ID and reject unknown IDs", () => {
+  const habits = createHabits();
+  const toggled = toggleHabitById(habits, "focused-work");
+  const repeated = toggleHabitById(toggled, "focused-work");
+
+  assert.equal(toggled.find(({ id }) => id === "focused-work").done, true);
+  assert.equal(toggled.filter(({ done }) => done).length, 1);
+  assert.deepEqual(repeated, habits);
+  assert.equal(toggleHabitById(habits, "unknown"), habits);
+});
+
+test("duplicate display labels cannot make an ID toggle multiple habits", () => {
+  const habits = createHabits().map((habit, index) =>
+    index < 2 ? { ...habit, name: "Same visible label" } : habit,
+  );
+  const toggled = toggleHabitById(habits, "exercise");
+
+  assert.equal(toggled[0].done, true);
+  assert.equal(toggled[1].done, false);
+  assert.equal(toggled.filter(({ done }) => done).length, 1);
+});
+
+test("habit rollover resets completion while preserving stable IDs", () => {
+  const previous = normalizeHabitDocument({
+    date: "2026-09-16",
+    data: [{ name: "Exercise", done: true }],
+  }, "2026-09-16");
+  const next = createHabits();
+
+  assert.deepEqual(
+    previous.data.map(({ id }) => id),
+    next.map(({ id }) => id),
+  );
+  assert.equal(next.every(({ done }) => done === false), true);
+  assert.equal(normalizeHabitDocument(previous, "2026-09-17"), null);
+});
+
+test("habit reconciliation preserves normalized ID records", () => {
+  const local = normalizeHabitDocument({
+    date: "2026-09-17",
+    revision: 2,
+    updatedAt: "2026-09-17T08:00:00.000Z",
+    data: [{ id: "exercise", done: true }],
+  }, "2026-09-17");
+  const cloud = normalizeHabitDocument({
+    date: "2026-09-17",
+    revision: 1,
+    updatedAt: "2026-09-17T07:00:00.000Z",
+    data: [{ id: "exercise", done: false }],
+  }, "2026-09-17");
+  const selectContent = ({ date, data }) => ({ date, data });
+  const localWinner = resolveVersionedState(local, cloud, selectContent);
+  const cloudWinner = resolveVersionedState(
+    local,
+    { ...cloud, revision: 3 },
+    selectContent,
+  );
+  const equal = resolveVersionedState(
+    local,
+    structuredClone(local),
+    selectContent,
+  );
+  const malformedCloud = normalizeHabitDocument({
+    date: "2026-09-17",
+    revision: 9,
+    data: [{ id: "unknown", done: true }],
+  }, "2026-09-17");
+  const malformedResolution = resolveVersionedState(
+    local,
+    malformedCloud,
+    selectContent,
+  );
+
+  assert.equal(localWinner.source, "local");
+  assert.equal(localWinner.value.data[0].id, "exercise");
+  assert.equal(cloudWinner.source, "cloud");
+  assert.equal(equal.source, "equal");
+  assert.equal(malformedCloud, null);
+  assert.equal(malformedResolution.value, local);
+});
+
+test("Habit reconciliation canonicalizes cloud winners and local uploads", async () => {
+  const local = normalizeHabitDocument({
+    date: "2026-09-17",
+    revision: 2,
+    updatedAt: "2026-09-17T08:00:00.000Z",
+    data: [{ id: "exercise", done: true }],
+  }, "2026-09-17");
+  const legacyCloud = normalizeHabitDocument({
+    date: "2026-09-17",
+    revision: 3,
+    updatedAt: "2026-09-17T09:00:00.000Z",
+    data: [{ name: "Focused Work", done: true }],
+  }, "2026-09-17");
+  const selectContent = ({ date, data }) => ({ date, data });
+  const cloudWinner = await reconcileVersionedState({
+    local,
+    cloud: legacyCloud,
+    selectContent,
+    uploadLocal: async () => assert.fail("cloud winner must not upload local"),
+  });
+
+  assert.equal(cloudWinner.source, "cloud");
+  assert.deepEqual(
+    cloudWinner.value.data.map(({ id }) => id),
+    HABIT_DEFINITIONS.map(({ id }) => id),
+  );
+  assert.equal(
+    cloudWinner.value.data.find(({ id }) => id === "focused-work").done,
+    true,
+  );
+
+  let uploaded = null;
+  const newerLocal = { ...local, revision: 4 };
+  const localWinner = await reconcileVersionedState({
+    local: newerLocal,
+    cloud: legacyCloud,
+    selectContent,
+    uploadLocal: async (document) => {
+      uploaded = structuredClone(document);
+    },
+  });
+
+  assert.equal(localWinner.source, "local");
+  assert.deepEqual(uploaded, newerLocal);
+  assert.equal(uploaded.data.every(({ id }) => typeof id === "string"), true);
+});
+
+test("legacy and malformed cloud Habit records normalize safely", () => {
+  const legacy = normalizeHabitDocument({
+    date: "2026-09-17",
+    data: [
+      { name: "Sleep On Time", done: true },
+      { name: "Sleep On Time", done: false },
+      { name: "Unknown", done: true },
+    ],
+  }, "2026-09-17");
+
+  assert.equal(legacy.data.find(({ id }) => id === "sleep-on-time").done, true);
+  assert.equal(legacy.data.length, HABIT_DEFINITIONS.length);
+  assert.equal(normalizeHabitDocument({
+    date: "2026-09-17",
+    data: [{ name: "Unknown", done: true }],
+  }, "2026-09-17"), null);
+});
+
+test("mounted Habit hydration stays isolated across A to B to A", () => {
+  memory.clear();
+  setStorageOwner(null);
+  const date = "2026-09-17";
+
+  setStorageOwner("habit-user-a");
+  saveHabitDocument({
+    date,
+    data: [{ id: "exercise", done: true }],
+    revision: 1,
+    updatedAt: "2026-09-17T08:00:00.000Z",
+  });
+  setStorageOwner("habit-user-b");
+  saveHabitDocument({
+    date,
+    data: [{ id: "focused-work", done: true }],
+    revision: 1,
+    updatedAt: "2026-09-17T09:00:00.000Z",
+  });
+
+  let mounted = null;
+  const unsubscribe = subscribeStorageOwner((owner) => {
+    mounted = {
+      owner,
+      habits: loadHabitDocument(date)?.data ?? createHabits(),
+    };
+  });
+
+  try {
+    setStorageOwner(null);
+    assert.equal(mounted.owner, null);
+    assert.equal(mounted.habits.every(({ done }) => done === false), true);
+    setStorageOwner("habit-user-a");
+    assert.equal(mounted.owner, "habit-user-a");
+    assert.equal(mounted.habits.find(({ id }) => id === "exercise").done, true);
+    assert.equal(mounted.habits.find(({ id }) => id === "focused-work").done, false);
+
+    setStorageOwner(null);
+    assert.equal(mounted.owner, null);
+    assert.equal(mounted.habits.every(({ done }) => done === false), true);
+    setStorageOwner("habit-user-b");
+    assert.equal(mounted.owner, "habit-user-b");
+    assert.equal(mounted.habits.find(({ id }) => id === "exercise").done, false);
+    assert.equal(mounted.habits.find(({ id }) => id === "focused-work").done, true);
+
+    setStorageOwner(null);
+    setStorageOwner("habit-user-a");
+    assert.equal(mounted.habits.find(({ id }) => id === "exercise").done, true);
+  } finally {
+    unsubscribe();
+  }
 });
 
 const versionContent = ({ value }) => value;

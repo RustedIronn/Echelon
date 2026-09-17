@@ -2,52 +2,25 @@ import { create } from "zustand";
 
 import {
   getStorageOwner,
-  saveData,
-  loadData,
   subscribeStorageOwner,
 } from "@/shared/storage";
-import { getToday, isNewDay } from "@/shared/date";
+import { getToday } from "@/shared/date";
 import {
   createNextRevision,
   reconcileVersionedState,
 } from "@/shared/versionedState";
-import { habits as defaultHabits } from "./constants";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { useAuth } from "@core/auth/store";
 import { hasMatchingOwnership } from "@core/auth/ownership";
 import { saveHabits, loadHabits } from "./service";
+import {
+  createHabits,
+  normalizeHabitDocument,
+  toggleHabitById,
+} from "./habits";
+import { loadHabitDocument, saveHabitDocument } from "./storage";
 
-const createHabits = () =>
-  defaultHabits.map((name) => ({
-    name,
-    done: false,
-  }));
-
-const normalizeHabits = (value) =>
-  Array.isArray(value) &&
-  value.length > 0 &&
-  value.every((habit) => habit && typeof habit.name === "string")
-    ? value.map((habit) => ({ ...habit, done: habit.done === true }))
-    : createHabits();
-
-const isValidHabits = (value) =>
-  Array.isArray(value) &&
-  value.length > 0 &&
-  value.every((habit) => habit && typeof habit.name === "string");
-
-const normalizeDocument = (value) => {
-  if (!value || isNewDay(value.date) || !isValidHabits(value.data)) return null;
-
-  return {
-    ...value,
-    data: normalizeHabits(value.data),
-    revision: Number.isInteger(value.revision) ? value.revision : 0,
-    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : null,
-  };
-};
-
-const loadLocalDocument = () =>
-  normalizeDocument(loadData("echelon_habits", null));
+const loadLocalDocument = () => loadHabitDocument(getToday());
 
 const initialDocument = loadLocalDocument();
 const stateFromDocument = (document) => ({
@@ -71,30 +44,26 @@ export const useHabits = create((set, get) => ({
     return useHabits.getState().loadFromCloud();
   },
 
-  toggleHabit: (name) => {
+  toggleHabit: (id) => {
     if (!hasOwnedAccess(get().owner)) return false;
     const state = get();
-    const habits = state.habits.map((habit) =>
-      habit.name === name
-        ? {
-            ...habit,
-            done: !habit.done,
-          }
-        : habit,
-    );
+    const habits = toggleHabitById(state.habits, id);
+    if (habits === state.habits) return false;
+
     const document = createNextRevision({
       date: getToday(),
       data: habits,
     }, state);
 
-    if (!saveData("echelon_habits", document)) return false;
+    const persisted = saveHabitDocument(document);
+    if (!persisted) return false;
 
     set({
-      habits,
-      revision: document.revision,
-      updatedAt: document.updatedAt,
+      habits: persisted.data,
+      revision: persisted.revision,
+      updatedAt: persisted.updatedAt,
     });
-    syncToCloud((uid) => saveHabits(uid, document));
+    syncToCloud((uid) => saveHabits(uid, persisted));
     return true;
   },
 
@@ -103,7 +72,7 @@ export const useHabits = create((set, get) => ({
       (uid) => loadHabits(uid, getToday()),
       async (cloud, uid) => {
         const local = loadLocalDocument();
-        const safeCloud = normalizeDocument(cloud);
+        const safeCloud = normalizeHabitDocument(cloud, getToday());
         const resolution = await reconcileVersionedState({
           local,
           cloud: safeCloud,
@@ -121,8 +90,9 @@ export const useHabits = create((set, get) => ({
           useHabits.getState().owner !== uid
         ) return;
 
-        if (!saveData("echelon_habits", resolution.value)) return;
-        set(stateFromDocument(resolution.value));
+        const persisted = saveHabitDocument(resolution.value);
+        if (!persisted) return;
+        set(stateFromDocument(persisted));
       },
       { applyNull: true },
     ),
