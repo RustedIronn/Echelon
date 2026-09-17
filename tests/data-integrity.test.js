@@ -160,6 +160,8 @@ import {
 } from "../src/features/schedule/editor.js";
 import {
   generateWeeklyInsights,
+  getCurrentLocalWeekRange,
+  getCurrentWeekReviews,
   normalizeProgressHistory,
 } from "../src/features/analytics/insights.js";
 import {
@@ -2464,6 +2466,114 @@ const reviewRecord = (date, score, updatedAt, extra = {}) => ({
   workoutRequired: false,
   ...(updatedAt ? { updatedAt } : {}),
   ...extra,
+});
+
+test("Analytics current local week uses Monday through Sunday boundaries", () => {
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2026, 8, 16, 12, 0)),
+    { start: "2026-09-14", end: "2026-09-20" },
+  );
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2026, 8, 14, 0, 0)),
+    { start: "2026-09-14", end: "2026-09-20" },
+  );
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2026, 8, 20, 23, 59)),
+    { start: "2026-09-14", end: "2026-09-20" },
+  );
+});
+
+test("Analytics local week boundaries cross months, years, and leap days", () => {
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2026, 2, 1, 12, 0)),
+    { start: "2026-02-23", end: "2026-03-01" },
+  );
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2027, 0, 1, 12, 0)),
+    { start: "2026-12-28", end: "2027-01-03" },
+  );
+  assert.deepEqual(
+    getCurrentLocalWeekRange(new Date(2024, 1, 29, 12, 0)),
+    { start: "2024-02-26", end: "2024-03-03" },
+  );
+});
+
+test("Weekly Intelligence uses sparse current-week reviews without older substitution", () => {
+  const reviews = [
+    reviewRecord("2026-09-13", 100, "2026-09-13T12:00:00.000Z", { focusMinutes: 500 }),
+    reviewRecord("2026-09-14", 50, "2026-09-14T12:00:00.000Z", { focusMinutes: 30 }),
+    reviewRecord("2026-09-16", 70, "2026-09-16T12:00:00.000Z"),
+    reviewRecord("2026-09-19", 90, "2026-09-19T12:00:00.000Z", { focusMinutes: 60 }),
+  ];
+  const now = new Date(2026, 8, 16, 12, 0);
+
+  assert.deepEqual(
+    getCurrentWeekReviews(reviews, now).map((review) => review.date),
+    ["2026-09-14", "2026-09-16", "2026-09-19"],
+  );
+  assert.deepEqual(generateWeeklyInsights(reviews, now), {
+    average: 70,
+    best: normalizeReview(reviews[3]),
+    worst: normalizeReview(reviews[1]),
+    totalFocus: 90,
+  });
+});
+
+test("Weekly Intelligence consumes normalized unique Review dates", () => {
+  const older = reviewRecord("2026-09-16", 30, "2026-09-16T10:00:00.000Z");
+  const newer = reviewRecord("2026-09-16", 80, "2026-09-16T11:00:00.000Z", { unknown: true });
+  const reviews = [
+    older,
+    { date: "not-a-date", score: 100 },
+    { ...newer, score: Number.NaN, updatedAt: "2027-01-01T00:00:00.000Z" },
+    newer,
+  ];
+  const insight = generateWeeklyInsights(reviews, new Date(2026, 8, 16, 12, 0));
+  const normalized = getCurrentWeekReviews(
+    reviews,
+    new Date(2026, 8, 16, 12, 0),
+  );
+
+  assert.equal(insight.average, 80);
+  assert.equal(insight.totalFocus, 0);
+  assert.equal(insight.best, null);
+  assert.equal(insight.worst, null);
+  assert.equal(normalized[0].score, 80);
+  assert.equal("unknown" in normalized[0], false);
+  assert.equal(
+    Object.values(insight).some((value) => typeof value === "number" && !Number.isFinite(value)),
+    false,
+  );
+});
+
+test("retired progress history is normalized but no longer drives Analytics", () => {
+  assert.deepEqual(normalizeProgressHistory([]), []);
+  assert.deepEqual(
+    normalizeProgressHistory([
+      null,
+      { date: "bad", progress: 50 },
+      { date: "2026-09-15", progress: Infinity },
+      { date: "2026-09-14", progress: "25", extra: "discarded" },
+      { date: "2026-09-14", progress: 75 },
+      { date: "2026-09-16", progress: 120 },
+    ]),
+    [
+      { date: "2026-09-14", progress: 75 },
+      { date: "2026-09-16", progress: 100 },
+    ],
+  );
+
+  const analyticsPage = readFileSync(
+    new URL("../src/pages/Analytics.jsx", import.meta.url),
+    "utf8",
+  );
+  const storageSource = readFileSync(
+    new URL("../src/shared/storage.js", import.meta.url),
+    "utf8",
+  );
+  assert.equal(analyticsPage.includes("ProgressChart"), false);
+  assert.equal(analyticsPage.includes("useStats"), false);
+  assert.equal(storageSource.includes('"echelon_history"'), true);
 });
 
 test("Daily Review normalization enforces its record and breakdown contract", () => {

@@ -4,7 +4,7 @@ import useReview from "@features/review/store";
 export default function WeeklyInsight() {
   const { history } = useReview();
 
-  const insight = generateWeeklyInsights(history.slice(-7));
+  const insight = generateWeeklyInsights(history);
 
   return (
     <section className="card">
