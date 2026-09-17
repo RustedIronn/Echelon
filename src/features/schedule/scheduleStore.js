@@ -16,6 +16,8 @@ import {
   reconcileVersionedState,
 } from "@/shared/versionedState";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+import { useAuth } from "@core/auth/store";
+import { hasMatchingOwnership } from "@core/auth/ownership";
 import { saveSchedule, loadSchedule } from "./scheduleService";
 
 const normalizeDocument = (value) => {
@@ -40,10 +42,18 @@ const stateFromDocument = (document) => ({
   updatedAt: document?.updatedAt ?? null,
 });
 
-export const useSchedule = create((set) => ({
+const hasOwnedAccess = (owner) => hasMatchingOwnership(
+  useAuth.getState().user?.uid ?? null,
+  getStorageOwner(),
+  owner,
+);
+
+export const useSchedule = create((set, get) => ({
+  owner: getStorageOwner(),
   ...stateFromDocument(initialDocument),
 
-  updateTask: (id, data) =>
+  updateTask: (id, data) => {
+    if (!hasOwnedAccess(get().owner)) return false;
     set((state) => {
       const updated = state.schedule.map((task) =>
         task.id === id
@@ -64,7 +74,9 @@ export const useSchedule = create((set) => ({
         revision: document.revision,
         updatedAt: document.updatedAt,
       };
-    }),
+    });
+    return true;
+  },
 
   loadFromCloud: () =>
     loadFromCloud(
@@ -77,7 +89,15 @@ export const useSchedule = create((set) => ({
           uploadLocal: (document) => saveSchedule(uid, document),
         });
 
-        if (!resolution.value || getStorageOwner() !== uid) return;
+        if (
+          !resolution.value ||
+          !hasMatchingOwnership(
+            useAuth.getState().user?.uid ?? null,
+            getStorageOwner(),
+            useSchedule.getState().owner,
+          ) ||
+          useSchedule.getState().owner !== uid
+        ) return;
 
         saveData("echelon_schedule", resolution.value);
         set(stateFromDocument(resolution.value));
@@ -87,5 +107,8 @@ export const useSchedule = create((set) => ({
 }));
 
 subscribeStorageOwner(() => {
-  useSchedule.setState(stateFromDocument(loadLocalDocument()));
+  useSchedule.setState({
+    owner: getStorageOwner(),
+    ...stateFromDocument(loadLocalDocument()),
+  });
 });

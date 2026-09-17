@@ -1,5 +1,6 @@
 import { getToday } from "../../shared/date.js";
 import { weightedScore } from "../../shared/executionScore.js";
+import { getFocusMinutesForDay } from "../focus/utils.js";
 
 export function generateReview({
   tasks = [],
@@ -25,16 +26,7 @@ export function generateReview({
     ? Math.round((completedHabits / safeHabits.length) * 100)
     : 0;
 
-  const focusSeconds = safeSessions
-    .filter((session) =>
-      typeof session?.date === "string" && session.date.startsWith(today),
-    )
-    .reduce(
-    (total, session) => total + Math.max(Number(session.duration) || 0, 0),
-    0,
-  );
-
-  const focusMinutes = Math.floor(focusSeconds / 60);
+  const focusMinutes = getFocusMinutesForDay(safeSessions, today);
 
   const todayWorkout = workoutStats?.todayWorkout || null;
 

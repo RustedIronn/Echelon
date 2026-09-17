@@ -5,8 +5,9 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "../firebase";
 import { setStorageOwner } from "@/shared/storage";
+import { createAuthTransitionController } from "./transition";
 
-let authRevision = 0;
+let transitionController = null;
 
 export const useAuth = create((set, get) => ({
   user: null,
@@ -22,27 +23,19 @@ export const useAuth = create((set, get) => ({
       initialized: true,
     });
 
-    onAuthStateChanged(auth, async (user) => {
-      const revision = ++authRevision;
+    if (!transitionController) {
+      transitionController = createAuthTransitionController({
+        setAuthState: (state) => useAuth.setState(state),
+        setStorageOwner,
+        initializeProfile: createUserProfile,
+        onProfileError: (error) => {
+          console.error("Unable to create user profile:", error);
+        },
+      });
+    }
 
-      // Switch the local persistence namespace before any feature can observe
-      // the new auth state or begin loading cloud data for it.
-      setStorageOwner(user?.uid ?? null);
-
-      try {
-        if (user) {
-          await createUserProfile(user);
-        }
-      } catch (error) {
-        console.error("Unable to create user profile:", error);
-      } finally {
-        if (revision === authRevision) {
-          set({
-            user,
-            loading: false,
-          });
-        }
-      }
+    onAuthStateChanged(auth, (user) => {
+      void transitionController.handleAuthChange(user);
     });
   },
 }));

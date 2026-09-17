@@ -77,9 +77,25 @@ import {
   groupTrackedPerformanceByExercise,
 } from "../src/features/workout/insights.js";
 import {
+  getFocusDayKey,
+  getFocusMinutesForDay,
+  getFocusSessionsForDay,
+  getFocusTimeForDay,
   getTodayFocusTime,
+  normalizeFocusSessions,
   mergeFocusSessions,
 } from "../src/features/focus/utils.js";
+import {
+  createFocusOwnerState,
+  deriveFocusElapsedSeconds,
+  finishFocusRuntime,
+  pauseFocusRuntime,
+  refreshFocusRuntime,
+  resumeFocusRuntime,
+  startFocusRuntime,
+} from "../src/features/focus/runtime.js";
+import { hasMatchingOwnership } from "../src/core/auth/ownership.js";
+import { createAuthTransitionController } from "../src/core/auth/transition.js";
 import { generateReview } from "../src/features/review/analyzer.js";
 import { computeReviewBreakdown } from "../src/features/review/breakdown.js";
 import { mergeReviews } from "../src/features/review/reviewStorage.js";
@@ -360,6 +376,138 @@ test("repeated legacy migration never overwrites scoped data", () => {
   assert.deepEqual(loadData("echelon_focus", null), { data: ["newer"] });
 });
 
+const createDeferred = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
+const createAuthTransitionHarness = () => {
+  let authState = { user: { uid: "initial" }, loading: false };
+  let storageOwner = "initial";
+  const ownerTransitions = [];
+  const profiles = new Map();
+  const controller = createAuthTransitionController({
+    setAuthState: (patch) => {
+      authState = { ...authState, ...patch };
+    },
+    setStorageOwner: (uid) => {
+      if (storageOwner !== uid) ownerTransitions.push(uid);
+      storageOwner = uid;
+    },
+    initializeProfile: (user) => {
+      const pending = profiles.get(user.uid);
+      return pending ? pending.promise : Promise.resolve();
+    },
+  });
+
+  return {
+    controller,
+    profiles,
+    ownerTransitions,
+    getState: () => ({ authState, storageOwner }),
+  };
+};
+
+test("auth A to B transition hides stale A while profile initialization waits", async () => {
+  const harness = createAuthTransitionHarness();
+  const pendingA = createDeferred();
+  const pendingB = createDeferred();
+  harness.profiles.set("A", pendingA);
+  harness.profiles.set("B", pendingB);
+
+  const operationA = harness.controller.handleAuthChange({ uid: "A" });
+  assert.deepEqual(harness.getState(), {
+    authState: { user: null, loading: true },
+    storageOwner: null,
+  });
+  const operationB = harness.controller.handleAuthChange({ uid: "B" });
+  pendingB.resolve();
+  assert.equal(await operationB, true);
+  assert.equal(harness.getState().authState.user.uid, "B");
+  assert.equal(harness.getState().storageOwner, "B");
+
+  pendingA.resolve();
+  assert.equal(await operationA, false);
+  assert.equal(harness.getState().authState.user.uid, "B");
+  assert.equal(harness.getState().storageOwner, "B");
+  assert.deepEqual(harness.ownerTransitions, [null, "B"]);
+});
+
+test("mutations are rejected throughout an auth profile transition", async () => {
+  const harness = createAuthTransitionHarness();
+  const pending = createDeferred();
+  harness.profiles.set("B", pending);
+
+  const operation = harness.controller.handleAuthChange({ uid: "B" });
+  const transition = harness.getState();
+  assert.equal(
+    hasMatchingOwnership(
+      transition.authState.user?.uid ?? null,
+      transition.storageOwner,
+      "B",
+    ),
+    false,
+  );
+
+  pending.resolve();
+  await operation;
+  const settled = harness.getState();
+  assert.equal(
+    hasMatchingOwnership(
+      settled.authState.user.uid,
+      settled.storageOwner,
+      "B",
+    ),
+    true,
+  );
+});
+
+test("logout invalidates pending profile initialization", async () => {
+  const harness = createAuthTransitionHarness();
+  const pending = createDeferred();
+  harness.profiles.set("A", pending);
+
+  const login = harness.controller.handleAuthChange({ uid: "A" });
+  const logout = harness.controller.handleAuthChange(null);
+  assert.equal(await logout, true);
+  assert.deepEqual(harness.getState(), {
+    authState: { user: null, loading: false },
+    storageOwner: null,
+  });
+
+  pending.resolve();
+  assert.equal(await login, false);
+  assert.deepEqual(harness.getState(), {
+    authState: { user: null, loading: false },
+    storageOwner: null,
+  });
+});
+
+test("stale auth callbacks cannot replace a newer settled account", async () => {
+  const harness = createAuthTransitionHarness();
+  const pendingA = createDeferred();
+  harness.profiles.set("A", pendingA);
+
+  const staleA = harness.controller.handleAuthChange({ uid: "A" });
+  assert.equal(await harness.controller.handleAuthChange({ uid: "B" }), true);
+  pendingA.resolve();
+  assert.equal(await staleA, false);
+  assert.equal(harness.getState().authState.user.uid, "B");
+  assert.equal(harness.getState().storageOwner, "B");
+});
+
+test("legacy mutation ownership requires matching auth, storage, and store UIDs", () => {
+  assert.equal(hasMatchingOwnership("A", "A", "A"), true);
+  assert.equal(hasMatchingOwnership("A", "B", "B"), false);
+  assert.equal(hasMatchingOwnership("A", "A", "B"), false);
+  assert.equal(hasMatchingOwnership(null, "A", "A"), false);
+});
+
 const versionContent = ({ value }) => value;
 
 test("version resolution keeps newer local state", () => {
@@ -520,7 +668,147 @@ test("focus histories ignore malformed sessions and merge idempotently", () => {
   };
 
   assert.equal(getTodayFocusTime([null, { duration: 5 }, session]), 60);
-  assert.deepEqual(mergeFocusSessions([session], [session]), [session]);
+  assert.deepEqual(
+    mergeFocusSessions([session], [session]),
+    normalizeFocusSessions([session]),
+  );
+});
+
+test("Focus attributes legacy ISO records across positive and negative offsets", () => {
+  const afterMidnightIndia = {
+    task: "India midnight",
+    duration: 60,
+    date: "2026-01-01T19:15:00.000Z",
+  };
+  const afterMidnightPacific = {
+    task: "Pacific midnight",
+    duration: 120,
+    date: "2026-01-02T08:15:00.000Z",
+  };
+
+  assert.equal(getFocusDayKey(afterMidnightIndia, -330), "2026-01-02");
+  assert.equal(getFocusDayKey(afterMidnightPacific, 480), "2026-01-02");
+  assert.equal(
+    getFocusTimeForDay([afterMidnightIndia], "2026-01-02", {
+      timezoneOffsetMinutes: -330,
+    }),
+    60,
+  );
+  assert.equal(
+    getFocusTimeForDay([afterMidnightPacific], "2026-01-02", {
+      timezoneOffsetMinutes: 480,
+    }),
+    120,
+  );
+});
+
+test("explicit Focus day keys remain authoritative for new records", () => {
+  const session = {
+    id: "focus-explicit-day",
+    task: "Late work",
+    category: "focus",
+    duration: 90,
+    date: "2026-01-01T19:15:00.000Z",
+    dayKey: "2026-01-02",
+  };
+  const [normalized] = normalizeFocusSessions([session], {
+    timezoneOffsetMinutes: 480,
+  });
+
+  assert.equal(normalized.dayKey, "2026-01-02");
+  assert.deepEqual(
+    getFocusSessionsForDay([session], "2026-01-02", {
+      timezoneOffsetMinutes: 480,
+    }),
+    [normalized],
+  );
+});
+
+test("invalid Focus day keys fall back to timestamp-derived local dates", () => {
+  const malformedDay = {
+    id: "focus-invalid-day",
+    task: "Late work",
+    duration: 60,
+    date: "2026-01-01T19:15:00.000Z",
+    dayKey: "2026-02-30",
+  };
+  const [normalized] = normalizeFocusSessions([malformedDay], {
+    timezoneOffsetMinutes: -330,
+  });
+
+  assert.equal(normalized.dayKey, "2026-01-02");
+  assert.equal(getFocusDayKey(malformedDay, -330), "2026-01-02");
+});
+
+test("Dashboard and Daily Review use the same Focus day aggregation", () => {
+  const dayKey = getToday();
+  const sessions = [
+    {
+      id: "focus-shared-aggregation",
+      task: "Shared source",
+      duration: 125,
+      date: new Date().toISOString(),
+      dayKey,
+    },
+  ];
+  const dashboardMinutes = Math.floor(getTodayFocusTime(sessions) / 60);
+  const review = generateReview({ sessions });
+  const breakdown = computeReviewBreakdown({ sessions });
+
+  assert.equal(getFocusMinutesForDay(sessions, dayKey), 2);
+  assert.equal(dashboardMinutes, 2);
+  assert.equal(review.focusMinutes, 2);
+  assert.equal(breakdown.find((item) => item.label === "Focus").value, 1);
+});
+
+test("Focus elapsed time is timestamp-derived after delayed display ticks", () => {
+  const task = { title: "Deep work", category: "focus" };
+  const started = startFocusRuntime(task, 1_000);
+  const delayed = refreshFocusRuntime(started, 3_601_000);
+
+  assert.equal(started.seconds, 0);
+  assert.equal(delayed.seconds, 3600);
+  assert.equal(deriveFocusElapsedSeconds(started, 3_601_000), 3600);
+});
+
+test("Focus pause and resume exclude suspended paused time", () => {
+  const task = { title: "Deep work", category: "focus" };
+  const started = startFocusRuntime(task, 1_000);
+  const paused = pauseFocusRuntime(started, 61_000);
+  const resumed = resumeFocusRuntime(paused, 3_661_000);
+  const finished = finishFocusRuntime(resumed, 3_691_000);
+
+  assert.equal(paused.seconds, 60);
+  assert.equal(finished.completed, true);
+  assert.equal(finished.duration, 90);
+});
+
+test("Focus finish after suspension is accurate and idempotent", () => {
+  const task = { title: "Deep work", category: "focus" };
+  const started = startFocusRuntime(task, 10_000);
+  const first = finishFocusRuntime(started, 610_000);
+  const repeated = finishFocusRuntime(first.runtime, 620_000);
+
+  assert.equal(first.duration, 600);
+  assert.equal(first.completed, true);
+  assert.equal(repeated.completed, false);
+  assert.equal(repeated.duration, 0);
+});
+
+test("Focus owner changes clear active runtime state", () => {
+  const active = {
+    owner: "A",
+    ...startFocusRuntime({ title: "A task", category: "focus" }, 1_000),
+    sessions: [{ id: "A-session" }],
+  };
+  const switched = createFocusOwnerState("B", [{ id: "B-session" }]);
+
+  assert.equal(active.active, true);
+  assert.equal(switched.owner, "B");
+  assert.equal(switched.active, false);
+  assert.equal(switched.task, null);
+  assert.equal(switched.seconds, 0);
+  assert.deepEqual(switched.sessions, [{ id: "B-session" }]);
 });
 
 test("workout history merge preserves local data and avoids cloud duplicates", () => {

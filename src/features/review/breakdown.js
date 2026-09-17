@@ -1,4 +1,5 @@
 import { getToday } from "../../shared/date.js";
+import { getFocusMinutesForDay } from "../focus/utils.js";
 
 export function computeReviewBreakdown({
   tasks = [],
@@ -23,17 +24,7 @@ export function computeReviewBreakdown({
       )
     : 0;
 
-  const focusMinutes = Math.floor(
-    safeSessions
-      .filter((session) =>
-        typeof session?.date === "string" && session.date.startsWith(dayKey),
-      )
-      .reduce(
-        (total, session) => total + Math.max(Number(session.duration) || 0, 0),
-        0,
-      ) /
-      60,
-  );
+  const focusMinutes = getFocusMinutesForDay(safeSessions, dayKey);
 
   const focusScore = Math.min(Math.round((focusMinutes / 240) * 100), 100);
 

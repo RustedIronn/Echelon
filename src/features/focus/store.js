@@ -1,72 +1,97 @@
 import { create } from "zustand";
 
 import { getToday } from "@/shared/date";
-import { saveData, loadData, subscribeStorageOwner } from "@/shared/storage";
+import {
+  getStorageOwner,
+  saveData,
+  loadData,
+  subscribeStorageOwner,
+} from "@/shared/storage";
 import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+import { useAuth } from "@core/auth/store";
+import { hasMatchingOwnership } from "@core/auth/ownership";
 import { saveFocusSession, loadFocusSessions } from "./service";
 import { mergeFocusSessions, normalizeFocusSessions } from "./utils";
+import {
+  createFocusOwnerState,
+  finishFocusRuntime,
+  pauseFocusRuntime,
+  refreshFocusRuntime,
+  resumeFocusRuntime,
+  startFocusRuntime,
+} from "./runtime";
 
 const loadLocalSessions = () =>
   normalizeFocusSessions(loadData("echelon_focus", null)?.data);
 
-export const useFocus = create((set) => ({
-  active: false,
-  task: null,
-  seconds: 0,
+const hasOwnedAccess = (owner) => hasMatchingOwnership(
+  useAuth.getState().user?.uid ?? null,
+  getStorageOwner(),
+  owner,
+);
 
-  sessions: loadLocalSessions(),
+export const useFocus = create((set, get) => ({
+  ...createFocusOwnerState(getStorageOwner(), loadLocalSessions()),
 
-  start: (task) => {
+  start: (task, now = Date.now()) => {
+    if (!hasOwnedAccess(get().owner)) return false;
     useToast.getState().show("Focus started");
 
-    set({
-      active: true,
-      task,
-      seconds: 0,
-    });
+    set(startFocusRuntime(task, now));
+    return true;
   },
 
-  stop: () => {
-    set((state) => {
-      if (!state.task || state.seconds === 0) {
-        useToast.getState().show("Focus session too short");
+  pause: (now = Date.now()) => {
+    if (!hasOwnedAccess(get().owner)) return false;
+    const current = get();
+    const paused = pauseFocusRuntime(current, now);
+    if (paused === current) return false;
+    set(paused);
+    return true;
+  },
 
-        return {
-          active: false,
-          task: null,
-          seconds: 0,
-        };
-      }
+  resume: (now = Date.now()) => {
+    if (!hasOwnedAccess(get().owner)) return false;
+    const current = get();
+    const resumed = resumeFocusRuntime(current, now);
+    if (resumed === current) return false;
+    set(resumed);
+    return true;
+  },
 
-      const session = {
-        id:
-          globalThis.crypto?.randomUUID?.() ||
-          `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        task: state.task.title,
-        category: state.task.category,
-        duration: state.seconds,
-        date: new Date().toISOString(),
-      };
+  stop: (now = Date.now()) => {
+    if (!hasOwnedAccess(get().owner)) return false;
+    const state = get();
+    const result = finishFocusRuntime(state, now);
+    set(result.runtime);
 
-      const sessions = [...state.sessions, session];
+    if (!result.completed) {
+      useToast.getState().show("Focus session too short");
+      return false;
+    }
 
-      saveData("echelon_focus", {
-        date: getToday(),
-        data: sessions,
-      });
+    const completedAt = new Date(now);
+    const session = {
+      id:
+        globalThis.crypto?.randomUUID?.() ||
+        `${completedAt.getTime()}-${Math.random().toString(36).slice(2)}`,
+      task: result.task.title,
+      category: result.task.category,
+      duration: result.duration,
+      date: completedAt.toISOString(),
+      dayKey: getToday(completedAt),
+    };
+    const sessions = [...state.sessions, session];
 
-      syncToCloud((uid) => saveFocusSession(uid, session));
-
-      useToast.getState().show("Focus session saved");
-
-      return {
-        active: false,
-        task: null,
-        seconds: 0,
-        sessions,
-      };
+    saveData("echelon_focus", {
+      date: getToday(completedAt),
+      data: sessions,
     });
+    syncToCloud((uid) => saveFocusSession(uid, session));
+    useToast.getState().show("Focus session saved");
+    set({ sessions });
+    return true;
   },
 
   loadFromCloud: () =>
@@ -74,6 +99,9 @@ export const useFocus = create((set) => ({
       (uid) => loadFocusSessions(uid),
       async (sessions, uid) => {
         if (!Array.isArray(sessions)) return;
+        if (!hasOwnedAccess(useFocus.getState().owner) || getStorageOwner() !== uid) {
+          return;
+        }
 
         const merged = mergeFocusSessions(
           sessions,
@@ -100,17 +128,15 @@ export const useFocus = create((set) => ({
       },
     ),
 
-  tick: () =>
-    set((state) => ({
-      seconds: state.seconds + 1,
-    })),
+  tick: (now = Date.now()) => {
+    if (!hasOwnedAccess(get().owner)) return false;
+    set((state) => refreshFocusRuntime(state, now));
+    return true;
+  },
 }));
 
 subscribeStorageOwner(() => {
-  useFocus.setState({
-    active: false,
-    task: null,
-    seconds: 0,
-    sessions: loadLocalSessions(),
-  });
+  useFocus.setState(
+    createFocusOwnerState(getStorageOwner(), loadLocalSessions()),
+  );
 });

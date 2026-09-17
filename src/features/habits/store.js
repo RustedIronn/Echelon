@@ -13,6 +13,8 @@ import {
 } from "@/shared/versionedState";
 import { habits as defaultHabits } from "./constants";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+import { useAuth } from "@core/auth/store";
+import { hasMatchingOwnership } from "@core/auth/ownership";
 import { saveHabits, loadHabits } from "./service";
 
 const createHabits = () =>
@@ -54,7 +56,14 @@ const stateFromDocument = (document) => ({
   updatedAt: document?.updatedAt ?? null,
 });
 
-export const useHabits = create((set) => ({
+const hasOwnedAccess = (owner) => hasMatchingOwnership(
+  useAuth.getState().user?.uid ?? null,
+  getStorageOwner(),
+  owner,
+);
+
+export const useHabits = create((set, get) => ({
+  owner: getStorageOwner(),
   ...stateFromDocument(initialDocument),
 
   rolloverDay: () => {
@@ -62,7 +71,8 @@ export const useHabits = create((set) => ({
     return useHabits.getState().loadFromCloud();
   },
 
-  toggleHabit: (name) =>
+  toggleHabit: (name) => {
+    if (!hasOwnedAccess(get().owner)) return false;
     set((state) => {
       const habits = state.habits.map((habit) =>
         habit.name === name
@@ -86,7 +96,9 @@ export const useHabits = create((set) => ({
         revision: document.revision,
         updatedAt: document.updatedAt,
       };
-    }),
+    });
+    return true;
+  },
 
   loadFromCloud: () =>
     loadFromCloud(
@@ -101,7 +113,15 @@ export const useHabits = create((set) => ({
           uploadLocal: (document) => saveHabits(uid, document),
         });
 
-        if (!resolution.value || getStorageOwner() !== uid) return;
+        if (
+          !resolution.value ||
+          !hasMatchingOwnership(
+            useAuth.getState().user?.uid ?? null,
+            getStorageOwner(),
+            useHabits.getState().owner,
+          ) ||
+          useHabits.getState().owner !== uid
+        ) return;
 
         saveData("echelon_habits", resolution.value);
         set(stateFromDocument(resolution.value));
@@ -111,5 +131,8 @@ export const useHabits = create((set) => ({
 }));
 
 subscribeStorageOwner(() => {
-  useHabits.setState(stateFromDocument(loadLocalDocument()));
+  useHabits.setState({
+    owner: getStorageOwner(),
+    ...stateFromDocument(loadLocalDocument()),
+  });
 });

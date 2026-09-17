@@ -17,6 +17,8 @@ import {
 } from "./constants";
 import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
+import { useAuth } from "@core/auth/store";
+import { hasMatchingOwnership } from "@core/auth/ownership";
 import { saveDaily, loadDaily } from "./todayService";
 
 const getTasks = () => {
@@ -53,7 +55,14 @@ const stateFromDocument = (document) => ({
   updatedAt: document?.updatedAt ?? null,
 });
 
-export const useToday = create((set) => ({
+const hasOwnedAccess = (owner) => hasMatchingOwnership(
+  useAuth.getState().user?.uid ?? null,
+  getStorageOwner(),
+  owner,
+);
+
+export const useToday = create((set, get) => ({
+  owner: getStorageOwner(),
   ...stateFromDocument(initialDocument),
 
   rolloverDay: () => {
@@ -61,7 +70,8 @@ export const useToday = create((set) => ({
     return useToday.getState().loadFromCloud();
   },
 
-  toggleTask: (id) =>
+  toggleTask: (id) => {
+    if (!hasOwnedAccess(get().owner)) return false;
     set((state) => {
       const currentTask = state.tasks.find((task) => task.id === id);
 
@@ -91,9 +101,12 @@ export const useToday = create((set) => ({
         revision: document.revision,
         updatedAt: document.updatedAt,
       };
-    }),
+    });
+    return true;
+  },
 
   refreshSchedule: () => {
+    if (!hasOwnedAccess(get().owner)) return false;
     const tasks = getTasks();
 
     const state = useToday.getState();
@@ -110,12 +123,14 @@ export const useToday = create((set) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
+    return true;
   },
 
   // clears today's checkmarks without reloading the schedule template —
   // distinct from refreshSchedule, which also pulls in any schedule edits.
   // was missing entirely after the phase-3 rewrite, which broke ResetDay.jsx.
-  resetDay: () =>
+  resetDay: () => {
+    if (!hasOwnedAccess(get().owner)) return false;
     set((state) => {
       const tasks = state.tasks.map((task) => ({
         ...task,
@@ -135,7 +150,9 @@ export const useToday = create((set) => ({
         revision: document.revision,
         updatedAt: document.updatedAt,
       };
-    }),
+    });
+    return true;
+  },
 
   loadFromCloud: () =>
     loadFromCloud(
@@ -148,7 +165,15 @@ export const useToday = create((set) => ({
           uploadLocal: (document) => saveDaily(uid, getToday(), document),
         });
 
-        if (!resolution.value || getStorageOwner() !== uid) return;
+        if (
+          !resolution.value ||
+          !hasMatchingOwnership(
+            useAuth.getState().user?.uid ?? null,
+            getStorageOwner(),
+            useToday.getState().owner,
+          ) ||
+          useToday.getState().owner !== uid
+        ) return;
 
         saveData("echelon_today", resolution.value);
         set(stateFromDocument(resolution.value));
@@ -158,5 +183,8 @@ export const useToday = create((set) => ({
 }));
 
 subscribeStorageOwner(() => {
-  useToday.setState(stateFromDocument(loadLocalDocument()));
+  useToday.setState({
+    owner: getStorageOwner(),
+    ...stateFromDocument(loadLocalDocument()),
+  });
 });
