@@ -4,6 +4,7 @@ import {
   schedule as defaultSchedule,
   isValidSchedule,
   normalizeSchedule,
+  normalizeScheduleItems,
 } from "./constants";
 import {
   getStorageOwner,
@@ -22,11 +23,12 @@ import { saveSchedule, loadSchedule } from "./scheduleService";
 
 const normalizeDocument = (value) => {
   const schedule = Array.isArray(value) ? value : value?.schedule;
+  const normalized = normalizeScheduleItems(schedule);
 
-  if (!isValidSchedule(schedule)) return null;
+  if (!normalized) return null;
 
   return {
-    schedule: normalizeSchedule(schedule),
+    schedule: normalized,
     revision: Number.isInteger(value?.revision) ? value.revision : 0,
     updatedAt: typeof value?.updatedAt === "string" ? value.updatedAt : null,
   };
@@ -52,29 +54,22 @@ export const useSchedule = create((set, get) => ({
   owner: getStorageOwner(),
   ...stateFromDocument(initialDocument),
 
-  updateTask: (id, data) => {
+  replaceSchedule: (schedule) => {
     if (!hasOwnedAccess(get().owner)) return false;
-    set((state) => {
-      const updated = state.schedule.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              ...data,
-            }
-          : task,
-      );
+    if (!isValidSchedule(schedule)) return false;
 
-      const document = createNextRevision({ schedule: updated }, state);
+    const state = get();
+    const normalized = normalizeSchedule(schedule);
+    const document = createNextRevision({ schedule: normalized }, state);
 
-      saveData("echelon_schedule", document);
-      syncToCloud((uid) => saveSchedule(uid, document));
+    if (!saveData("echelon_schedule", document)) return false;
 
-      return {
-        schedule: updated,
-        revision: document.revision,
-        updatedAt: document.updatedAt,
-      };
+    set({
+      schedule: normalized,
+      revision: document.revision,
+      updatedAt: document.updatedAt,
     });
+    syncToCloud((uid) => saveSchedule(uid, document));
     return true;
   },
 
@@ -99,7 +94,7 @@ export const useSchedule = create((set, get) => ({
           useSchedule.getState().owner !== uid
         ) return;
 
-        saveData("echelon_schedule", resolution.value);
+        if (!saveData("echelon_schedule", resolution.value)) return;
         set(stateFromDocument(resolution.value));
       },
       { applyNull: true },

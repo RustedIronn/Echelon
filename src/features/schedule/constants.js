@@ -123,32 +123,72 @@ export const schedule=[
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+export const SCHEDULE_CATEGORY_IDS = Object.freeze([
+	"foundation",
+	"movement",
+	"nourishment",
+	"focus",
+	"build",
+	"unwind",
+]);
+
+const scheduleCategoryIds = new Set(SCHEDULE_CATEGORY_IDS);
+
+const isValidId = (id) =>
+	(typeof id === "string" && id.trim().length > 0) ||
+	(typeof id === "number" && Number.isFinite(id));
+
+const isValidScheduleItem = (task) =>
+	task &&
+	isValidId(task.id) &&
+	typeof task.title === "string" &&
+	task.title.trim().length > 0 &&
+	scheduleCategoryIds.has(task.category) &&
+	typeof task.description === "string" &&
+	TIME_PATTERN.test(task.start) &&
+	TIME_PATTERN.test(task.end) &&
+	task.start < task.end;
+
+const compareScheduleItems = (left, right) =>
+	left.start.localeCompare(right.start) ||
+	left.end.localeCompare(right.end) ||
+	String(left.id).localeCompare(String(right.id));
+
+// Persisted schedules are recovered item-by-item: malformed entries and later
+// duplicate IDs are discarded, while valid siblings remain available. IDs and
+// categories are never invented. An entirely unusable value returns null so
+// callers can deliberately fall back to the built-in schedule.
+export function normalizeScheduleItems(value) {
+	if (!Array.isArray(value)) return null;
+
+	const seenIds = new Set();
+	const normalized = [];
+
+	for (const task of value) {
+		if (!isValidScheduleItem(task)) continue;
+
+		const idKey = String(task.id);
+		if (seenIds.has(idKey)) continue;
+
+		seenIds.add(idKey);
+		normalized.push({ ...task });
+	}
+
+	return normalized.length > 0 ? normalized.sort(compareScheduleItems) : null;
+}
+
 export function isValidSchedule(value) {
-	return (
-		Array.isArray(value) &&
-		value.length > 0 &&
-		!value.some((task) =>
-			!task ||
-			(typeof task.id !== "string" && typeof task.id !== "number") ||
-			typeof task.title !== "string" ||
-			typeof task.category !== "string" ||
-			typeof task.description !== "string" ||
-			!TIME_PATTERN.test(task.start) ||
-			!TIME_PATTERN.test(task.end),
-		)
-	);
+	const normalized = normalizeScheduleItems(value);
+	return normalized !== null && normalized.length === value.length;
 }
 
 export function normalizeSchedule(value) {
-	return isValidSchedule(value) ? value : schedule;
+	return normalizeScheduleItems(value) ?? schedule;
 }
 
 export function normalizeDailyTasks(value) {
-	if (!Array.isArray(value)) return null;
-
-	const normalized = normalizeSchedule(value);
-
-	if (normalized === schedule && value !== schedule) return null;
+	const normalized = normalizeScheduleItems(value);
+	if (!normalized) return null;
 
 	return normalized.map((task) => ({
 		...task,

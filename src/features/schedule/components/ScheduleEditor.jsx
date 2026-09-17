@@ -1,11 +1,23 @@
+import { useState } from "react";
+
 import { useSchedule } from "@/features/schedule/scheduleStore";
 import { useToday } from "@/features/schedule/todayStore";
 import { Card, Button } from "@ui";
+import {
+  createScheduleDraft,
+  getScheduleEditorKey,
+  prepareScheduleCommit,
+  updateScheduleDraft,
+} from "../editor";
 
-export default function ScheduleEditor() {
-  const { schedule, updateTask } = useSchedule();
+function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule }) {
+  const [draft, setDraft] = useState(() => createScheduleDraft(schedule));
 
-  const { refreshSchedule } = useToday();
+  const resetDraft = () => setDraft(createScheduleDraft(schedule));
+  const applyDraft = () => {
+    const committed = prepareScheduleCommit(draft);
+    if (committed && replaceSchedule(committed)) refreshSchedule();
+  };
 
   return (
     <Card>
@@ -16,7 +28,7 @@ export default function ScheduleEditor() {
       </div>
 
       <div className="stack">
-        {schedule.map((task) => (
+        {draft.map((task) => (
           <div className="editor-item" key={task.id}>
             <div>
               <h3>{task.title}</h3>
@@ -26,20 +38,26 @@ export default function ScheduleEditor() {
 
             <div className="editor-inputs">
               <input
+                type="time"
                 value={task.start}
                 onChange={(e) =>
-                  updateTask(task.id, {
-                    start: e.target.value,
-                  })
+                  setDraft((current) =>
+                    updateScheduleDraft(current, task.id, {
+                      start: e.target.value,
+                    }),
+                  )
                 }
               />
 
               <input
+                type="time"
                 value={task.end}
                 onChange={(e) =>
-                  updateTask(task.id, {
-                    end: e.target.value,
-                  })
+                  setDraft((current) =>
+                    updateScheduleDraft(current, task.id, {
+                      end: e.target.value,
+                    }),
+                  )
                 }
               />
             </div>
@@ -48,8 +66,24 @@ export default function ScheduleEditor() {
       </div>
 
       <div className="editor-actions">
-        <Button onClick={refreshSchedule}>Apply Changes</Button>
+        <Button onClick={applyDraft}>Apply Changes</Button>
+        <Button onClick={resetDraft}>Cancel</Button>
       </div>
     </Card>
+  );
+}
+
+export default function ScheduleEditor() {
+  const { owner, schedule, revision, updatedAt, replaceSchedule } = useSchedule();
+  const { refreshSchedule } = useToday();
+  const committedVersion = getScheduleEditorKey({ owner, revision, updatedAt });
+
+  return (
+    <ScheduleEditorForm
+      key={committedVersion}
+      schedule={schedule}
+      replaceSchedule={replaceSchedule}
+      refreshSchedule={refreshSchedule}
+    />
   );
 }

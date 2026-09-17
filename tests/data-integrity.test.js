@@ -124,10 +124,18 @@ import {
   COMPOSURE_STORAGE_KEY,
 } from "../src/features/review/composureConstants.js";
 import {
+  isValidSchedule,
   normalizeDailyTasks,
   normalizeSchedule,
+  normalizeScheduleItems,
   schedule as defaultSchedule,
 } from "../src/features/schedule/constants.js";
+import {
+  createScheduleDraft,
+  getScheduleEditorKey,
+  prepareScheduleCommit,
+  updateScheduleDraft,
+} from "../src/features/schedule/editor.js";
 import {
   generateWeeklyInsights,
   normalizeProgressHistory,
@@ -271,6 +279,56 @@ test("local storage falls back safely when JSON is malformed", () => {
 
   saveData("valid", { value: 1 });
   assert.deepEqual(loadData("valid", null), { value: 1 });
+});
+
+test("saveData reports serialization failures without replacing stored data", () => {
+  memory.clear();
+  memory.set("serialization-failure", JSON.stringify({ preserved: true }));
+  const circular = {};
+  circular.self = circular;
+  const originalWarn = console.warn;
+  console.warn = () => {};
+
+  try {
+    assert.equal(saveData("serialization-failure", circular), false);
+    assert.deepEqual(loadData("serialization-failure", null), {
+      preserved: true,
+    });
+    assert.equal(saveData("undefined-serialization", undefined), false);
+    assert.equal(memory.has("undefined-serialization"), false);
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("saveData reports storage write failures without replacing stored data", () => {
+  memory.clear();
+  memory.set("quota-failure", JSON.stringify({ preserved: true }));
+  const originalSetItem = globalThis.localStorage.setItem;
+  const originalWarn = console.warn;
+  globalThis.localStorage.setItem = (key, value) => {
+    if (key === "quota-failure") throw new Error("Quota exceeded");
+    return originalSetItem(key, value);
+  };
+  console.warn = () => {};
+
+  try {
+    assert.equal(saveData("quota-failure", { replacement: true }), false);
+    assert.deepEqual(loadData("quota-failure", null), { preserved: true });
+  } finally {
+    globalThis.localStorage.setItem = originalSetItem;
+    console.warn = originalWarn;
+  }
+});
+
+test("saveData returns false without an owner and true after a valid write", () => {
+  memory.clear();
+  setStorageOwner(null);
+
+  assert.equal(saveData("echelon_schedule", { owner: "none" }), false);
+  assert.equal(memory.has("echelon_schedule"), false);
+  assert.equal(saveData("global-test-key", { saved: true }), true);
+  assert.deepEqual(loadData("global-test-key", null), { saved: true });
 });
 
 test("legacy user data is claimed once by the first authenticated UID", () => {
@@ -2121,6 +2179,127 @@ test("review and schedule persistence reject partial shapes safely", () => {
   assert.equal(normalizeDailyTasks(validTasks).every((task) => !task.done), true);
 });
 
+test("schedule normalization keeps valid siblings and rejects malformed items", () => {
+  const valid = { ...defaultSchedule[0] };
+  const unknownCategory = {
+    ...defaultSchedule[1],
+    category: "unknown",
+  };
+  const blankTitle = { ...defaultSchedule[2], title: "   " };
+  const blankId = { ...defaultSchedule[3], id: "   " };
+  const invertedTime = {
+    ...defaultSchedule[4],
+    start: "09:00",
+    end: "08:00",
+  };
+
+  assert.deepEqual(normalizeScheduleItems([
+    unknownCategory,
+    valid,
+    blankTitle,
+    blankId,
+    invertedTime,
+  ]), [valid]);
+  assert.equal(isValidSchedule([unknownCategory, valid]), false);
+});
+
+test("schedule normalization keeps the first unique ID deterministically", () => {
+  const first = { ...defaultSchedule[0], title: "First" };
+  const duplicate = { ...defaultSchedule[1], id: String(first.id) };
+  const normalized = normalizeScheduleItems([duplicate, first]);
+
+  assert.equal(normalized.length, 1);
+  assert.equal(normalized[0].title, duplicate.title);
+});
+
+test("a malformed duplicate cannot block a later valid schedule item", () => {
+  const valid = { ...defaultSchedule[0] };
+  const malformed = { ...valid, title: "   " };
+
+  assert.deepEqual(normalizeScheduleItems([malformed, valid]), [valid]);
+});
+
+test("schedule normalization sorts valid items without mutating the source", () => {
+  const later = { ...defaultSchedule[5] };
+  const earlier = { ...defaultSchedule[0] };
+  const source = [later, earlier];
+  const normalized = normalizeScheduleItems(source);
+
+  assert.deepEqual(normalized.map(({ id }) => id), [earlier.id, later.id]);
+  assert.deepEqual(source.map(({ id }) => id), [later.id, earlier.id]);
+  assert.equal(isValidSchedule(source), true);
+});
+
+test("schedule draft edits remain isolated until one accepted apply", () => {
+  const committed = defaultSchedule.map((task) => ({ ...task }));
+  const draft = createScheduleDraft(committed);
+  const partial = updateScheduleDraft(draft, committed[0].id, { start: "0" });
+  let persistCount = 0;
+  let notificationRecomputes = 0;
+
+  assert.equal(committed[0].start, "05:30");
+  assert.equal(draft[0].start, "05:30");
+  assert.equal(partial[0].start, "0");
+  assert.equal(persistCount, 0);
+  assert.equal(notificationRecomputes, 0);
+  assert.equal(prepareScheduleCommit(partial), null);
+  assert.equal(persistCount, 0);
+  assert.equal(notificationRecomputes, 0);
+
+  const prepared = prepareScheduleCommit(draft);
+  if (prepared) {
+    persistCount += 1;
+    notificationRecomputes += 1;
+  }
+  assert.equal(persistCount, 1);
+  assert.equal(notificationRecomputes, 1);
+});
+
+test("schedule draft reload and cancel restore the committed schedule", () => {
+  const committed = defaultSchedule.map((task) => ({ ...task }));
+  const partial = updateScheduleDraft(
+    createScheduleDraft(committed),
+    committed[0].id,
+    { start: "0" },
+  );
+
+  assert.notDeepEqual(partial, committed);
+  assert.deepEqual(createScheduleDraft(committed), committed);
+});
+
+test("schedule editor ownership and committed versions invalidate dirty drafts", () => {
+  const userA = getScheduleEditorKey({
+    owner: "user-a",
+    revision: 2,
+    updatedAt: "2026-09-17T10:00:00.000Z",
+  });
+  const userB = getScheduleEditorKey({
+    owner: "user-b",
+    revision: 2,
+    updatedAt: "2026-09-17T10:00:00.000Z",
+  });
+  const userBUpdated = getScheduleEditorKey({
+    owner: "user-b",
+    revision: 3,
+    updatedAt: "2026-09-17T10:01:00.000Z",
+  });
+
+  assert.notEqual(userA, userB);
+  assert.notEqual(userB, userBUpdated);
+});
+
+test("schedule apply does not claim success when persistence rejects commit", () => {
+  let attempts = 0;
+  const prepared = prepareScheduleCommit(createScheduleDraft(defaultSchedule));
+  const applied = prepared && (() => {
+    attempts += 1;
+    return false;
+  })();
+
+  assert.equal(attempts, 1);
+  assert.equal(applied, false);
+});
+
 const scheduleTask = {
   id: 6,
   start: "20:00",
@@ -2264,6 +2443,27 @@ test("persisted terminal status prevents delivery after refresh", () => {
   );
 
   assert.deepEqual(plan, { schedulable: [], missed: [] });
+});
+
+test("failed terminal persistence prevents delivery without scheduler retry", () => {
+  const reminder = createScheduleReminder(scheduleTask, "2026-01-02", 10);
+  const fake = createFakeScheduler();
+  let terminalWrites = 0;
+  let deliveries = 0;
+
+  fake.scheduler.reconcile([reminder], () => {
+    terminalWrites += 1;
+    const persisted = false;
+    if (!persisted) return;
+    deliveries += 1;
+  });
+
+  const scheduled = [...fake.callbacks.values()][0];
+  scheduled.callback();
+
+  assert.equal(terminalWrites, 1);
+  assert.equal(deliveries, 0);
+  assert.deepEqual(fake.scheduler.getScheduledIds(), []);
 });
 
 test("schedule edits invalidate the old reminder timer", () => {

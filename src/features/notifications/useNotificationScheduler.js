@@ -52,7 +52,7 @@ export default function useNotificationScheduler() {
 
       // Persist the terminal state before delivery so refresh/reinitialization
       // cannot deliver the same deterministic reminder twice.
-      recordStatus(reminder, NOTIFICATION_STATUSES.fired);
+      if (!recordStatus(reminder, NOTIFICATION_STATUSES.fired)) return;
       deliverReminder({
         reminder,
         settings,

@@ -108,8 +108,15 @@ export function saveData(key, data) {
   const storageKey = resolveKey(key);
   if (!storageKey) return false;
 
-  localStorage.setItem(storageKey, JSON.stringify(data));
-  return true;
+  try {
+    const serialized = JSON.stringify(data);
+    if (typeof serialized !== "string") return false;
+    localStorage.setItem(storageKey, serialized);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to persist local data for "${storageKey}".`, error);
+    return false;
+  }
 }
 
 export function loadData(key, defaultValue) {

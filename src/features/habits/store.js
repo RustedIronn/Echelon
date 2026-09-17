@@ -73,30 +73,28 @@ export const useHabits = create((set, get) => ({
 
   toggleHabit: (name) => {
     if (!hasOwnedAccess(get().owner)) return false;
-    set((state) => {
-      const habits = state.habits.map((habit) =>
-        habit.name === name
-          ? {
-              ...habit,
-              done: !habit.done,
-            }
-          : habit,
-      );
+    const state = get();
+    const habits = state.habits.map((habit) =>
+      habit.name === name
+        ? {
+            ...habit,
+            done: !habit.done,
+          }
+        : habit,
+    );
+    const document = createNextRevision({
+      date: getToday(),
+      data: habits,
+    }, state);
 
-      const document = createNextRevision({
-        date: getToday(),
-        data: habits,
-      }, state);
+    if (!saveData("echelon_habits", document)) return false;
 
-      saveData("echelon_habits", document);
-      syncToCloud((uid) => saveHabits(uid, document));
-
-      return {
-        habits,
-        revision: document.revision,
-        updatedAt: document.updatedAt,
-      };
+    set({
+      habits,
+      revision: document.revision,
+      updatedAt: document.updatedAt,
     });
+    syncToCloud((uid) => saveHabits(uid, document));
     return true;
   },
 
@@ -123,7 +121,7 @@ export const useHabits = create((set, get) => ({
           useHabits.getState().owner !== uid
         ) return;
 
-        saveData("echelon_habits", resolution.value);
+        if (!saveData("echelon_habits", resolution.value)) return;
         set(stateFromDocument(resolution.value));
       },
       { applyNull: true },

@@ -72,36 +72,32 @@ export const useToday = create((set, get) => ({
 
   toggleTask: (id) => {
     if (!hasOwnedAccess(get().owner)) return false;
-    set((state) => {
-      const currentTask = state.tasks.find((task) => task.id === id);
+    const state = get();
+    const currentTask = state.tasks.find((task) => task.id === id);
+    const tasks = state.tasks.map((task) =>
+      task.id === id
+        ? {
+            ...task,
+            done: !task.done,
+          }
+        : task,
+    );
+    const document = createNextRevision({
+      date: getToday(),
+      tasks,
+    }, state);
 
-      const tasks = state.tasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              done: !task.done,
-            }
-          : task,
-      );
+    if (!saveData("echelon_today", document)) return false;
 
-      const document = createNextRevision({
-        date: getToday(),
-        tasks,
-      }, state);
-
-      saveData("echelon_today", document);
-      syncToCloud((uid) => saveDaily(uid, getToday(), document));
-
-      useToast
-        .getState()
-        .show(currentTask?.done ? "Task reopened" : "Task completed");
-
-      return {
-        tasks,
-        revision: document.revision,
-        updatedAt: document.updatedAt,
-      };
+    set({
+      tasks,
+      revision: document.revision,
+      updatedAt: document.updatedAt,
     });
+    syncToCloud((uid) => saveDaily(uid, getToday(), document));
+    useToast
+      .getState()
+      .show(currentTask?.done ? "Task reopened" : "Task completed");
     return true;
   },
 
@@ -115,7 +111,7 @@ export const useToday = create((set, get) => ({
       tasks,
     }, state);
 
-    saveData("echelon_today", document);
+    if (!saveData("echelon_today", document)) return false;
     syncToCloud((uid) => saveDaily(uid, getToday(), document));
 
     set({
@@ -131,26 +127,24 @@ export const useToday = create((set, get) => ({
   // was missing entirely after the phase-3 rewrite, which broke ResetDay.jsx.
   resetDay: () => {
     if (!hasOwnedAccess(get().owner)) return false;
-    set((state) => {
-      const tasks = state.tasks.map((task) => ({
-        ...task,
-        done: false,
-      }));
+    const state = get();
+    const tasks = state.tasks.map((task) => ({
+      ...task,
+      done: false,
+    }));
+    const document = createNextRevision({
+      date: getToday(),
+      tasks,
+    }, state);
 
-      const document = createNextRevision({
-        date: getToday(),
-        tasks,
-      }, state);
+    if (!saveData("echelon_today", document)) return false;
 
-      saveData("echelon_today", document);
-      syncToCloud((uid) => saveDaily(uid, getToday(), document));
-
-      return {
-        tasks,
-        revision: document.revision,
-        updatedAt: document.updatedAt,
-      };
+    set({
+      tasks,
+      revision: document.revision,
+      updatedAt: document.updatedAt,
     });
+    syncToCloud((uid) => saveDaily(uid, getToday(), document));
     return true;
   },
 
@@ -175,7 +169,7 @@ export const useToday = create((set, get) => ({
           useToday.getState().owner !== uid
         ) return;
 
-        saveData("echelon_today", resolution.value);
+        if (!saveData("echelon_today", resolution.value)) return;
         set(stateFromDocument(resolution.value));
       },
       { applyNull: true },

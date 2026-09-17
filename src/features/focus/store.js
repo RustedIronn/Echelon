@@ -64,9 +64,9 @@ export const useFocus = create((set, get) => ({
     if (!hasOwnedAccess(get().owner)) return false;
     const state = get();
     const result = finishFocusRuntime(state, now);
-    set(result.runtime);
 
     if (!result.completed) {
+      set(result.runtime);
       useToast.getState().show("Focus session too short");
       return false;
     }
@@ -84,13 +84,15 @@ export const useFocus = create((set, get) => ({
     };
     const sessions = [...state.sessions, session];
 
-    saveData("echelon_focus", {
+    const persisted = saveData("echelon_focus", {
       date: getToday(completedAt),
       data: sessions,
     });
+    if (!persisted) return false;
+
     syncToCloud((uid) => saveFocusSession(uid, session));
     useToast.getState().show("Focus session saved");
-    set({ sessions });
+    set({ ...result.runtime, sessions });
     return true;
   },
 
@@ -115,12 +117,13 @@ export const useFocus = create((set, get) => ({
           (session) => !cloudIds.has(session.id),
         );
 
-        set({ sessions: merged });
-
-        saveData("echelon_focus", {
+        const persisted = saveData("echelon_focus", {
           date: getToday(),
           data: merged,
         });
+        if (!persisted) return;
+
+        set({ sessions: merged });
 
         await Promise.all(
           missingFromCloud.map((session) => saveFocusSession(uid, session)),

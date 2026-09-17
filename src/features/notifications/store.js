@@ -42,14 +42,12 @@ const loadHistory = () =>
 
 const persistSettings = (settings) => {
   const normalized = normalizeNotificationSettings(settings);
-  saveData(NOTIFICATION_SETTINGS_KEY, normalized);
-  return normalized;
+  return saveData(NOTIFICATION_SETTINGS_KEY, normalized) ? normalized : null;
 };
 
 const persistHistory = (history) => {
   const normalized = normalizeHistory(history);
-  saveData(NOTIFICATION_HISTORY_KEY, normalized);
-  return normalized;
+  return saveData(NOTIFICATION_HISTORY_KEY, normalized) ? normalized : null;
 };
 
 export const useNotifications = create((set, get) => ({
@@ -59,28 +57,33 @@ export const useNotifications = create((set, get) => ({
   reminders: [],
   permission: getNotificationPermission(),
 
-  updateSettings: (patch) =>
-    set((state) => ({
-      settings: persistSettings({ ...state.settings, ...patch }),
-    })),
+  updateSettings: (patch) => {
+    const settings = persistSettings({ ...get().settings, ...patch });
+    if (!settings) return false;
+    set({ settings });
+    return true;
+  },
 
-  updateQuietHours: (patch) =>
-    set((state) => ({
-      settings: persistSettings({
-        ...state.settings,
-        quietHours: { ...state.settings.quietHours, ...patch },
-      }),
-    })),
+  updateQuietHours: (patch) => {
+    const current = get().settings;
+    const settings = persistSettings({
+      ...current,
+      quietHours: { ...current.quietHours, ...patch },
+    });
+    if (!settings) return false;
+    set({ settings });
+    return true;
+  },
 
   enableBrowserNotifications: async () => {
     const permission = await requestNotificationPermission();
-    const settings =
+    const persisted =
       permission === "granted"
         ? persistSettings({ ...get().settings, browserEnabled: true })
         : persistSettings({ ...get().settings, browserEnabled: false });
 
-    set({ permission, settings });
-    return permission;
+    set(persisted ? { permission, settings: persisted } : { permission });
+    return permission === "granted" && !persisted ? null : permission;
   },
 
   refreshPermission: () => {
@@ -93,19 +96,21 @@ export const useNotifications = create((set, get) => ({
 
   setReminders: (reminders) => set({ reminders }),
 
-  recordStatus: (reminders, status) =>
-    set((state) => {
-      const items = Array.isArray(reminders) ? reminders : [reminders];
-      const byId = new Map(state.history.map((record) => [record.id, record]));
-      const updatedAt = new Date().toISOString();
+  recordStatus: (reminders, status) => {
+    const items = Array.isArray(reminders) ? reminders : [reminders];
+    const byId = new Map(get().history.map((record) => [record.id, record]));
+    const updatedAt = new Date().toISOString();
 
-      items.filter(Boolean).forEach((reminder) => {
-        byId.delete(reminder.id);
-        byId.set(reminder.id, { ...reminder, status, updatedAt });
-      });
+    items.filter(Boolean).forEach((reminder) => {
+      byId.delete(reminder.id);
+      byId.set(reminder.id, { ...reminder, status, updatedAt });
+    });
 
-      return { history: persistHistory([...byId.values()]) };
-    }),
+    const history = persistHistory([...byId.values()]);
+    if (!history) return false;
+    set({ history });
+    return true;
+  },
 }));
 
 subscribeStorageOwner(() => {

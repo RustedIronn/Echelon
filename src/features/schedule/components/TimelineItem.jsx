@@ -3,7 +3,9 @@ import { getHeight } from "@/shared/duration";
 import { Check } from "lucide-react";
 
 export default function TimelineItem({ task, toggleTask, current }) {
-  const category = categories[task.category];
+  // Schedule normalization guarantees a known category. Keep this fallback as
+  // a final render boundary for callers outside the persisted schedule flow.
+  const category = categories[task.category] ?? categories.foundation;
   const Icon = category.icon;
 
   return (
