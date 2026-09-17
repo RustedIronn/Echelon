@@ -19,9 +19,9 @@ import { useToast } from "@/ui/useToast";
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { useAuth } from "@core/auth/store";
 import { hasMatchingOwnership } from "@core/auth/ownership";
-import { saveDaily, loadDaily } from "./todayService";
+import { loadTodayCloud, saveTodayCloud } from "./service";
 
-const getTasks = () => {
+const createTodayTasksFromSchedule = () => {
   const stored = loadData("echelon_schedule", null);
   const storedSchedule = Array.isArray(stored) ? stored : stored?.schedule;
   const schedule = normalizeSchedule(storedSchedule);
@@ -50,7 +50,7 @@ const loadLocalDocument = () =>
 
 const initialDocument = loadLocalDocument();
 const stateFromDocument = (document) => ({
-  tasks: document?.tasks ?? getTasks(),
+  tasks: document?.tasks ?? createTodayTasksFromSchedule(),
   revision: document?.revision ?? 0,
   updatedAt: document?.updatedAt ?? null,
 });
@@ -94,7 +94,7 @@ export const useToday = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveDaily(uid, getToday(), document));
+    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
     useToast
       .getState()
       .show(currentTask?.done ? "Task reopened" : "Task completed");
@@ -103,7 +103,7 @@ export const useToday = create((set, get) => ({
 
   refreshSchedule: () => {
     if (!hasOwnedAccess(get().owner)) return false;
-    const tasks = getTasks();
+    const tasks = createTodayTasksFromSchedule();
 
     const state = useToday.getState();
     const document = createNextRevision({
@@ -112,7 +112,7 @@ export const useToday = create((set, get) => ({
     }, state);
 
     if (!saveData("echelon_today", document)) return false;
-    syncToCloud((uid) => saveDaily(uid, getToday(), document));
+    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
 
     set({
       tasks,
@@ -122,9 +122,8 @@ export const useToday = create((set, get) => ({
     return true;
   },
 
-  // clears today's checkmarks without reloading the schedule template —
-  // distinct from refreshSchedule, which also pulls in any schedule edits.
-  // was missing entirely after the phase-3 rewrite, which broke ResetDay.jsx.
+  // Clear today's checkmarks without pulling later Schedule edits into the
+  // current day; refreshSchedule intentionally performs both operations.
   resetDay: () => {
     if (!hasOwnedAccess(get().owner)) return false;
     const state = get();
@@ -144,19 +143,19 @@ export const useToday = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveDaily(uid, getToday(), document));
+    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
     return true;
   },
 
   loadFromCloud: () =>
     loadFromCloud(
-      (uid) => loadDaily(uid, getToday()),
+      (uid) => loadTodayCloud(uid, getToday()),
       async (cloud, uid) => {
         const resolution = await reconcileVersionedState({
           local: loadLocalDocument(),
           cloud: normalizeDocument(cloud),
           selectContent: ({ date, tasks }) => ({ date, tasks }),
-          uploadLocal: (document) => saveDaily(uid, getToday(), document),
+          uploadLocal: (document) => saveTodayCloud(uid, getToday(), document),
         });
 
         if (

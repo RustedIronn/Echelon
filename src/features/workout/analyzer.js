@@ -1,17 +1,4 @@
-const DAY_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-const isValidDayKey = (value) => {
-  if (!DAY_KEY_PATTERN.test(value)) return false;
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-};
+import { getToday, isValidDayKey } from "../../shared/date.js";
 
 const validWorkouts = (workouts) =>
   Array.isArray(workouts)
@@ -23,12 +10,6 @@ const validWorkouts = (workouts) =>
         Number(item.duration) >= 0,
       )
     : [];
-
-const localDayKey = (date = new Date()) => [
-  date.getFullYear(),
-  String(date.getMonth() + 1).padStart(2, "0"),
-  String(date.getDate()).padStart(2, "0"),
-].join("-");
 
 const dayNumber = (dayKey) => {
   const [year, month, day] = dayKey.split("-").map(Number);
@@ -55,7 +36,7 @@ export function getWorkoutStats(workouts = []) {
     (a, b) => b[1] - a[1],
   )[0];
 
-  const today = localDayKey();
+  const today = getToday();
 
   const todayWorkout = safeWorkouts.find((item) => item.date === today);
 
@@ -83,7 +64,7 @@ export function getWorkoutStreak(workouts = []) {
 
   let streak = 0;
 
-  let expected = dayNumber(localDayKey());
+  let expected = dayNumber(getToday());
   const newest = dayNumber(dates[0]);
 
   if (expected - newest > 1) return 0;

@@ -1,4 +1,4 @@
-import { getToday } from "../../shared/date.js";
+import { getToday, parseDayKey } from "../../shared/date.js";
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   NOTIFICATION_STATUSES,
@@ -7,28 +7,6 @@ import {
 } from "./constants.js";
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-const parseDateKey = (dateKey) => {
-  if (typeof dateKey !== "string") return null;
-
-  const parts = dateKey.split("-").map(Number);
-  if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
-    return null;
-  }
-
-  const [year, month, day] = parts;
-  const date = new Date(year, month - 1, day);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return date;
-};
 
 export function normalizeNotificationSettings(value) {
   const leadMinutes = REMINDER_LEAD_OPTIONS.includes(Number(value?.leadMinutes))
@@ -53,7 +31,7 @@ export function normalizeNotificationSettings(value) {
 }
 
 export function addLocalDays(dateKey, days) {
-  const date = parseDateKey(dateKey);
+  const date = parseDayKey(dateKey);
   if (!date) return null;
 
   date.setDate(date.getDate() + days);
@@ -61,7 +39,7 @@ export function addLocalDays(dateKey, days) {
 }
 
 export function getScheduleStart(dateKey, start) {
-  const date = parseDateKey(dateKey);
+  const date = parseDayKey(dateKey);
   if (!date || !TIME_PATTERN.test(start)) return null;
 
   const [hours, minutes] = start.split(":").map(Number);

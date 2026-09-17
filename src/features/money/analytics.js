@@ -1,4 +1,5 @@
-import { filterTransactions, isValidMoneyDate } from "./transactions.js";
+import { isValidDayKey } from "../../shared/date.js";
+import { filterTransactions } from "./transactions.js";
 
 export function aggregateLedger(transactions, month = "all") {
   const filtered = filterTransactions(transactions, { month });
@@ -40,7 +41,7 @@ export function spendingByCategory(transactions, month = "all") {
 export function monthlyLedger(transactions) {
   const months = new Map();
   transactions.forEach((transaction) => {
-    if (!isValidMoneyDate(transaction.date)) return;
+    if (!isValidDayKey(transaction.date)) return;
     const month = transaction.date.slice(0, 7);
     const current = months.get(month) ?? {
       month,

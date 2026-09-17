@@ -1,5 +1,5 @@
-import { categories } from "@/app/layout/categories";
-import { getHeight } from "@/shared/duration";
+import { categories } from "../categories";
+import { getScheduleItemHeight } from "../time";
 import { Check } from "lucide-react";
 
 export default function TimelineItem({ task, toggleTask, current }) {
@@ -12,7 +12,7 @@ export default function TimelineItem({ task, toggleTask, current }) {
     <div
       className={`
 				timeline-item
-				h-${getHeight(task)}
+				h-${getScheduleItemHeight(task)}
 				${task.done ? "completed" : ""}
 				${current ? "current" : ""}
 			`}

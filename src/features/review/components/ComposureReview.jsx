@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button, Card, EmptyState } from "@ui";
-import { getToday } from "@/shared/date";
+import { getToday, parseDayKey } from "@/shared/date";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
 import {
   countComposureChecks,
   createEmptyComposureChecks,
   getComposureWeeklyMetrics,
-  parseComposureDate,
 } from "../composure.js";
 import {
   COMPOSURE_CHECKLIST,
@@ -22,7 +21,7 @@ const dayFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 const formatDay = (day) => {
-  const date = parseComposureDate(day);
+  const date = parseDayKey(day);
   return date ? dayFormatter.format(date) : day;
 };
 
@@ -134,7 +133,7 @@ export default function ComposureReview() {
   const metrics = useMemo(
     () => getComposureWeeklyMetrics(
       data.reviews,
-      parseComposureDate(day) ?? new Date(),
+      parseDayKey(day) ?? new Date(),
     ),
     [data.reviews, day],
   );

@@ -13,7 +13,7 @@ import {
   getTrackingMetrics,
   normalizeCompletedTracking,
 } from "../tracking";
-import { isValidWorkoutPlanDate } from "../utils";
+import { isValidDayKey } from "@/shared/date";
 
 export default function WorkoutHistoryDetail() {
   const { date } = useParams();
@@ -60,7 +60,7 @@ export default function WorkoutHistoryDetail() {
               <div className="section-header">
                 <h3>{session.workout}</h3>
                 <p>{duration ? `${duration} · ` : ""}Completed</p>
-                {isValidWorkoutPlanDate(session.planDate) &&
+                {isValidDayKey(session.planDate) &&
                 session.planDate !== session.date ? (
                   <p>Planned for {formatWorkoutDate(session.planDate)}</p>
                 ) : null}

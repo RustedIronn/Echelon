@@ -1,8 +1,8 @@
 import { generateWeeklyInsights } from "../insights";
-import useReview from "@features/review/store";
+import useDailyReviews from "@features/review/store";
 
 export default function WeeklyInsight() {
-  const { history } = useReview();
+  const { history } = useDailyReviews();
 
   const insight = generateWeeklyInsights(history);
 

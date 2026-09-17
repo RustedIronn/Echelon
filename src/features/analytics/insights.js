@@ -1,29 +1,8 @@
-import { getToday } from "../../shared/date.js";
+import { getLocalWeekRange } from "../../shared/date.js";
 import { normalizeReviews } from "../review/reviews.js";
 
-export function getCurrentLocalWeekRange(now = new Date()) {
-	const anchor = new Date(now);
-	if (Number.isNaN(anchor.getTime())) return null;
-
-	const start = new Date(
-		anchor.getFullYear(),
-		anchor.getMonth(),
-		anchor.getDate(),
-	);
-	const daysSinceMonday = (start.getDay() + 6) % 7;
-	start.setDate(start.getDate() - daysSinceMonday);
-
-	const end = new Date(start);
-	end.setDate(start.getDate() + 6);
-
-	return {
-		start: getToday(start),
-		end: getToday(end),
-	};
-}
-
 export function getCurrentWeekReviews(reviews, now = new Date()) {
-	const range = getCurrentLocalWeekRange(now);
+	const range = getLocalWeekRange(now);
 	if (!range) return [];
 
 	return normalizeReviews(reviews).filter(

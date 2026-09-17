@@ -1,22 +1,6 @@
-const DAY_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+import { isValidDayKey } from "../../shared/date.js";
+
 const BREAKDOWN_LABELS = ["Tasks", "Habits", "Focus", "Workout"];
-
-export function isValidReviewDay(value) {
-  const match = typeof value === "string" && value.match(DAY_KEY_PATTERN);
-  if (!match) return false;
-
-  const [, yearValue, monthValue, dayValue] = match;
-  const year = Number(yearValue);
-  const month = Number(monthValue);
-  const day = Number(dayValue);
-  const date = new Date(year, month - 1, day);
-
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
 
 const normalizeTimestamp = (value) =>
   typeof value === "string" && Number.isFinite(Date.parse(value))
@@ -55,7 +39,7 @@ export function normalizeReviewBreakdown(value) {
 export function normalizeReview(value) {
   if (
     !value ||
-    !isValidReviewDay(value.date) ||
+    !isValidDayKey(value.date) ||
     !Number.isFinite(value.score) ||
     value.score < 0 ||
     value.score > 100

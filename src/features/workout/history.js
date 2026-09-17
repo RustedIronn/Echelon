@@ -1,4 +1,4 @@
-import { getToday } from "../../shared/date.js";
+import { getToday, parseDayKey } from "../../shared/date.js";
 import { mergeWorkoutHistories } from "./workoutStorage.js";
 import { normalizeCompletedTracking } from "./tracking.js";
 
@@ -68,10 +68,8 @@ export function getCalendarMonth(year, month) {
 }
 
 export function formatWorkoutDate(date) {
-  const [year, month, day] = String(date).split("-").map(Number);
-  const localDate = new Date(year, month - 1, day);
-
-  if (getToday(localDate) !== date) return date;
+  const localDate = parseDayKey(date);
+  if (!localDate) return date;
 
   return new Intl.DateTimeFormat(undefined, {
     weekday: "long",

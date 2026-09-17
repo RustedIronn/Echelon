@@ -1,16 +1,4 @@
-import { getToday } from "../../shared/date.js";
-
-const DAY_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-export function isValidFocusDayKey(value) {
-	const match = typeof value === "string" ? DAY_KEY_PATTERN.exec(value) : null;
-	if (!match) return false;
-	const [, year, month, day] = match.map(Number);
-	const date = new Date(Date.UTC(year, month - 1, day));
-	return date.getUTCFullYear() === year &&
-		date.getUTCMonth() === month - 1 &&
-		date.getUTCDate() === day;
-}
+import { getToday, isValidDayKey } from "../../shared/date.js";
 
 export function getLocalDayKeyFromTimestamp(value, timezoneOffsetMinutes) {
 	const date = new Date(value);
@@ -23,7 +11,7 @@ export function getLocalDayKeyFromTimestamp(value, timezoneOffsetMinutes) {
 }
 
 export function getFocusDayKey(session, timezoneOffsetMinutes) {
-	if (isValidFocusDayKey(session?.dayKey)) return session.dayKey;
+	if (isValidDayKey(session?.dayKey)) return session.dayKey;
 	return getLocalDayKeyFromTimestamp(session?.date, timezoneOffsetMinutes);
 }
 
@@ -96,7 +84,7 @@ export function getTotalFocusTime(sessions){
 }
 
 export function getFocusSessionsForDay(sessions, dayKey, options = {}) {
-	if (!isValidFocusDayKey(dayKey)) return [];
+	if (!isValidDayKey(dayKey)) return [];
 	return normalizeFocusSessions(sessions, options)
 		.filter((session) => session.dayKey === dayKey);
 }

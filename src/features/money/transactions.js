@@ -1,4 +1,4 @@
-import { getToday } from "../../shared/date.js";
+import { isValidDayKey } from "../../shared/date.js";
 import { TRANSACTION_TYPES } from "./constants.js";
 
 const ID_PATTERN = /^[a-zA-Z0-9:_-]+$/;
@@ -7,16 +7,6 @@ const typeSet = new Set(TRANSACTION_TYPES);
 
 export function isValidMoneyId(value) {
   return typeof value === "string" && ID_PATTERN.test(value);
-}
-
-export function isValidMoneyDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  return getToday(date) === value;
 }
 
 export function parseMoneyToMinor(value) {
@@ -72,7 +62,7 @@ export function normalizeTransaction(value, categories) {
     value.amountMinor <= 0 ||
     !category ||
     category.type !== value.type ||
-    !isValidMoneyDate(value?.date) ||
+    !isValidDayKey(value?.date) ||
     !createdAt ||
     !updatedAt
   ) {

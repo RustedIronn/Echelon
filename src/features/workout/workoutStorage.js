@@ -4,25 +4,10 @@ import {
   normalizeWorkoutTracking,
   WORKOUT_TRACKING_VERSION,
 } from "./tracking.js";
-import { isValidWorkoutPlanDate } from "./utils.js";
+import { isValidDayKey } from "../../shared/date.js";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";
-
-const DAY_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-const isValidDayKey = (value) => {
-  if (!DAY_KEY_PATTERN.test(value)) return false;
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-};
 
 export function normalizeWorkoutHistory(sessions) {
   if (!Array.isArray(sessions)) return [];
@@ -121,7 +106,7 @@ export function normalizeWorkoutProgress(progress) {
     seconds,
   };
 
-  if (isValidWorkoutPlanDate(progress.planDate)) {
+  if (isValidDayKey(progress.planDate)) {
     normalized.planDate = progress.planDate;
   }
 

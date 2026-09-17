@@ -1,11 +1,11 @@
-import { getCurrentTask } from "@/shared/time";
+import { getCurrentScheduleItem } from "@features/schedule/time";
 import { useFocus } from "@features/focus/store";
 import { Button, EmptyState } from "@ui";
 
 export default function CurrentMission({ tasks }) {
   const { start } = useFocus();
 
-  const current = getCurrentTask(tasks);
+  const current = getCurrentScheduleItem(tasks);
 
   const mission = current || tasks.find((task) => !task.done);
 

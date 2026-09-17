@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import TimelineItem from "./TimelineItem";
-import { getCurrentTask } from "@/shared/time";
+import { getCurrentScheduleItem } from "../time";
 
 export default function Timeline({ tasks, toggleTask }) {
-  const current = getCurrentTask(tasks);
+  const current = getCurrentScheduleItem(tasks);
 
   return (
     <div className="timeline">

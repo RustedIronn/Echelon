@@ -7,13 +7,16 @@ import {
   getStorageOwner,
   subscribeStorageOwner,
 } from "../../shared/storage.js";
-import { getReviews, saveReviews } from "./reviewStorage.js";
-import { loadReviewsCloud, saveReviewCloud } from "./service.js";
+import {
+  loadReviewHistory,
+  saveReviewHistory,
+} from "./reviewStorage.js";
+import { loadReviewHistoryCloud, saveReviewCloud } from "./service.js";
 import { createReviewSyncController } from "./sync.js";
 
-const useReviewStore = create(() => ({
+const useDailyReviewStore = create(() => ({
   owner: getStorageOwner(),
-  history: getReviews(),
+  history: loadReviewHistory(),
   syncStatus: "idle",
   syncError: null,
 }));
@@ -21,7 +24,7 @@ const useReviewStore = create(() => ({
 const context = () => ({
   authUid: useAuth.getState().user?.uid ?? null,
   storageOwner: getStorageOwner(),
-  storeOwner: useReviewStore.getState().owner,
+  storeOwner: useDailyReviewStore.getState().owner,
 });
 
 const isOwned = (uid) => {
@@ -36,17 +39,17 @@ const isOwned = (uid) => {
 const controller = createReviewSyncController({
   getContext: context,
   getLocalHistory: (uid) =>
-    isOwned(uid) ? useReviewStore.getState().history : [],
+    isOwned(uid) ? useDailyReviewStore.getState().history : [],
   applyHistory: (uid, history) => {
     if (!isOwned(uid)) return false;
-    const saved = saveReviews(history);
+    const saved = saveReviewHistory(history);
     if (!saved || !isOwned(uid)) return false;
-    useReviewStore.setState({ history: saved });
+    useDailyReviewStore.setState({ history: saved });
     return true;
   },
   setStatus: (uid, syncStatus, error = null) => {
     if (!isOwned(uid)) return false;
-    useReviewStore.setState({
+    useDailyReviewStore.setState({
       syncStatus,
       syncError: error instanceof Error ? error.message : null,
     });
@@ -57,23 +60,23 @@ const controller = createReviewSyncController({
     if (syncStatus === "error") sync.setSyncError();
     return true;
   },
-  loadCloudHistory: loadReviewsCloud,
+  loadCloudHistory: loadReviewHistoryCloud,
   saveCloudReview: saveReviewCloud,
 });
 
 subscribeStorageOwner((owner) => {
-  const previousOwner = useReviewStore.getState().owner;
+  const previousOwner = useDailyReviewStore.getState().owner;
   if (previousOwner) controller.deactivate(previousOwner);
-  useReviewStore.setState({
+  useDailyReviewStore.setState({
     owner,
-    history: getReviews(),
+    history: loadReviewHistory(),
     syncStatus: "idle",
     syncError: null,
   });
 });
 
-export default function useReview(review) {
-  const state = useReviewStore();
+export default function useDailyReviews(review) {
+  const state = useDailyReviewStore();
   const authUid = useAuth((authState) => authState.user?.uid ?? null);
   const reviewSignature = review ? JSON.stringify(review) : "";
 
@@ -89,5 +92,3 @@ export default function useReview(review) {
 
   return state;
 }
-
-export { controller as reviewSyncController, useReviewStore };

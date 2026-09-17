@@ -1,6 +1,9 @@
 import { create } from "zustand";
 
-import { saveWorkoutCloud, loadWorkoutCloud } from "./service";
+import {
+  loadWorkoutHistoryCloud,
+  saveWorkoutHistoryCloud,
+} from "./service";
 import {
   saveWorkout,
   getWorkouts,
@@ -71,7 +74,7 @@ export const useWorkout = create((set) => ({
 
   loadFromCloud: () =>
     loadFromCloud(
-      (uid) => loadWorkoutCloud(uid),
+      (uid) => loadWorkoutHistoryCloud(uid),
       async (sessions, uid) => {
         const merged = mergeWorkoutHistories(getWorkouts(), sessions);
 
@@ -79,7 +82,7 @@ export const useWorkout = create((set) => ({
         saveWorkout(merged);
 
         if (JSON.stringify(merged) !== JSON.stringify(sessions)) {
-          await saveWorkoutCloud(uid, merged);
+          await saveWorkoutHistoryCloud(uid, merged);
         }
       },
     ),
@@ -223,10 +226,8 @@ export const useWorkout = create((set) => ({
       return next;
     }),
 
-  // was `async`, and `await saveWorkoutCloud(...)` — completeWorkout no longer
-  // waits on the network, matching how every other store's cloud sync behaves
-  // (fire-and-forget via syncToCloud). If a caller was relying on awaiting
-  // this to know the cloud write finished, that behavior has changed.
+  // Completion is locally authoritative; the cloud write remains background
+  // work and reports failures through the shared sync status.
   completeWorkout: () => {
     const state = useWorkout.getState();
 
@@ -237,7 +238,7 @@ export const useWorkout = create((set) => ({
     const updated = mergeWorkoutHistories(state.sessions, [completed]);
 
     saveWorkout(updated);
-    syncToCloud((uid) => saveWorkoutCloud(uid, updated));
+    syncToCloud((uid) => saveWorkoutHistoryCloud(uid, updated));
     clearProgress();
 
     set({

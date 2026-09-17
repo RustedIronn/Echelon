@@ -2,6 +2,7 @@ import {
   HABIT_DEFINITIONS,
   LEGACY_HABIT_IDS_BY_NAME,
 } from "./constants.js";
+import { isValidDayKey } from "../../shared/date.js";
 
 const definitionsById = new Map(
   HABIT_DEFINITIONS.map((definition) => [definition.id, definition]),
@@ -54,8 +55,7 @@ export function normalizeHabitRecords(value) {
 
 export function normalizeHabitDocument(value, expectedDate) {
   if (
-    typeof expectedDate !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(expectedDate) ||
+    !isValidDayKey(expectedDate) ||
     !value ||
     value.date !== expectedDate
   ) return null;

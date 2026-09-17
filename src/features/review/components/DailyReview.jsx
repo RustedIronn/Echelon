@@ -6,7 +6,7 @@ import { useWorkout } from "@features/workout/store";
 import { getWorkoutStats } from "@features/workout/analyzer";
 import { getTodayWorkout } from "@features/workout/utils";
 import { generateReview } from "@features/review/analyzer";
-import useReview from "@features/review/store";
+import useDailyReviews from "@features/review/store";
 
 import ReviewBreakdown from "./ReviewBreakdown";
 import { computeReviewBreakdown } from "../breakdown";
@@ -31,7 +31,7 @@ export default function DailyReview() {
     sessions,
     workoutCompleted: review.workoutCompleted,
   });
-  const { history } = useReview({ ...review, breakdown });
+  const { history } = useDailyReviews({ ...review, breakdown });
 
   return (
     <div className="stack">

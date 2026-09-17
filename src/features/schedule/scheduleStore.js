@@ -19,7 +19,7 @@ import {
 import { syncToCloud, loadFromCloud } from "@core/cloudSync";
 import { useAuth } from "@core/auth/store";
 import { hasMatchingOwnership } from "@core/auth/ownership";
-import { saveSchedule, loadSchedule } from "./scheduleService";
+import { loadScheduleCloud, saveScheduleCloud } from "./service";
 
 const normalizeDocument = (value) => {
   const schedule = Array.isArray(value) ? value : value?.schedule;
@@ -69,19 +69,19 @@ export const useSchedule = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveSchedule(uid, document));
+    syncToCloud((uid) => saveScheduleCloud(uid, document));
     return true;
   },
 
   loadFromCloud: () =>
     loadFromCloud(
-      (uid) => loadSchedule(uid),
+      (uid) => loadScheduleCloud(uid),
       async (cloud, uid) => {
         const resolution = await reconcileVersionedState({
           local: loadLocalDocument(),
           cloud: normalizeDocument(cloud),
           selectContent: ({ schedule }) => schedule,
-          uploadLocal: (document) => saveSchedule(uid, document),
+          uploadLocal: (document) => saveScheduleCloud(uid, document),
         });
 
         if (

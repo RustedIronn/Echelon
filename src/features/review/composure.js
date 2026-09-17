@@ -2,30 +2,11 @@ import {
   COMPOSURE_CHECKLIST,
   COMPOSURE_NOTE_MAX_LENGTH,
 } from "./composureConstants.js";
+import { getLocalWeekRange, isValidDayKey } from "../../shared/date.js";
 
 const checklistIds = new Set(COMPOSURE_CHECKLIST.map((item) => item.id));
 
 const roundOne = (value) => Math.round(value * 10) / 10;
-
-export function isValidComposureDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
-
-export function parseComposureDate(value) {
-  if (!isValidComposureDate(value)) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
 
 const normalizeTimestamp = (value) => {
   if (typeof value !== "string") return null;
@@ -66,7 +47,7 @@ export function normalizeComposureNote(value) {
 }
 
 export function normalizeComposureRecord(value) {
-  if (!isValidComposureDate(value?.date)) return null;
+  if (!isValidDayKey(value?.date)) return null;
   const id = `composure:${value.date}`;
   if (value.id !== id) return null;
 
@@ -120,7 +101,7 @@ const nextTimestamp = (current, now) => {
 };
 
 export function upsertComposureReview(reviews, input, now = new Date()) {
-  if (!isValidComposureDate(input?.date)) return reviews;
+  if (!isValidDayKey(input?.date)) return reviews;
   const normalized = normalizeComposureReviews(reviews);
   const current = normalized.find((review) => review.date === input.date);
   const updatedAt = nextTimestamp(current, now);
@@ -152,19 +133,12 @@ export function countComposureChecks(review) {
 }
 
 export function filterComposureWeek(reviews, reference = new Date()) {
-  const date = reference instanceof Date ? new Date(reference) : new Date(reference);
-  if (Number.isNaN(date.getTime())) return [];
-  date.setHours(0, 0, 0, 0);
-  const mondayOffset = (date.getDay() + 6) % 7;
-  const start = new Date(date);
-  start.setDate(start.getDate() - mondayOffset);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
+  const range = getLocalWeekRange(reference);
+  if (!range) return [];
 
-  return normalizeComposureReviews(reviews).filter((review) => {
-    const reviewDate = parseComposureDate(review.date);
-    return reviewDate && reviewDate >= start && reviewDate < end;
-  });
+  return normalizeComposureReviews(reviews).filter(
+    (review) => review.date >= range.start && review.date <= range.end,
+  );
 }
 
 export function averageComposureRating(reviews) {

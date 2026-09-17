@@ -38,7 +38,7 @@ export async function saveReviewCloud(uid, review) {
   });
 }
 
-export async function loadReviewsCloud(uid) {
+export async function loadReviewHistoryCloud(uid) {
   const q = query(
     collection(db, "users", uid, "reviews"),
     orderBy("date", "desc"),

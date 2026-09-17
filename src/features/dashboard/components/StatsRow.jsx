@@ -6,8 +6,6 @@ import { Clock3, CheckCircle2, Flame, Dumbbell } from "lucide-react";
 
 import { getTodayFocusTime, formatTime } from "@features/focus/utils";
 
-import { getCompletedCount } from "@/shared/stats";
-
 import { getWorkoutStreak } from "@features/workout/analyzer";
 
 export default function StatsRow({ tasks }) {
@@ -19,7 +17,7 @@ export default function StatsRow({ tasks }) {
 
   const focus = getTodayFocusTime(sessions);
 
-  const completed = getCompletedCount(tasks);
+  const completed = tasks.filter((task) => task.done).length;
 
   const doneHabits = habits.filter((habit) => habit.done).length;
 

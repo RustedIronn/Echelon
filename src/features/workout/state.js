@@ -7,10 +7,8 @@ import {
   WORKOUT_TRACKING_VERSION,
   DEFAULT_REST_SECONDS,
 } from "./tracking.js";
-import {
-  getDefaultWorkoutPlanDate,
-  isValidWorkoutPlanDate,
-} from "./utils.js";
+import { getDefaultWorkoutPlanDate } from "./utils.js";
+import { isValidDayKey } from "../../shared/date.js";
 
 export function createWorkoutStartState(
   state,
@@ -34,7 +32,7 @@ export function createWorkoutStartState(
   const resolvedPlanDate =
     planDate ?? getDefaultWorkoutPlanDate(startedAt);
 
-  if (!tracking || !isValidWorkoutPlanDate(resolvedPlanDate)) return state;
+  if (!tracking || !isValidDayKey(resolvedPlanDate)) return state;
 
   return {
     ...state,
@@ -236,7 +234,7 @@ export function createCompletedSession(state, date) {
     duration: state.elapsed,
   };
 
-  if (isValidWorkoutPlanDate(state.planDate)) {
+  if (isValidDayKey(state.planDate)) {
     completed.planDate = state.planDate;
   }
 

@@ -2,9 +2,9 @@ import { useAuth } from "./auth/store";
 import { useSync } from "../ui/useSync";
 import { getStorageOwner } from "../shared/storage";
 
-// Fire-and-forget cloud write, gated on auth. Replaces the
-// "const user = useAuth.getState().user; if (user) { ...().catch(console.error) }"
-// block that was copy-pasted across useHabits, useToday (twice), useFocus, and useWorkout.
+// Background cloud write shared by legacy stores. The active auth and storage
+// owner must agree before transport begins, and failures remain visible in the
+// shared sync status.
 export function syncToCloud(fn) {
   const user = useAuth.getState().user;
   if (!user || getStorageOwner() !== user.uid) return Promise.resolve(false);
@@ -23,8 +23,8 @@ export function syncToCloud(fn) {
     });
 }
 
-// Shared shape for every store's loadFromCloud: guard on auth, try/catch,
-// only apply the result if the load actually returned something.
+// Auth-gated cloud read that revalidates account ownership before applying a
+// response. Domain stores remain responsible for normalization and merging.
 export async function loadFromCloud(fn, onSuccess, { applyNull = false } = {}) {
   const user = useAuth.getState().user;
   if (!user || getStorageOwner() !== user.uid) return null;

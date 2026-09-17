@@ -6,7 +6,13 @@ import {
   calculateExecutionScore,
   weightedScore,
 } from "../src/shared/executionScore.js";
-import { getToday, isNewDay } from "../src/shared/date.js";
+import {
+  getToday,
+  getLocalWeekRange,
+  isNewDay,
+  isValidDayKey,
+  parseDayKey,
+} from "../src/shared/date.js";
 import {
   getMillisecondsUntilNextLocalDay,
   hasLocalDayChanged,
@@ -73,7 +79,6 @@ import {
   extractTrackedSessions,
   getExercisePerformance,
   getTrackedProgressSummary,
-  getWeekStartDayKey,
   getWeeklyTrackedAggregates,
   groupTrackedPerformanceByExercise,
 } from "../src/features/workout/insights.js";
@@ -110,9 +115,7 @@ import {
 } from "../src/features/habits/storage.js";
 import { generateReview } from "../src/features/review/analyzer.js";
 import { computeReviewBreakdown } from "../src/features/review/breakdown.js";
-import { mergeReviews } from "../src/features/review/reviewStorage.js";
 import {
-  isValidReviewDay,
   normalizeReview,
   normalizeReviews,
   reconcileReviewHistories,
@@ -160,7 +163,6 @@ import {
 } from "../src/features/schedule/editor.js";
 import {
   generateWeeklyInsights,
-  getCurrentLocalWeekRange,
   getCurrentWeekReviews,
 } from "../src/features/analytics/insights.js";
 import {
@@ -911,6 +913,13 @@ test("day keys use the local calendar date and detect rollover", () => {
   const localDate = new Date(2026, 0, 2, 0, 15, 0);
 
   assert.equal(getToday(localDate), "2026-01-02");
+  assert.equal(isValidDayKey("2024-02-29"), true);
+  assert.equal(isValidDayKey("2026-02-29"), false);
+  assert.equal(isValidDayKey("2026-2-09"), false);
+  assert.equal(getToday(parseDayKey("2026-12-31")), "2026-12-31");
+  assert.equal(parseDayKey("2026-02-30"), null);
+  assert.equal(parseDayKey("2026-13-01"), null);
+  assert.equal(getLocalWeekRange("2026-1-02"), null);
   assert.equal(isNewDay(getToday()), false);
   assert.equal(isNewDay("1999-01-01"), true);
 });
@@ -1156,6 +1165,10 @@ test("workout history merge preserves local data and avoids cloud duplicates", (
   assert.deepEqual(mergeWorkoutHistories([session], []), [session]);
   assert.deepEqual(mergeWorkoutHistories([session], [session]), [session]);
   assert.deepEqual(mergeWorkoutHistories([session, session], [session]), [session]);
+  assert.deepEqual(
+    mergeWorkoutHistories([session], [null, { workout: "bad" }, session]),
+    [session],
+  );
   assert.deepEqual(getWorkoutStats([null, { workout: "bad" }, session]), {
     totalWorkouts: 1,
     totalMinutes: 10,
@@ -2172,7 +2185,7 @@ test("weekly tracked aggregates preserve local week boundaries across years", ()
     }),
   ];
 
-  assert.equal(getWeekStartDayKey("2026-01-01"), "2025-12-29");
+  assert.equal(getLocalWeekRange("2026-01-01").start, "2025-12-29");
   assert.deepEqual(getWeeklyTrackedAggregates(sessions), [
     {
       week: "2025-12-29",
@@ -2435,7 +2448,7 @@ test("review and schedule persistence reject partial shapes safely", () => {
   const localReview = { date: "2026-01-01", score: 80 };
 
   assert.deepEqual(
-    mergeReviews([cloudReview, null], [localReview]),
+    reconcileReviewHistories([localReview], [cloudReview, null]).history,
     [localReview],
   );
   assert.equal(normalizeSchedule([{ id: 1 }]), defaultSchedule);
@@ -2459,30 +2472,30 @@ const reviewRecord = (date, score, updatedAt, extra = {}) => ({
 
 test("Analytics current local week uses Monday through Sunday boundaries", () => {
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2026, 8, 16, 12, 0)),
+    getLocalWeekRange(new Date(2026, 8, 16, 12, 0)),
     { start: "2026-09-14", end: "2026-09-20" },
   );
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2026, 8, 14, 0, 0)),
+    getLocalWeekRange(new Date(2026, 8, 14, 0, 0)),
     { start: "2026-09-14", end: "2026-09-20" },
   );
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2026, 8, 20, 23, 59)),
+    getLocalWeekRange(new Date(2026, 8, 20, 23, 59)),
     { start: "2026-09-14", end: "2026-09-20" },
   );
 });
 
 test("Analytics local week boundaries cross months, years, and leap days", () => {
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2026, 2, 1, 12, 0)),
+    getLocalWeekRange(new Date(2026, 2, 1, 12, 0)),
     { start: "2026-02-23", end: "2026-03-01" },
   );
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2027, 0, 1, 12, 0)),
+    getLocalWeekRange(new Date(2027, 0, 1, 12, 0)),
     { start: "2026-12-28", end: "2027-01-03" },
   );
   assert.deepEqual(
-    getCurrentLocalWeekRange(new Date(2024, 1, 29, 12, 0)),
+    getLocalWeekRange(new Date(2024, 1, 29, 12, 0)),
     { start: "2024-02-26", end: "2024-03-03" },
   );
 });
@@ -2658,8 +2671,8 @@ test("equal Daily Review content with different timestamps is a reconciliation n
 test("Daily Review identity follows adjacent local calendar dates", () => {
   const beforeMidnight = getToday(new Date(2026, 8, 17, 23, 59, 59));
   const afterMidnight = getToday(new Date(2026, 8, 18, 0, 0, 1));
-  assert.equal(isValidReviewDay(beforeMidnight), true);
-  assert.equal(isValidReviewDay(afterMidnight), true);
+  assert.equal(isValidDayKey(beforeMidnight), true);
+  assert.equal(isValidDayKey(afterMidnight), true);
   assert.notEqual(beforeMidnight, afterMidnight);
 
   const first = upsertReview([], reviewRecord(beforeMidnight, 60), new Date("2026-09-17T18:29:59.000Z"));
@@ -3079,6 +3092,7 @@ test("reminder times support zero and ten-minute lead times", () => {
   const atStart = calculateReminderTime("2026-01-02", "20:00", 0);
   const tenMinutesBefore = calculateReminderTime("2026-01-02", "20:00", 10);
 
+  assert.equal(calculateReminderTime("2026-1-02", "20:00", 10), null);
   assert.deepEqual(
     [atStart.getFullYear(), atStart.getMonth(), atStart.getDate(), atStart.getHours(), atStart.getMinutes()],
     [2026, 0, 2, 20, 0],

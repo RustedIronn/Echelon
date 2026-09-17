@@ -1,8 +1,8 @@
 import {
-  isValidMoneyDate,
   isValidMoneyId,
   parseMoneyToMinor,
 } from "./transactions.js";
+import { isValidDayKey } from "../../shared/date.js";
 
 const timestamp = (value) => {
   if (typeof value !== "string" || Number.isNaN(Date.parse(value))) return null;
@@ -25,7 +25,7 @@ export function normalizeGoal(value) {
     value.targetAmountMinor <= 0 ||
     !Number.isSafeInteger(value?.savedAmountMinor) ||
     value.savedAmountMinor < 0 ||
-    (targetDate !== null && !isValidMoneyDate(targetDate)) ||
+    (targetDate !== null && !isValidDayKey(targetDate)) ||
     !createdAt ||
     !updatedAt
   ) {

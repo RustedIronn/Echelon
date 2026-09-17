@@ -1,17 +1,8 @@
-import { getToday } from "../../shared/date.js";
+import { getLocalWeekRange, getToday } from "../../shared/date.js";
 import { mergeWorkoutHistories } from "./workoutStorage.js";
 import { normalizeCompletedTracking } from "./tracking.js";
 
 const roundVolume = (value) => Number(value.toFixed(2));
-
-const parseDayKey = (dayKey) => {
-  if (typeof dayKey !== "string") return null;
-
-  const [year, month, day] = dayKey.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-
-  return getToday(date) === dayKey ? date : null;
-};
 
 const completedSets = (exercise) =>
   exercise.sets.filter(
@@ -194,20 +185,11 @@ export function compareLatestExerciseSessions(occurrences) {
   };
 }
 
-export function getWeekStartDayKey(dayKey) {
-  const date = parseDayKey(dayKey);
-  if (!date) return null;
-
-  const mondayOffset = (date.getDay() + 6) % 7;
-  date.setDate(date.getDate() - mondayOffset);
-  return getToday(date);
-}
-
 export function getWeeklyTrackedAggregates(sessions) {
   const weeks = new Map();
 
   extractTrackedSessions(sessions).forEach((session) => {
-    const week = getWeekStartDayKey(session.date);
+    const week = getLocalWeekRange(session.date)?.start ?? null;
     if (!week) return;
 
     const current = weeks.get(week) ?? {
@@ -238,7 +220,7 @@ export function getTrackedProgressSummary(sessions, now = new Date()) {
   const trackedSessions = extractTrackedSessions(sessions);
   const groups = groupTrackedSessions(trackedSessions);
   const today = getToday(now);
-  const currentWeek = getWeekStartDayKey(today);
+  const currentWeek = getLocalWeekRange(today)?.start ?? null;
   const currentMonth = today.slice(0, 7);
   const totals = {
     trackedSessions: trackedSessions.length,
@@ -250,7 +232,7 @@ export function getTrackedProgressSummary(sessions, now = new Date()) {
   };
 
   trackedSessions.forEach((session) => {
-    if (getWeekStartDayKey(session.date) === currentWeek) {
+    if (getLocalWeekRange(session.date)?.start === currentWeek) {
       totals.workoutsThisWeek += 1;
     }
     if (session.date.startsWith(currentMonth)) totals.workoutsThisMonth += 1;
