@@ -23,38 +23,6 @@
   }
 }
 
-.chart {
-  height: 220px;
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-4);
-  padding-top: var(--space-5);
-}
-
-.bar-wrapper {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.bar {
-  width: 100%;
-  max-width: 36px;
-  min-height: 4px;
-  background: var(--color-focus);
-  border-radius: 10px 10px 4px 4px;
-}
-
-.bar-wrapper span {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
 .analytics-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

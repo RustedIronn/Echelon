@@ -1,30 +1,5 @@
 import { getToday } from "../../shared/date.js";
-import {
-	isValidReviewDay,
-	normalizeReviews,
-} from "../review/reviews.js";
-
-export function normalizeProgressHistory(history) {
-	if (!Array.isArray(history)) return [];
-
-	const byDate = new Map();
-	for (const day of history) {
-		if (
-			!day ||
-			!isValidReviewDay(day.date) ||
-			!Number.isFinite(Number(day.progress))
-		) continue;
-
-		byDate.set(day.date, {
-			date: day.date,
-			progress: Math.min(Math.max(Number(day.progress), 0), 100),
-		});
-	}
-
-	return [...byDate.values()].sort((left, right) =>
-		left.date.localeCompare(right.date),
-	);
-}
+import { normalizeReviews } from "../review/reviews.js";
 
 export function getCurrentLocalWeekRange(now = new Date()) {
 	const anchor = new Date(now);

@@ -162,7 +162,6 @@ import {
   generateWeeklyInsights,
   getCurrentLocalWeekRange,
   getCurrentWeekReviews,
-  normalizeProgressHistory,
 } from "../src/features/analytics/insights.js";
 import {
   calculateReminderTime,
@@ -2422,17 +2421,7 @@ test("workout store imports only authoritative workoutStorage exports", () => {
   assert.equal(storageSource.includes("createWorkoutProgressSnapshot"), false);
 });
 
-test("analytics sanitizes partial histories without NaN or Infinity", () => {
-  assert.deepEqual(normalizeProgressHistory(null), []);
-  assert.deepEqual(
-    normalizeProgressHistory([
-      null,
-      { date: "2026-01-01", progress: Infinity },
-      { date: "2026-01-02", progress: 150 },
-    ]),
-    [{ date: "2026-01-02", progress: 100 }],
-  );
-
+test("analytics sanitizes partial review histories without NaN or Infinity", () => {
   assert.deepEqual(generateWeeklyInsights([null, { score: "bad" }]), {
     average: 0,
     best: null,
@@ -2546,23 +2535,7 @@ test("Weekly Intelligence consumes normalized unique Review dates", () => {
   );
 });
 
-test("retired progress history is normalized but no longer drives Analytics", () => {
-  assert.deepEqual(normalizeProgressHistory([]), []);
-  assert.deepEqual(
-    normalizeProgressHistory([
-      null,
-      { date: "bad", progress: 50 },
-      { date: "2026-09-15", progress: Infinity },
-      { date: "2026-09-14", progress: "25", extra: "discarded" },
-      { date: "2026-09-14", progress: 75 },
-      { date: "2026-09-16", progress: 120 },
-    ]),
-    [
-      { date: "2026-09-14", progress: 75 },
-      { date: "2026-09-16", progress: 100 },
-    ],
-  );
-
+test("retired progress history remains registered but no longer drives Analytics", () => {
   const analyticsPage = readFileSync(
     new URL("../src/pages/Analytics.jsx", import.meta.url),
     "utf8",
@@ -2571,8 +2544,7 @@ test("retired progress history is normalized but no longer drives Analytics", ()
     new URL("../src/shared/storage.js", import.meta.url),
     "utf8",
   );
-  assert.equal(analyticsPage.includes("ProgressChart"), false);
-  assert.equal(analyticsPage.includes("useStats"), false);
+  assert.equal(analyticsPage.includes("echelon_history"), false);
   assert.equal(storageSource.includes('"echelon_history"'), true);
 });
 
