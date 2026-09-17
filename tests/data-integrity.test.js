@@ -112,6 +112,16 @@ import { generateReview } from "../src/features/review/analyzer.js";
 import { computeReviewBreakdown } from "../src/features/review/breakdown.js";
 import { mergeReviews } from "../src/features/review/reviewStorage.js";
 import {
+  isValidReviewDay,
+  normalizeReview,
+  normalizeReviews,
+  reconcileReviewHistories,
+  resolveReviewConflict,
+  reviewsHaveEqualContent,
+  upsertReview,
+} from "../src/features/review/reviews.js";
+import { createReviewSyncController } from "../src/features/review/sync.js";
+import {
   averageChecklistCompletion,
   averageComposureRating,
   countComposureChecks,
@@ -2442,6 +2452,399 @@ test("review and schedule persistence reject partial shapes safely", () => {
 
   const validTasks = defaultSchedule.map((task) => ({ ...task, done: "yes" }));
   assert.equal(normalizeDailyTasks(validTasks).every((task) => !task.done), true);
+});
+
+const reviewRecord = (date, score, updatedAt, extra = {}) => ({
+  date,
+  score,
+  wins: [],
+  improvements: [],
+  focusMinutes: 0,
+  workoutCompleted: false,
+  workoutRequired: false,
+  ...(updatedAt ? { updatedAt } : {}),
+  ...extra,
+});
+
+test("Daily Review normalization enforces its record and breakdown contract", () => {
+  const valid = reviewRecord("2026-09-17", 75, "2026-09-17T12:00:00.000Z", {
+    breakdown: [
+      { label: "Workout", value: 0 },
+      { label: "Tasks", value: 80 },
+      { label: "Focus", value: 70 },
+      { label: "Habits", value: 90 },
+    ],
+    ignored: "not persisted",
+  });
+  const normalized = normalizeReview(valid);
+
+  assert.deepEqual(normalized.breakdown.map((item) => item.label), [
+    "Tasks",
+    "Habits",
+    "Focus",
+    "Workout",
+  ]);
+  assert.equal("ignored" in normalized, false);
+  assert.equal(normalizeReview({ ...valid, score: Infinity }), null);
+  assert.equal(normalizeReview({ ...valid, date: "2026-02-30" }), null);
+  assert.equal(normalizeReview({ ...valid, breakdown: [{ label: "Tasks", value: 50 }] }), null);
+});
+
+test("Daily Review duplicate dates keep the newest valid record deterministically", () => {
+  const older = reviewRecord("2026-09-17", 60, "2026-09-17T10:00:00.000Z");
+  const newer = reviewRecord("2026-09-17", 80, "2026-09-17T11:00:00.000Z");
+  const invalidNewer = { ...newer, score: Number.NaN, updatedAt: "2027-01-01T00:00:00.000Z" };
+
+  assert.deepEqual(normalizeReviews([older, invalidNewer, newer]), [newer]);
+  assert.deepEqual(normalizeReviews([newer, older]), [newer]);
+  assert.deepEqual(normalizeReviews([{ ...older, updatedAt: undefined }, { ...newer, updatedAt: undefined }]), [
+    { ...older, updatedAt: undefined },
+  ].map((item) => normalizeReview(item)));
+});
+
+test("Daily Review same-date upsert is idempotent and advances freshness only on change", () => {
+  const existing = reviewRecord("2026-09-17", 60, "2026-09-17T10:00:00.000Z");
+  const unchanged = upsertReview([existing], { ...existing, updatedAt: undefined }, new Date("2026-09-17T11:00:00.000Z"));
+  const changed = upsertReview([existing], { ...existing, score: 80, updatedAt: undefined }, new Date("2026-09-17T12:00:00.000Z"));
+
+  assert.equal(unchanged.changed, false);
+  assert.deepEqual(unchanged.history, [existing]);
+  assert.equal(changed.changed, true);
+  assert.equal(changed.history.length, 1);
+  assert.equal(changed.review.score, 80);
+  assert.equal(changed.review.updatedAt, "2026-09-17T12:00:00.000Z");
+
+  const clockRollback = upsertReview(
+    changed.history,
+    { ...changed.review, score: 90, updatedAt: undefined },
+    new Date("2026-09-17T11:00:00.000Z"),
+  );
+  assert.equal(clockRollback.review.updatedAt, "2026-09-17T12:00:00.001Z");
+});
+
+test("Daily Review conflicts use valid freshness and favor local ambiguous ties", () => {
+  const localOlder = reviewRecord("2026-09-17", 60, "2026-09-17T10:00:00.000Z");
+  const cloudNewer = reviewRecord("2026-09-17", 80, "2026-09-17T11:00:00.000Z");
+  assert.deepEqual(resolveReviewConflict(localOlder, cloudNewer), cloudNewer);
+  assert.deepEqual(resolveReviewConflict(cloudNewer, localOlder), cloudNewer);
+
+  const localLegacy = reviewRecord("2026-09-18", 70);
+  const cloudLegacy = reviewRecord("2026-09-18", 30);
+  assert.deepEqual(resolveReviewConflict(localLegacy, cloudLegacy), localLegacy);
+  assert.equal(reviewsHaveEqualContent(localOlder, { ...localOlder, updatedAt: "2026-09-17T13:00:00.000Z" }), true);
+});
+
+test("Daily Review reconciliation preserves local history and uploads local conflict winners", () => {
+  const localOnly = reviewRecord("2026-09-15", 55, "2026-09-15T10:00:00.000Z");
+  const localWinner = reviewRecord("2026-09-16", 85, "2026-09-16T12:00:00.000Z");
+  const cloudLoser = reviewRecord("2026-09-16", 45, "2026-09-16T11:00:00.000Z");
+  const cloudOnly = reviewRecord("2026-09-17", 75, "2026-09-17T10:00:00.000Z");
+  const result = reconcileReviewHistories(
+    [localOnly, localWinner, { date: "bad", score: 100 }],
+    [cloudLoser, cloudOnly, { ...cloudOnly, score: Infinity }],
+  );
+
+  assert.deepEqual(result.history.map((review) => review.date), [
+    "2026-09-15",
+    "2026-09-16",
+    "2026-09-17",
+  ]);
+  assert.deepEqual(result.uploads, [localWinner]);
+});
+
+test("repeated Daily Review reconciliation preserves local-only dates without backfill", async () => {
+  const localOnly = reviewRecord("2026-09-15", 55, "2026-09-15T10:00:00.000Z");
+  const cloudOnly = reviewRecord("2026-09-16", 75, "2026-09-16T10:00:00.000Z");
+  const harness = createReviewSyncHarness({ cloud: [cloudOnly] });
+  harness.state.histories["user-a"] = [localOnly];
+
+  assert.equal(await harness.controller.activate("user-a"), true);
+  assert.equal(await harness.controller.activate("user-a"), true);
+  assert.deepEqual(harness.state.histories["user-a"], [localOnly, cloudOnly]);
+  assert.deepEqual(harness.state.writes, []);
+});
+
+test("equal Daily Review content with different timestamps is a reconciliation no-op", () => {
+  const local = reviewRecord("2026-09-17", 80, "2026-09-17T10:00:00.000Z");
+  const cloud = { ...local, updatedAt: "2026-09-17T12:00:00.000Z" };
+  const result = reconcileReviewHistories([local], [cloud]);
+
+  assert.deepEqual(result.history, [local]);
+  assert.deepEqual(result.uploads, []);
+});
+
+test("Daily Review identity follows adjacent local calendar dates", () => {
+  const beforeMidnight = getToday(new Date(2026, 8, 17, 23, 59, 59));
+  const afterMidnight = getToday(new Date(2026, 8, 18, 0, 0, 1));
+  assert.equal(isValidReviewDay(beforeMidnight), true);
+  assert.equal(isValidReviewDay(afterMidnight), true);
+  assert.notEqual(beforeMidnight, afterMidnight);
+
+  const first = upsertReview([], reviewRecord(beforeMidnight, 60), new Date("2026-09-17T18:29:59.000Z"));
+  const second = upsertReview(first.history, reviewRecord(afterMidnight, 70), new Date("2026-09-17T18:30:01.000Z"));
+  assert.equal(second.history.length, 2);
+});
+
+function createReviewSyncHarness({
+  cloud = [],
+  loadError = null,
+  writeError = null,
+  saveResult = null,
+} = {}) {
+  const state = {
+    context: { authUid: "user-a", storageOwner: "user-a", storeOwner: "user-a" },
+    histories: { "user-a": [] },
+    cloud: { "user-a": cloud },
+    statuses: [],
+    writes: [],
+    loadError,
+    writeError,
+    rejectApply: false,
+  };
+  const controller = createReviewSyncController({
+    getContext: () => state.context,
+    getLocalHistory: (uid) => state.histories[uid] ?? [],
+    applyHistory: (uid, history) => {
+      if (state.context.authUid !== uid || state.context.storageOwner !== uid || state.context.storeOwner !== uid) return false;
+      if (state.rejectApply) return false;
+      state.histories[uid] = history;
+      return true;
+    },
+    setStatus: (uid, status) => {
+      if (state.context.authUid !== uid || state.context.storageOwner !== uid || state.context.storeOwner !== uid) return false;
+      state.statuses.push({ uid, status });
+      return true;
+    },
+    loadCloudHistory: async (uid) => {
+      if (state.loadError) throw state.loadError;
+      return state.cloud[uid] ?? [];
+    },
+    saveCloudReview: async (uid, review) => {
+      state.writes.push({ uid, review });
+      if (state.writeError) throw state.writeError;
+      if (saveResult) return saveResult(uid, review);
+      state.cloud[uid] = reconcileReviewHistories(state.cloud[uid] ?? [], [review]).history;
+      return { written: true, review };
+    },
+    now: () => new Date("2026-09-17T12:00:00.000Z"),
+  });
+  return { state, controller };
+}
+
+test("Daily Review sync applies newer cloud and uploads newer local conflicts", async () => {
+  const cloudNewer = reviewRecord("2026-09-16", 80, "2026-09-16T12:00:00.000Z");
+  const harness = createReviewSyncHarness({ cloud: [cloudNewer] });
+  harness.state.histories["user-a"] = [reviewRecord("2026-09-16", 40, "2026-09-16T11:00:00.000Z")];
+  assert.equal(await harness.controller.activate("user-a"), true);
+  assert.deepEqual(harness.state.histories["user-a"], [cloudNewer]);
+  assert.equal(harness.state.writes.length, 0);
+
+  assert.equal(
+    await harness.controller.save(
+      "user-a",
+      reviewRecord("2026-09-16", 40, "2026-09-16T11:00:00.000Z"),
+    ),
+    true,
+  );
+  assert.deepEqual(harness.state.histories["user-a"], [cloudNewer]);
+  assert.equal(harness.state.writes.length, 0);
+
+  const second = createReviewSyncHarness({ cloud: [reviewRecord("2026-09-16", 40, "2026-09-16T11:00:00.000Z")] });
+  const localNewer = reviewRecord("2026-09-16", 80, "2026-09-16T12:00:00.000Z");
+  second.state.histories["user-a"] = [localNewer];
+  assert.equal(await second.controller.activate("user-a"), true);
+  assert.deepEqual(second.state.writes, [{ uid: "user-a", review: localNewer }]);
+});
+
+test("Daily Review failed reads and writes never report synced", async () => {
+  const failedRead = createReviewSyncHarness({ loadError: new Error("read failed") });
+  const failedActivation = failedRead.controller.activate("user-a");
+  const failedLocalSave = failedRead.controller.save(
+    "user-a",
+    reviewRecord("2026-09-17", 65),
+  );
+  assert.equal(await failedActivation, false);
+  assert.equal(await failedLocalSave, false);
+  assert.equal(failedRead.state.histories["user-a"].length, 1);
+  assert.equal(failedRead.state.writes.length, 0);
+  assert.equal(failedRead.state.statuses.at(-1).status, "error");
+
+  const failedWrite = createReviewSyncHarness({ writeError: new Error("write failed") });
+  assert.equal(await failedWrite.controller.activate("user-a"), true);
+  assert.equal(await failedWrite.controller.save("user-a", reviewRecord("2026-09-17", 75)), false);
+  assert.equal(failedWrite.state.histories["user-a"].length, 1);
+  assert.equal(failedWrite.state.statuses.at(-1).status, "error");
+});
+
+test("Daily Review recovers from a failed read before allowing cloud writes", async () => {
+  const cloudReview = reviewRecord(
+    "2026-09-16",
+    90,
+    "2026-09-16T12:00:00.000Z",
+  );
+  const harness = createReviewSyncHarness({ loadError: new Error("offline") });
+  harness.state.histories["user-a"] = [
+    reviewRecord("2026-09-15", 60, "2026-09-15T12:00:00.000Z"),
+  ];
+
+  assert.equal(await harness.controller.activate("user-a"), false);
+  assert.equal(
+    await harness.controller.save("user-a", reviewRecord("2026-09-17", 70)),
+    false,
+  );
+  assert.equal(harness.state.writes.length, 0);
+
+  harness.state.loadError = null;
+  harness.state.cloud["user-a"] = [cloudReview];
+  assert.equal(await harness.controller.activate("user-a"), true);
+  assert.deepEqual(
+    harness.state.histories["user-a"].map((review) => review.date),
+    ["2026-09-15", "2026-09-16", "2026-09-17"],
+  );
+  assert.equal(harness.state.statuses.at(-1).status, "synced");
+});
+
+test("failed Daily Review reconciliation apply cannot unlock later cloud writes", async () => {
+  const local = reviewRecord(
+    "2026-09-17",
+    70,
+    "2026-09-17T11:00:00.000Z",
+  );
+  const harness = createReviewSyncHarness({
+    cloud: [reviewRecord("2026-09-16", 80, "2026-09-16T11:00:00.000Z")],
+  });
+  harness.state.histories["user-a"] = [local];
+  harness.state.rejectApply = true;
+
+  assert.equal(await harness.controller.activate("user-a"), false);
+  assert.equal(await harness.controller.save("user-a", local), false);
+  assert.deepEqual(harness.state.writes, []);
+  assert.equal(harness.state.statuses.at(-1).status, "error");
+});
+
+test("Daily Review write reconciliation accepts a concurrently newer cloud record", async () => {
+  const newerRemote = reviewRecord(
+    "2026-09-17",
+    95,
+    "2026-09-17T13:00:00.000Z",
+  );
+  const harness = createReviewSyncHarness({
+    saveResult: () => ({ written: false, review: newerRemote }),
+  });
+  assert.equal(await harness.controller.activate("user-a"), true);
+  assert.equal(
+    await harness.controller.save("user-a", reviewRecord("2026-09-17", 70)),
+    true,
+  );
+  assert.deepEqual(harness.state.histories["user-a"], [newerRemote]);
+  assert.equal(harness.state.statuses.at(-1).status, "synced");
+});
+
+test("Daily Review sync rejects pre-auth and mismatched-owner operations", async () => {
+  const harness = createReviewSyncHarness();
+  harness.state.context = { authUid: null, storageOwner: null, storeOwner: null };
+  assert.equal(await harness.controller.activate("user-a"), false);
+  assert.equal(
+    await harness.controller.save("user-a", reviewRecord("2026-09-17", 50)),
+    false,
+  );
+  assert.deepEqual(harness.state.histories["user-a"], []);
+  assert.deepEqual(harness.state.writes, []);
+});
+
+test("Daily Review stale User A cloud responses are discarded after switching to B", async () => {
+  let resolveUserA;
+  const state = {
+    context: { authUid: "user-a", storageOwner: "user-a", storeOwner: "user-a" },
+    histories: { "user-a": [], "user-b": [] },
+    statuses: [],
+  };
+  const controller = createReviewSyncController({
+    getContext: () => state.context,
+    getLocalHistory: (uid) => state.histories[uid],
+    applyHistory: (uid, history) => {
+      if (state.context.authUid !== uid || state.context.storageOwner !== uid || state.context.storeOwner !== uid) return false;
+      state.histories[uid] = history;
+      return true;
+    },
+    setStatus: (uid, status) => state.statuses.push({ uid, status }),
+    loadCloudHistory: (uid) => uid === "user-a"
+      ? new Promise((resolve) => { resolveUserA = resolve; })
+      : Promise.resolve([reviewRecord("2026-09-17", 90)]),
+    saveCloudReview: async () => {},
+  });
+
+  const pendingA = controller.activate("user-a");
+  await Promise.resolve();
+  controller.deactivate("user-a");
+  state.context = { authUid: "user-b", storageOwner: "user-b", storeOwner: "user-b" };
+  const pendingB = controller.activate("user-b");
+  resolveUserA([reviewRecord("2026-09-17", 10)]);
+  assert.equal(await pendingA, false);
+  assert.equal(await pendingB, true);
+  assert.deepEqual(state.histories["user-a"], []);
+  assert.equal(state.histories["user-b"][0].score, 90);
+});
+
+test("Daily Review stale User A transaction completion cannot affect User B", async () => {
+  let resolveWrite;
+  let signalWriteStarted;
+  const writeStarted = new Promise((resolve) => {
+    signalWriteStarted = resolve;
+  });
+  const harness = createReviewSyncHarness({
+    saveResult: () => new Promise((resolve) => {
+      resolveWrite = resolve;
+      signalWriteStarted();
+    }),
+  });
+  assert.equal(await harness.controller.activate("user-a"), true);
+  const pendingWrite = harness.controller.save(
+    "user-a",
+    reviewRecord("2026-09-17", 70),
+  );
+  await writeStarted;
+
+  harness.controller.deactivate("user-a");
+  harness.state.context = {
+    authUid: "user-b",
+    storageOwner: "user-b",
+    storeOwner: "user-b",
+  };
+  harness.state.histories["user-b"] = [];
+  harness.state.cloud["user-b"] = [];
+  resolveWrite({
+    written: true,
+    review: reviewRecord("2026-09-17", 70, "2026-09-17T12:00:00.000Z"),
+  });
+
+  assert.equal(await pendingWrite, false);
+  assert.deepEqual(harness.state.histories["user-b"], []);
+  assert.equal(
+    harness.state.statuses.some(
+      ({ uid, status }) => uid === "user-b" && status === "synced",
+    ),
+    false,
+  );
+});
+
+test("Daily Review mounted sync lifecycle restores isolated A and B histories", async () => {
+  const harness = createReviewSyncHarness();
+  await harness.controller.activate("user-a");
+  await harness.controller.save("user-a", reviewRecord("2026-09-17", 70));
+  harness.controller.deactivate("user-a");
+
+  harness.state.context = { authUid: "user-b", storageOwner: "user-b", storeOwner: "user-b" };
+  harness.state.histories["user-b"] = [];
+  harness.state.cloud["user-b"] = [];
+  await harness.controller.activate("user-b");
+  await harness.controller.save("user-b", reviewRecord("2026-09-17", 30));
+  harness.controller.deactivate("user-b");
+
+  harness.state.context = { authUid: "user-a", storageOwner: "user-a", storeOwner: "user-a" };
+  await harness.controller.activate("user-a");
+  assert.equal(harness.state.histories["user-a"][0].score, 70);
+  assert.equal(harness.state.histories["user-b"][0].score, 30);
 });
 
 test("schedule normalization keeps valid siblings and rejects malformed items", () => {

@@ -31,7 +31,7 @@ export default function DailyReview() {
     sessions,
     workoutCompleted: review.workoutCompleted,
   });
-  const { history } = useReview(review);
+  const { history } = useReview({ ...review, breakdown });
 
   return (
     <div className="stack">
