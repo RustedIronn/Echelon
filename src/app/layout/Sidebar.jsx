@@ -11,7 +11,7 @@ export default function Sidebar() {
   const { status } = useSync();
 
   return (
-    <aside>
+    <aside className="sidebar">
       <div className="brand">
         <img src="/assets/echelon.svg" alt="Echelon" />
 
@@ -22,7 +22,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav>
+      <nav className="sidebar-nav" aria-label="Primary navigation">
         {desktopNavigation.map(({ id, label, path, icon: Icon }) => (
           <NavLink key={id} to={path}>
             <Icon size={18} />
@@ -32,7 +32,12 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sync-status">
+      <div
+        className="sync-status"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {status === "syncing"
           ? "☁ Syncing..."
           : status === "synced"

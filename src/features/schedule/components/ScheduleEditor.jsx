@@ -39,6 +39,7 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule }) {
             <div className="editor-inputs">
               <input
                 type="time"
+                aria-label={`Start time for ${task.title}`}
                 value={task.start}
                 onChange={(e) =>
                   setDraft((current) =>
@@ -51,6 +52,7 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule }) {
 
               <input
                 type="time"
+                aria-label={`End time for ${task.title}`}
                 value={task.end}
                 onChange={(e) =>
                   setDraft((current) =>

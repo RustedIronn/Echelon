@@ -7,14 +7,6 @@
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(var(--blur-panel));
 
-  transition:
-    transform var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-normal) var(--ease-standard);
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
 }
 
 .card h2 {
@@ -45,6 +37,14 @@ button:hover {
 
 button:active {
   transform: translateY(0);
+}
+
+button:disabled,
+button:disabled:hover,
+button:disabled:active {
+  cursor: not-allowed;
+  opacity: .45;
+  transform: none;
 }
 
 .section-header {

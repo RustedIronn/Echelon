@@ -28,6 +28,12 @@
   transform: translateX(4px);
 }
 
+.timeline-item:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+
 .timeline-marker {
   display: flex;
   justify-content: center;

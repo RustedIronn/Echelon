@@ -20,7 +20,18 @@ export default function TimelineItem({ task, toggleTask, current }) {
         "--category-color": category.color,
         "--category-bg": category.background,
       }}
+      role="checkbox"
+      tabIndex={0}
+      aria-checked={task.done}
+      aria-current={current ? "true" : undefined}
+      aria-label={`${task.title}, ${category.name}, ${task.start} to ${task.end}`}
       onClick={() => toggleTask(task.id)}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+
+        event.preventDefault();
+        toggleTask(task.id);
+      }}
     >
       <div className="timeline-marker">
         <div className="dot">
