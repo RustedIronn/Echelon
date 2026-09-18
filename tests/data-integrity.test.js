@@ -102,6 +102,16 @@ import {
 } from "../src/features/focus/runtime.js";
 import { hasMatchingOwnership } from "../src/core/auth/ownership.js";
 import { createAuthTransitionController } from "../src/core/auth/transition.js";
+import {
+  createSyncSourceState,
+  deriveSyncStatus,
+  useSync,
+} from "../src/ui/useSync.js";
+import {
+  desktopNavigation,
+  mobileMoreNavigation,
+  mobilePrimaryNavigation,
+} from "../src/app/layout/navigation.js";
 import { HABIT_DEFINITIONS } from "../src/features/habits/constants.js";
 import {
   createHabits,
@@ -472,7 +482,9 @@ const createDeferred = () => {
 const createAuthTransitionHarness = () => {
   let authState = { user: { uid: "initial" }, loading: false };
   let storageOwner = "initial";
+  let syncOwner = "initial";
   const ownerTransitions = [];
+  const syncTransitions = [];
   const profiles = new Map();
   const controller = createAuthTransitionController({
     setAuthState: (patch) => {
@@ -481,6 +493,10 @@ const createAuthTransitionHarness = () => {
     setStorageOwner: (uid) => {
       if (storageOwner !== uid) ownerTransitions.push(uid);
       storageOwner = uid;
+    },
+    resetSync: (uid) => {
+      if (syncOwner !== uid) syncTransitions.push(uid);
+      syncOwner = uid;
     },
     initializeProfile: (user) => {
       const pending = profiles.get(user.uid);
@@ -492,7 +508,9 @@ const createAuthTransitionHarness = () => {
     controller,
     profiles,
     ownerTransitions,
+    syncTransitions,
     getState: () => ({ authState, storageOwner }),
+    getSyncOwner: () => syncOwner,
   };
 };
 
@@ -513,12 +531,14 @@ test("auth A to B transition hides stale A while profile initialization waits", 
   assert.equal(await operationB, true);
   assert.equal(harness.getState().authState.user.uid, "B");
   assert.equal(harness.getState().storageOwner, "B");
+  assert.equal(harness.getSyncOwner(), "B");
 
   pendingA.resolve();
   assert.equal(await operationA, false);
   assert.equal(harness.getState().authState.user.uid, "B");
   assert.equal(harness.getState().storageOwner, "B");
   assert.deepEqual(harness.ownerTransitions, [null, "B"]);
+  assert.deepEqual(harness.syncTransitions, [null, "B"]);
 });
 
 test("mutations are rejected throughout an auth profile transition", async () => {
@@ -562,6 +582,7 @@ test("logout invalidates pending profile initialization", async () => {
     authState: { user: null, loading: false },
     storageOwner: null,
   });
+  assert.equal(harness.getSyncOwner(), null);
 
   pending.resolve();
   assert.equal(await login, false);
@@ -569,6 +590,7 @@ test("logout invalidates pending profile initialization", async () => {
     authState: { user: null, loading: false },
     storageOwner: null,
   });
+  assert.equal(harness.getSyncOwner(), null);
 });
 
 test("stale auth callbacks cannot replace a newer settled account", async () => {
@@ -589,6 +611,87 @@ test("legacy mutation ownership requires matching auth, storage, and store UIDs"
   assert.equal(hasMatchingOwnership("A", "B", "B"), false);
   assert.equal(hasMatchingOwnership("A", "A", "B"), false);
   assert.equal(hasMatchingOwnership(null, "A", "A"), false);
+});
+
+test("sync status derives error, syncing, synced, and idle priority", () => {
+  const idle = createSyncSourceState();
+  assert.equal(deriveSyncStatus(idle), "idle");
+  assert.equal(
+    deriveSyncStatus({ ...idle, money: "synced" }),
+    "synced",
+  );
+  assert.equal(
+    deriveSyncStatus({ ...idle, money: "syncing", review: "synced" }),
+    "syncing",
+  );
+  assert.equal(
+    deriveSyncStatus({ ...idle, money: "error", review: "synced" }),
+    "error",
+  );
+});
+
+test("sync sources update independently without hiding another source error", () => {
+  const sync = useSync.getState();
+  sync.resetSync("A");
+
+  assert.equal(sync.setSyncStatus("money", "error", "A"), true);
+  assert.equal(sync.setSyncStatus("review", "synced", "A"), true);
+  assert.deepEqual(useSync.getState().sources, {
+    bootstrap: "idle",
+    money: "error",
+    review: "synced",
+  });
+  assert.equal(useSync.getState().status, "error");
+
+  useSync.getState().resetSync(null);
+});
+
+test("sync ownership reset rejects stale account completions", () => {
+  useSync.getState().resetSync("A");
+  assert.equal(
+    useSync.getState().setSyncStatus("bootstrap", "syncing", "A"),
+    true,
+  );
+
+  useSync.getState().resetSync(null);
+  assert.equal(useSync.getState().status, "idle");
+  assert.deepEqual(useSync.getState().sources, createSyncSourceState());
+
+  useSync.getState().resetSync("B");
+  assert.equal(
+    useSync.getState().setSyncStatus("money", "error", "A"),
+    false,
+  );
+  assert.equal(useSync.getState().ownerUid, "B");
+  assert.equal(useSync.getState().status, "idle");
+
+  useSync.getState().resetSync(null);
+});
+
+test("navigation registry preserves desktop and five-slot mobile destinations", () => {
+  assert.deepEqual(
+    desktopNavigation.map(({ id }) => id),
+    [
+      "today",
+      "schedule",
+      "focus",
+      "habits",
+      "review",
+      "settings",
+      "analytics",
+      "workouts",
+      "money",
+      "tools",
+    ],
+  );
+  assert.deepEqual(
+    mobilePrimaryNavigation.map(({ id }) => id),
+    ["today", "schedule", "focus", "habits"],
+  );
+  assert.deepEqual(
+    mobileMoreNavigation.map(({ id }) => id),
+    ["tools", "money", "workouts", "review", "analytics", "settings"],
+  );
 });
 
 test("legacy name-only habits normalize to stable built-in IDs", () => {

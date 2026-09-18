@@ -8,6 +8,7 @@ import {
 } from "@/shared/dayRollover";
 import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@/features/habits/store";
+import { useAuth } from "@core/auth/store";
 import { useSync } from "@/ui/useSync";
 
 const TIMER_BUFFER_MS = 50;
@@ -31,10 +32,15 @@ export default function useDayRollover() {
 
       if (hasLocalDayChanged(dayRef.current, now)) {
         dayRef.current = getToday(now);
+        const operationUid = useAuth.getState().user?.uid ?? null;
         Promise.all([
           useToday.getState().rolloverDay(),
           useHabits.getState().rolloverDay(),
-        ]).catch(() => useSync.getState().setSyncError());
+        ]).catch(() => useSync.getState().setSyncStatus(
+          "bootstrap",
+          "error",
+          operationUid,
+        ));
         window.dispatchEvent(new Event(DAY_ROLLOVER_EVENT));
       }
 

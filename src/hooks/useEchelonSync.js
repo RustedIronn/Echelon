@@ -19,7 +19,7 @@ export default function useEchelonSync() {
 
   useEffect(() => {
     if (!user) {
-      useSync.getState().resetSync();
+      useSync.getState().resetSync(null);
       return;
     }
 
@@ -27,7 +27,7 @@ export default function useEchelonSync() {
     const unbindMoneyRecovery = bindMoneyBackgroundRecovery(user.uid);
 
     const sync = async () => {
-      useSync.getState().setSyncing();
+      useSync.getState().setSyncStatus("bootstrap", "syncing", user.uid);
 
       try {
         await Promise.all([
@@ -39,18 +39,14 @@ export default function useEchelonSync() {
           startMoneyBackgroundSync(user.uid),
         ]);
 
-        if (
-          !cancelled &&
-          useAuth.getState().user?.uid === user.uid &&
-          useSync.getState().status !== "error"
-        ) {
-          useSync.getState().setSynced();
+        if (!cancelled && useAuth.getState().user?.uid === user.uid) {
+          useSync.getState().setSyncStatus("bootstrap", "synced", user.uid);
         }
       } catch (error) {
         console.error("Echelon sync failed:", error);
 
         if (!cancelled && useAuth.getState().user?.uid === user.uid) {
-          useSync.getState().setSyncError();
+          useSync.getState().setSyncStatus("bootstrap", "error", user.uid);
         }
       }
     };

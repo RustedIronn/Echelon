@@ -1,35 +1,10 @@
 import { NavLink } from "react-router-dom";
 
-import {
-  Home,
-  CalendarDays,
-  Dumbbell,
-  Timer,
-  CheckSquare,
-  BookOpen,
-  Settings,
-  BarChart3,
-  WalletCards,
-  Wrench,
-} from "lucide-react";
-
 import { useSync } from "@/ui/useSync";
 
 import { useAuth } from "@core/auth/store";
 import { logout } from "@core/auth/service";
-
-const links = [
-  ["Today", "/", Home],
-  ["Schedule", "/schedule", CalendarDays],
-  ["Focus", "/focus", Timer],
-  ["Habits", "/habits", CheckSquare],
-  ["Review", "/review", BookOpen],
-  ["Settings", "/settings", Settings],
-  ["Analytics", "/analytics", BarChart3],
-  ["Workouts", "/workouts", Dumbbell],
-  ["Money", "/money", WalletCards],
-  ["Tools", "/tools", Wrench],
-];
+import { desktopNavigation } from "./navigation";
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -48,11 +23,11 @@ export default function Sidebar() {
       </div>
 
       <nav>
-        {links.map(([name, path, Icon]) => (
-          <NavLink key={name} to={path}>
+        {desktopNavigation.map(({ id, label, path, icon: Icon }) => (
+          <NavLink key={id} to={path}>
             <Icon size={18} />
 
-            <span>{name}</span>
+            <span>{label}</span>
           </NavLink>
         ))}
       </nav>

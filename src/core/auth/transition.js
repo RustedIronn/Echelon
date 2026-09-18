@@ -1,6 +1,7 @@
 export function createAuthTransitionController({
   setAuthState,
   setStorageOwner,
+  resetSync = () => {},
   initializeProfile,
   onProfileError = () => {},
 }) {
@@ -13,6 +14,7 @@ export function createAuthTransitionController({
     // next owner's local namespace is not exposed until profile initialization
     // has finished and this callback is still current.
     setAuthState({ user: null, loading: true });
+    resetSync(null);
     setStorageOwner(null);
 
     if (!user) {
@@ -31,6 +33,7 @@ export function createAuthTransitionController({
 
     // Store subscribers load the new namespace before the authenticated app
     // remounts. No mutation can pass the ownership guard until user is set.
+    resetSync(user.uid);
     setStorageOwner(user.uid);
     setAuthState({ user, loading: false });
     return true;

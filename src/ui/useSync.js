@@ -1,25 +1,49 @@
 import { create } from "zustand";
 
-export const useSync = create((set) => ({
-  status: "idle",
+export const SYNC_SOURCES = Object.freeze([
+  "bootstrap",
+  "money",
+  "review",
+]);
 
-  setSyncing: () =>
-    set({
-      status: "syncing",
-    }),
+const SYNC_STATUSES = new Set(["idle", "syncing", "synced", "error"]);
 
-  setSynced: () =>
-    set({
-      status: "synced",
-    }),
+export const createSyncSourceState = () => Object.fromEntries(
+  SYNC_SOURCES.map((source) => [source, "idle"]),
+);
 
-  setSyncError: () =>
-    set({
-      status: "error",
-    }),
+export function deriveSyncStatus(sources) {
+  const statuses = SYNC_SOURCES.map((source) => sources?.[source] ?? "idle");
 
-  resetSync: () =>
-    set({
-      status: "idle",
-    }),
+  if (statuses.includes("error")) return "error";
+  if (statuses.includes("syncing")) return "syncing";
+  if (statuses.includes("synced")) return "synced";
+  return "idle";
+}
+
+const createOwnedSyncState = (ownerUid = null) => {
+  const sources = createSyncSourceState();
+  return { ownerUid, sources, status: deriveSyncStatus(sources) };
+};
+
+export const useSync = create((set, get) => ({
+  ...createOwnedSyncState(),
+
+  setSyncStatus: (source, status, operationUid) => {
+    if (
+      !SYNC_SOURCES.includes(source) ||
+      !SYNC_STATUSES.has(status) ||
+      !operationUid ||
+      get().ownerUid !== operationUid
+    ) return false;
+
+    const current = get().sources;
+    if (current[source] === status) return true;
+
+    const sources = { ...current, [source]: status };
+    set({ sources, status: deriveSyncStatus(sources) });
+    return true;
+  },
+
+  resetSync: (ownerUid = null) => set(createOwnedSyncState(ownerUid)),
 }));

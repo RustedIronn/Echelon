@@ -54,10 +54,7 @@ const controller = createReviewSyncController({
       syncError: error instanceof Error ? error.message : null,
     });
 
-    const sync = useSync.getState();
-    if (syncStatus === "syncing") sync.setSyncing();
-    if (syncStatus === "synced") sync.setSynced();
-    if (syncStatus === "error") sync.setSyncError();
+    useSync.getState().setSyncStatus("review", syncStatus, uid);
     return true;
   },
   loadCloudHistory: loadReviewHistoryCloud,

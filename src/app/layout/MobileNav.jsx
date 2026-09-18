@@ -1,48 +1,27 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { Menu } from "lucide-react";
+
 import {
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  CheckSquare,
-  Dumbbell,
-  Home,
-  Menu,
-  Settings,
-  Timer,
-  WalletCards,
-  Wrench,
-} from "lucide-react";
-
-const links = [
-  ["Today", "/", Home],
-  ["Schedule", "/schedule", CalendarDays],
-  ["Focus", "/focus", Timer],
-  ["Habits", "/habits", CheckSquare],
-];
-
-const moreLinks = [
-  ["Tools", "/tools", Wrench],
-  ["Money", "/money", WalletCards],
-  ["Workouts", "/workouts", Dumbbell],
-  ["Review", "/review", BookOpen],
-  ["Analytics", "/analytics", BarChart3],
-  ["Settings", "/settings", Settings],
-];
+  mobileMoreNavigation,
+  mobilePrimaryNavigation,
+} from "./navigation";
 
 export default function MobileNav() {
   const [openPath, setOpenPath] = useState(null);
   const location = useLocation();
   const open = openPath === location.pathname;
-  const moreActive = moreLinks.some(([, path]) => location.pathname.startsWith(path));
+  const moreActive = mobileMoreNavigation.some(
+    ({ path }) => location.pathname.startsWith(path),
+  );
 
   return (
     <nav className="mobile-nav">
-      {links.map(([name, path, Icon]) => (
-        <NavLink key={name} to={path}>
+      {mobilePrimaryNavigation.map(({ id, label, path, icon: Icon }) => (
+        <NavLink key={id} to={path}>
           <Icon size={22} />
 
-          <span>{name}</span>
+          <span>{label}</span>
         </NavLink>
       ))}
       <div className="mobile-more">
@@ -58,10 +37,10 @@ export default function MobileNav() {
         </button>
         {open ? (
           <div className="mobile-more-menu" id="mobile-more-menu">
-            {moreLinks.map(([name, path, Icon]) => (
-              <NavLink key={name} to={path} onClick={() => setOpenPath(null)}>
+            {mobileMoreNavigation.map(({ id, label, path, icon: Icon }) => (
+              <NavLink key={id} to={path} onClick={() => setOpenPath(null)}>
                 <Icon size={18} />
-                <span>{name}</span>
+                <span>{label}</span>
               </NavLink>
             ))}
           </div>

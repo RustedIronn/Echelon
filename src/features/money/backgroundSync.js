@@ -26,10 +26,11 @@ const controller = createMoneySyncController({
   applyCloudDocument: applyMoneyCloudDocument,
   setStatus: (uid, status, error) => {
     setMoneySyncStatus(uid, status, error);
-    // The app-level initial sync owns the shared "synced" state. Money may
-    // report failure, but must not hide another feature's failure by setting
-    // the shared status back to synced independently.
-    if (status === "error") useSync.getState().setSyncError();
+    useSync.getState().setSyncStatus(
+      "money",
+      status === "pending" ? "syncing" : status,
+      uid,
+    );
   },
   loadCloudDocument: loadMoneyFromCloud,
   saveCloudDocument: saveMoneyToCloud,

@@ -16,7 +16,7 @@ export function syncToCloud(fn) {
       console.error("Cloud sync failed:", error);
 
       if (useAuth.getState().user?.uid === user.uid) {
-        useSync.getState().setSyncError();
+        useSync.getState().setSyncStatus("bootstrap", "error", user.uid);
       }
 
       return false;
