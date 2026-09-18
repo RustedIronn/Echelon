@@ -31,8 +31,8 @@ export default function ResetMode() {
           ))}
         </div>
         <div className="tools-actions">
-          <Button onClick={() => setChecked(new Set())}>Reset checklist</Button>
-          <Button className="tools-secondary" onClick={() => { if (restoreResetSteps()) setDrafts(Object.fromEntries(DEFAULT_RESET_STEPS.map((step) => [step.id, step.text]))); }}>Restore default wording</Button>
+          <Button variant="secondary" onClick={() => setChecked(new Set())}>Reset checklist</Button>
+          <Button variant="secondary" onClick={() => { if (restoreResetSteps()) setDrafts(Object.fromEntries(DEFAULT_RESET_STEPS.map((step) => [step.id, step.text]))); }}>Restore default wording</Button>
         </div>
         <p className="tools-muted">Checkmarks last only for this open Reset screen. Edited wording is saved to your account’s local toolbox.</p>
       </Card>

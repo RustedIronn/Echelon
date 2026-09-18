@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Button, Card } from "@ui";
+import { Button, Card, ErrorState } from "@ui";
 import { TIMER_DURATIONS } from "../constants.js";
 import { useTools } from "../store.js";
 import { deriveAwarenessTimer } from "../timer.js";
@@ -48,11 +48,11 @@ export default function TimeBlindnessTimer() {
       <Card>
         <div className="section-header"><h2>Make elapsed time visible</h2><p>This timer derives from timestamps, so a sleeping tab does not lose time.</p></div>
         <div className="tools-duration-buttons" aria-label="Quick timer durations">
-          {TIMER_DURATIONS.map((minutes) => <Button key={minutes} className={duration === minutes && custom === "" ? "" : "tools-secondary"} onClick={() => { setDuration(minutes); setCustom(""); }}>{minutes} min</Button>)}
+          {TIMER_DURATIONS.map((minutes) => <Button key={minutes} variant={duration === minutes && custom === "" ? "primary" : "secondary"} onClick={() => { setDuration(minutes); setCustom(""); }}>{minutes} min</Button>)}
         </div>
         <label className="tools-custom-duration"><span>Custom minutes</span><input type="number" min="1" step="1" value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Optional" /></label>
         {timer.status === "idle" || timer.status === "finished" ? <Button onClick={start}>Start</Button> : null}
-        {error ? <p className="tools-form-error" role="alert">{error}</p> : null}
+        {error ? <ErrorState compact description={error} /> : null}
       </Card>
 
       <Card className="tools-timer-card" aria-live="polite">
@@ -69,8 +69,8 @@ export default function TimeBlindnessTimer() {
         <div className="tools-actions">
           {timer.status === "running" ? <Button onClick={() => { pauseTimer(); setNow(new Date()); }}>Pause</Button> : null}
           {timer.status === "paused" ? <Button onClick={() => { resumeTimer(); setNow(new Date()); }}>Resume</Button> : null}
-          {timer.status === "running" || timer.status === "paused" ? <Button className="tools-secondary" onClick={() => { finishTimer(); setNow(new Date()); }}>Finish</Button> : null}
-          {timer.status !== "idle" ? <Button className="tools-secondary" onClick={resetTimer}>Clear timer</Button> : null}
+          {timer.status === "running" || timer.status === "paused" ? <Button variant="secondary" onClick={() => { finishTimer(); setNow(new Date()); }}>Finish</Button> : null}
+          {timer.status !== "idle" ? <Button variant="secondary" onClick={resetTimer}>Clear timer</Button> : null}
         </div>
       </Card>
     </div>

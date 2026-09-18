@@ -1,13 +1,13 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-import { PageTitle } from "@ui";
+import { PageTitle, Subnav } from "@ui";
 
 const sections = [
-  ["Today", "/workouts/today"],
-  ["Calendar", "/workouts/calendar"],
-  ["History", "/workouts/history"],
-  ["Progress", "/workouts/progress"],
-  ["Plans", "/workouts/plans"],
+  { label: "Today", path: "/workouts/today" },
+  { label: "Calendar", path: "/workouts/calendar" },
+  { label: "History", path: "/workouts/history" },
+  { label: "Progress", path: "/workouts/progress" },
+  { label: "Plans", path: "/workouts/plans" },
 ];
 
 export default function WorkoutLayout() {
@@ -19,13 +19,7 @@ export default function WorkoutLayout() {
         description="Train, recover, and review your consistency."
       />
 
-      <nav className="workout-subnav" aria-label="Workout sections">
-        {sections.map(([label, path]) => (
-          <NavLink key={path} to={path}>
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+      <Subnav label="Workout sections" items={sections} />
 
       <div className="workout-view">
         <Outlet />

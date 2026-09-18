@@ -1,9 +1,17 @@
 import MotionCard from "./MotionCard";
 
-export default function Card({ children, className = "", ...props }) {
+export default function Card({
+  children,
+  className = "",
+  interactive = false,
+  ...props
+}) {
   return (
     <MotionCard>
-      <section className={`card ${className}`.trim()} {...props}>
+      <section
+        className={`card ${interactive ? "card--interactive" : ""} ${className}`.trim()}
+        {...props}
+      >
         {children}
       </section>
     </MotionCard>

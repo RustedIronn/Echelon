@@ -1,15 +1,15 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-import { PageTitle } from "@ui";
+import { PageTitle, Subnav } from "@ui";
 import { useTools } from "../store.js";
 
 const sections = [
-  ["Overview", "/tools"],
-  ["Now", "/tools/now"],
-  ["Brain Dump", "/tools/brain-dump"],
-  ["Breakdown", "/tools/breakdown"],
-  ["Timer", "/tools/timer"],
-  ["Reset", "/tools/reset"],
+  { label: "Overview", path: "/tools", end: true },
+  { label: "Now", path: "/tools/now" },
+  { label: "Brain Dump", path: "/tools/brain-dump" },
+  { label: "Breakdown", path: "/tools/breakdown" },
+  { label: "Timer", path: "/tools/timer" },
+  { label: "Reset", path: "/tools/reset" },
 ];
 
 export default function ToolsLayout() {
@@ -23,13 +23,7 @@ export default function ToolsLayout() {
         description="A few quiet tools for finding the next workable step."
       />
 
-      <nav className="tools-subnav" aria-label="Toolbox sections">
-        {sections.map(([label, path], index) => (
-          <NavLink key={path} to={path} end={index === 0}>
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+      <Subnav label="Toolbox sections" items={sections} />
 
       <Outlet key={owner ?? "anonymous"} />
     </div>

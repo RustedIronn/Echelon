@@ -73,7 +73,7 @@ export default function TrackedWorkoutSession() {
           <div className="tracked-section-heading">
             <h2 id="today-sets-title">Today</h2>
             <Button
-              className="tracked-secondary-button"
+              variant="secondary"
               onClick={() => addTrackedSet(exercise.exerciseId)}
               disabled={paused}
             >
@@ -134,7 +134,7 @@ export default function TrackedWorkoutSession() {
 
                   {set.completed ? (
                     <Button
-                      className="tracked-secondary-button"
+                      variant="secondary"
                       onClick={() =>
                         reopenTrackedSet(exercise.exerciseId, set.id)
                       }
@@ -145,7 +145,7 @@ export default function TrackedWorkoutSession() {
                     </Button>
                   ) : set.isExtra ? (
                     <Button
-                      className="tracked-secondary-button"
+                      variant="secondary"
                       onClick={() =>
                         removeTrackedSet(exercise.exerciseId, set.id)
                       }
@@ -212,7 +212,7 @@ export default function TrackedWorkoutSession() {
           {phase === "rest" ? (
             <div className="workout-actions">
               {seconds > 0 ? (
-                <Button onClick={skipTrackedRest} disabled={paused}>
+                <Button variant="secondary" onClick={skipTrackedRest} disabled={paused}>
                   Skip Rest
                 </Button>
               ) : (
@@ -220,7 +220,7 @@ export default function TrackedWorkoutSession() {
                   {continueLabel}
                 </Button>
               )}
-              <Button onClick={restartTrackedRest} disabled={paused}>
+              <Button variant="secondary" onClick={restartTrackedRest} disabled={paused}>
                 Restart Rest
               </Button>
             </div>
@@ -228,8 +228,8 @@ export default function TrackedWorkoutSession() {
         </section>
 
         <div className="workout-actions">
-          <Button onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
-          <Button onClick={stopWorkout}>Stop Workout</Button>
+          <Button variant="secondary" onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
+          <Button variant="danger" onClick={stopWorkout}>Stop Workout</Button>
         </div>
       </div>
     </Card>

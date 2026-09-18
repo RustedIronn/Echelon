@@ -9,7 +9,7 @@ export default function OccupiedNowPrompt({ onConfirm, onCancel }) {
       </div>
       <div className="tools-actions">
         <Button onClick={onConfirm}>Move current Now to Next</Button>
-        <Button className="tools-secondary" onClick={onCancel}>Cancel</Button>
+        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
     </Card>
   );

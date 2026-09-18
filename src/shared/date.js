@@ -21,6 +21,29 @@ export function parseDayKey(value) {
 	return getToday(date) === value ? date : null;
 }
 
+export function formatDayKey(value, options = {}) {
+	const date = parseDayKey(value);
+	if (!date) return value;
+
+	return new Intl.DateTimeFormat(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		...options,
+	}).format(date);
+}
+
+export function formatMonthKey(value) {
+	if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) return value;
+	const date = parseDayKey(`${value}-01`);
+	if (!date) return value;
+
+	return new Intl.DateTimeFormat(undefined, {
+		month: "long",
+		year: "numeric",
+	}).format(date);
+}
+
 export function getLocalWeekRange(reference = new Date()) {
 	const date = reference instanceof Date
 		? new Date(reference)

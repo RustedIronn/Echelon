@@ -1,9 +1,5 @@
-export default function EmptyState({ title, description }) {
-  return (
-    <div className="empty-state">
-      <h3>{title}</h3>
+import StatusState from "./StatusState";
 
-      <p>{description}</p>
-    </div>
-  );
+export default function EmptyState(props) {
+  return <StatusState {...props} tone="empty" />;
 }

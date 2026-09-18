@@ -135,9 +135,9 @@ export default function WorkoutSession() {
         {nextExercise && <p>Next: {nextExercise.name}</p>}
 
         <div className="workout-actions">
-          <Button onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
+          <Button variant="secondary" onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
 
-          <Button onClick={stopWorkout}>Stop Workout</Button>
+          <Button variant="danger" onClick={stopWorkout}>Stop Workout</Button>
         </div>
       </div>
     </Card>

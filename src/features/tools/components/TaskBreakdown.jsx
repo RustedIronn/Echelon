@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Card, EmptyState } from "@ui";
+import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { firstIncompleteStep } from "../breakdowns.js";
 import { useTools } from "../store.js";
 import { createToolsId } from "../utils.js";
@@ -29,10 +29,10 @@ function BreakdownCard({ breakdown, onSendNow }) {
         {renaming ? (
           <form onSubmit={(event) => { event.preventDefault(); if (renameBreakdown(breakdown.id, title)) setRenaming(false); }}>
             <label><span>Breakdown title</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-            <div className="tools-actions"><Button type="submit">Save</Button><Button className="tools-secondary" onClick={() => { setTitle(breakdown.title); setRenaming(false); }}>Cancel</Button></div>
+            <div className="tools-actions"><Button type="submit">Save</Button><Button variant="secondary" onClick={() => { setTitle(breakdown.title); setRenaming(false); }}>Cancel</Button></div>
           </form>
         ) : <div><h2>{breakdown.title}</h2><p>{incomplete ? `Next small step: ${incomplete.text}` : "No incomplete steps."}</p></div>}
-        {!renaming ? <Button className="tools-secondary" onClick={() => setRenaming(true)}>Rename</Button> : null}
+        {!renaming ? <Button variant="secondary" onClick={() => setRenaming(true)}>Rename</Button> : null}
       </div>
 
       {breakdown.steps.length ? (
@@ -41,9 +41,9 @@ function BreakdownCard({ breakdown, onSendNow }) {
             <li key={step.id} className={step.completed ? "is-complete" : ""}>
               <label><input type="checkbox" checked={step.completed} onChange={() => toggleBreakdownStep(breakdown.id, step.id)} /><span>{step.text}</span></label>
               <div className="tools-actions">
-                <Button className="tools-icon-button" aria-label={`Move ${step.text} up`} disabled={index === 0} onClick={() => reorderBreakdownStep(breakdown.id, step.id, -1)}>↑</Button>
-                <Button className="tools-icon-button" aria-label={`Move ${step.text} down`} disabled={index === breakdown.steps.length - 1} onClick={() => reorderBreakdownStep(breakdown.id, step.id, 1)}>↓</Button>
-                <Button className="tools-secondary" onClick={() => removeBreakdownStep(breakdown.id, step.id)}>Remove</Button>
+                <Button className="tools-icon-button" variant="secondary" aria-label={`Move ${step.text} up`} disabled={index === 0} onClick={() => reorderBreakdownStep(breakdown.id, step.id, -1)}>↑</Button>
+                <Button className="tools-icon-button" variant="secondary" aria-label={`Move ${step.text} down`} disabled={index === breakdown.steps.length - 1} onClick={() => reorderBreakdownStep(breakdown.id, step.id, 1)}>↓</Button>
+                <Button variant="danger" onClick={() => removeBreakdownStep(breakdown.id, step.id)}>Remove</Button>
               </div>
             </li>
           ))}
@@ -57,10 +57,10 @@ function BreakdownCard({ breakdown, onSendNow }) {
 
       <div className="tools-actions tools-breakdown-actions">
         <Button disabled={!incomplete} onClick={() => onSendNow(breakdown.id)}>Send first incomplete step to Now</Button>
-        <Button className="tools-secondary" disabled={!incomplete} onClick={() => sendBreakdownStep(breakdown.id, "next")}>Send to Next</Button>
+        <Button variant="secondary" disabled={!incomplete} onClick={() => sendBreakdownStep(breakdown.id, "next")}>Send to Next</Button>
         {confirmDelete ? (
-          <><Button className="tools-danger" onClick={() => deleteBreakdown(breakdown.id)}>Confirm delete</Button><Button className="tools-secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button></>
-        ) : <Button className="tools-secondary" onClick={() => setConfirmDelete(true)}>Delete breakdown</Button>}
+          <><Button variant="danger" onClick={() => deleteBreakdown(breakdown.id)}>Confirm delete</Button><Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button></>
+        ) : <Button variant="secondary" onClick={() => setConfirmDelete(true)}>Delete breakdown</Button>}
       </div>
     </Card>
   );
@@ -86,7 +86,7 @@ export default function TaskBreakdown() {
         <form className="tools-add-form" onSubmit={(event) => { event.preventDefault(); if (addBreakdown(title, { id: draftId })) { setTitle(""); setDraftId(createToolsId("breakdown")); setError(""); } else setError("Give the breakdown a title."); }}>
           <label className="tools-grow"><span>Task</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Prepare Physics" /></label>
           <Button type="submit">Create breakdown</Button>
-          {error ? <p className="tools-form-error" role="alert">{error}</p> : null}
+          {error ? <ErrorState compact description={error} /> : null}
         </form>
       </Card>
 

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { Card, EmptyState } from "@ui";
-import { getToday } from "../../../shared/date.js";
+import { formatDayKey, formatMonthKey, getToday } from "../../../shared/date.js";
 import { aggregateLedger, monthlyLedger, spendingByCategory } from "../analytics.js";
 import { calculateBudgetUsage } from "../budgets.js";
 import { getGoalProgress } from "../goals.js";
@@ -36,7 +36,7 @@ export default function MoneyOverview() {
         <Card>
           <div className="section-header">
             <h2>This month</h2>
-            <p>{month}</p>
+            <p>{formatMonthKey(month)}</p>
           </div>
           <div className="money-summary-list">
             <div><span>Income</span><strong>{formatInr(current.incomeMinor)}</strong></div>
@@ -60,7 +60,7 @@ export default function MoneyOverview() {
               <div className="money-transaction-row" key={transaction.id}>
                 <div>
                   <strong>{transaction.description || categoryById.get(transaction.categoryId)?.name}</strong>
-                  <span>{transaction.date} · {categoryById.get(transaction.categoryId)?.name}</span>
+                  <span>{formatDayKey(transaction.date)} · {categoryById.get(transaction.categoryId)?.name}</span>
                 </div>
                 <strong className={`money-amount is-${transaction.type}`}>
                   {transaction.type === "expense" ? "−" : "+"}
@@ -112,7 +112,7 @@ export default function MoneyOverview() {
             <div className="money-month-list">
               {months.map((item) => (
                 <div key={item.month}>
-                  <strong>{item.month}</strong>
+                  <strong>{formatMonthKey(item.month)}</strong>
                   <span>Income {formatInr(item.incomeMinor)}</span>
                   <span>Spent {formatInr(item.expenseMinor)}</span>
                   <span>Net {formatInr(item.netMinor)}</span>

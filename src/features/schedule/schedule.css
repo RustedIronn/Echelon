@@ -234,10 +234,6 @@
   margin-top: var(--space-5);
 }
 
-.danger-card button {
-  background: var(--color-danger);
-}
-
 @media (max-width: 700px) {
   .editor-item {
     flex-direction: column;

@@ -15,7 +15,7 @@ select {
 }
 
 textarea {
-  min-height: 120px;
+  min-height: 100px;
   width: 100%;
 }
 

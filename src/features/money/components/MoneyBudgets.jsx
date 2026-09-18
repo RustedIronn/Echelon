@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Card, EmptyState } from "@ui";
+import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { getToday } from "../../../shared/date.js";
 import { calculateBudgetUsage } from "../budgets.js";
 import { useMoney } from "../store.js";
@@ -67,7 +67,7 @@ export default function MoneyBudgets() {
             />
           </label>
           <Button type="submit">Set Budget</Button>
-          {formError ? <p className="money-form-error" role="alert">{formError}</p> : null}
+          {formError ? <ErrorState compact description={formError} /> : null}
         </form>
       </Card>
 
@@ -82,7 +82,7 @@ export default function MoneyBudgets() {
             <Card className={`money-budget-card is-${budget.status}`} key={budget.id}>
               <div className="money-section-heading">
                 <div><h3>{categoryById.get(budget.categoryId)?.name}</h3><p>{budget.percent}% used</p></div>
-                <Button className="money-secondary-button" onClick={() => deleteBudget(budget.id)}>Remove</Button>
+                <Button variant="danger" onClick={() => deleteBudget(budget.id)}>Remove</Button>
               </div>
               <div className="money-progress" aria-label={`${budget.percent}% of budget used`}>
                 <i style={{ width: `${budget.visualPercent}%` }} />

@@ -6,6 +6,7 @@ import { getToday } from "@/shared/date";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
 import { useWorkout } from "@features/workout/store";
 import {
+  formatWorkoutDate,
   getCalendarMonth,
   groupWorkoutHistoryByDate,
   shiftCalendarMonth,
@@ -65,11 +66,11 @@ export default function WorkoutCalendar() {
 
       <Card className="workout-calendar-card">
         <div className="workout-calendar-header">
-          <Button onClick={() => moveMonth(-1)} aria-label="Previous month">
+          <Button variant="secondary" onClick={() => moveMonth(-1)} aria-label="Previous month">
             Previous
           </Button>
           <h3 aria-live="polite">{monthLabel}</h3>
-          <Button onClick={() => moveMonth(1)} aria-label="Next month">
+          <Button variant="secondary" onClick={() => moveMonth(1)} aria-label="Next month">
             Next
           </Button>
         </div>
@@ -107,7 +108,7 @@ export default function WorkoutCalendar() {
                 key={day.date}
                 to={`/workouts/history/${day.date}`}
                 role="gridcell"
-                aria-label={`${day.date}: ${completed.length} completed workout${completed.length === 1 ? "" : "s"}`}
+                aria-label={`${formatWorkoutDate(day.date)}: ${completed.length} completed workout${completed.length === 1 ? "" : "s"}`}
               >
                 <span>{day.day}</span>
                 <i aria-hidden="true" />
@@ -117,7 +118,7 @@ export default function WorkoutCalendar() {
                 className={className}
                 key={day.date}
                 role="gridcell"
-                aria-label={day.date === today ? `${day.date}, today` : day.date}
+                aria-label={day.date === today ? `${formatWorkoutDate(day.date)}, today` : formatWorkoutDate(day.date)}
               >
                 {day.day}
               </span>

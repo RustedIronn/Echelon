@@ -1,5 +1,6 @@
 import { generateWeeklyInsights } from "../insights";
 import useDailyReviews from "@features/review/store";
+import { formatDayKey } from "@/shared/date";
 
 export default function WeeklyInsight() {
   const { history } = useDailyReviews();
@@ -30,13 +31,13 @@ export default function WeeklyInsight() {
         <div>
           <span>Best Day</span>
 
-          <strong>{insight.best?.date || "-"}</strong>
+          <strong>{insight.best ? formatDayKey(insight.best.date) : "-"}</strong>
         </div>
 
         <div>
           <span>Lowest Day</span>
 
-          <strong>{insight.worst?.date || "-"}</strong>
+          <strong>{insight.worst ? formatDayKey(insight.worst.date) : "-"}</strong>
         </div>
       </div>
     </section>

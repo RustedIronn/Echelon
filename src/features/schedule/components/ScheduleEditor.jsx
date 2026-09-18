@@ -69,7 +69,7 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule }) {
 
       <div className="editor-actions">
         <Button onClick={applyDraft}>Apply Changes</Button>
-        <Button onClick={resetDraft}>Cancel</Button>
+        <Button variant="secondary" onClick={resetDraft}>Cancel</Button>
       </div>
     </Card>
   );

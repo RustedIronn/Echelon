@@ -39,7 +39,7 @@ export default function WorkoutHistory() {
                 key={session.id ?? `${session.workout}-${session.date}-${session.duration}-${index}`}
                 to={`/workouts/history/${session.date}`}
               >
-                <Card className="workout-history-card">
+                <Card className="workout-history-card" interactive>
                   <div>
                     <strong>{session.workout}</strong>
                     <span>{formatWorkoutDate(session.date)}</span>

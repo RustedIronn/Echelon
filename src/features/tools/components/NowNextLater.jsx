@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Button, Card, EmptyState } from "@ui";
+import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { useTools } from "../store.js";
 import { createToolsId } from "../utils.js";
 import { getLaneTasks, getNowTask } from "../tasks.js";
@@ -28,31 +28,31 @@ function TaskRow({ task, lane, index, count, onMoveNow }) {
             <input value={text} onChange={(event) => setText(event.target.value)} />
           </label>
           <Button type="submit">Save</Button>
-          <Button className="tools-secondary" onClick={() => { setText(task.text); setEditing(false); }}>Cancel</Button>
+          <Button variant="secondary" onClick={() => { setText(task.text); setEditing(false); }}>Cancel</Button>
         </form>
       ) : (
         <strong>{task.text}</strong>
       )}
 
       <div className="tools-actions">
-        {!editing ? <Button className="tools-secondary" onClick={() => setEditing(true)}>Edit</Button> : null}
-        {lane !== "now" ? <Button className="tools-secondary" onClick={() => onMoveNow(task.id)}>Now</Button> : null}
-        {lane !== "next" ? <Button className="tools-secondary" onClick={() => moveTask(task.id, "next")}>Next</Button> : null}
-        {lane !== "later" ? <Button className="tools-secondary" onClick={() => moveTask(task.id, "later")}>Later</Button> : null}
+        {!editing ? <Button variant="secondary" onClick={() => setEditing(true)}>Edit</Button> : null}
+        {lane !== "now" ? <Button variant="secondary" onClick={() => onMoveNow(task.id)}>Now</Button> : null}
+        {lane !== "next" ? <Button variant="secondary" onClick={() => moveTask(task.id, "next")}>Next</Button> : null}
+        {lane !== "later" ? <Button variant="secondary" onClick={() => moveTask(task.id, "later")}>Later</Button> : null}
         {lane !== "now" ? (
           <>
-            <Button className="tools-icon-button" aria-label={`Move ${task.text} up`} disabled={index === 0} onClick={() => reorderTask(lane, task.id, -1)}>↑</Button>
-            <Button className="tools-icon-button" aria-label={`Move ${task.text} down`} disabled={index === count - 1} onClick={() => reorderTask(lane, task.id, 1)}>↓</Button>
+            <Button className="tools-icon-button" variant="secondary" aria-label={`Move ${task.text} up`} disabled={index === 0} onClick={() => reorderTask(lane, task.id, -1)}>↑</Button>
+            <Button className="tools-icon-button" variant="secondary" aria-label={`Move ${task.text} down`} disabled={index === count - 1} onClick={() => reorderTask(lane, task.id, 1)}>↓</Button>
           </>
         ) : null}
-        <Button className="tools-secondary" onClick={() => completeTask(task.id)}>Complete</Button>
+        <Button variant="secondary" onClick={() => completeTask(task.id)}>Complete</Button>
         {confirmDelete ? (
           <>
-            <Button className="tools-danger" onClick={() => deleteTask(task.id)}>Confirm delete</Button>
-            <Button className="tools-secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button variant="danger" onClick={() => deleteTask(task.id)}>Confirm delete</Button>
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
           </>
         ) : (
-          <Button className="tools-secondary" onClick={() => setConfirmDelete(true)}>Delete</Button>
+          <Button variant="secondary" onClick={() => setConfirmDelete(true)}>Delete</Button>
         )}
       </div>
     </div>
@@ -117,7 +117,7 @@ export default function NowNextLater() {
           <label className="tools-grow"><span>Add something</span><input value={text} onChange={(event) => setText(event.target.value)} placeholder="One clear, workable thing" /></label>
           <label><span>Lane</span><select value={lane} onChange={(event) => setLane(event.target.value)}><option value="now">Now</option><option value="next">Next</option><option value="later">Later</option></select></label>
           <Button type="submit">Add</Button>
-          {error ? <p className="tools-form-error" role="alert">{error}</p> : null}
+          {error ? <ErrorState compact description={error} /> : null}
         </form>
       </Card>
 

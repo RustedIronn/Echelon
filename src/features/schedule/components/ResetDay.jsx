@@ -10,7 +10,7 @@ export default function ResetDay() {
 
       <p>Clear today's progress.</p>
 
-      <Button onClick={resetDay}>Reset Day</Button>
+      <Button variant="danger" onClick={resetDay}>Reset Day</Button>
     </section>
   );
 }

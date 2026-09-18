@@ -65,19 +65,19 @@ export default function WorkoutToday() {
   return (
     <div className="stack workout-today">
       <nav className="workout-plan-date-nav" aria-label="Workout plan date">
-        <Button onClick={() => moveSelectedDate(-1)}>← Previous Day</Button>
+        <Button variant="secondary" onClick={() => moveSelectedDate(-1)}>← Previous Day</Button>
         <div>
           <strong>{formatWorkoutDate(selectedDate)}</strong>
           {selectedDate !== today ? (
             <Button
-              className="tracked-secondary-button"
+              variant="secondary"
               onClick={() => setSelectedDate(today)}
             >
               Today
             </Button>
           ) : null}
         </div>
-        <Button onClick={() => moveSelectedDate(1)}>Next Day →</Button>
+        <Button variant="secondary" onClick={() => moveSelectedDate(1)}>Next Day →</Button>
       </nav>
 
       <header className="workout-view-header">
@@ -121,7 +121,7 @@ export default function WorkoutToday() {
 
                 <div className="workout-actions">
                   <Button onClick={continueWorkout}>Continue Workout</Button>
-                  <Button onClick={reset}>Discard</Button>
+                  <Button variant="danger" onClick={reset}>Discard</Button>
                 </div>
               </div>
             </Card>

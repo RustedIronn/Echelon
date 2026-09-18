@@ -1,7 +1,12 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-import { PageTitle } from "@ui";
+import { PageTitle, Subnav } from "@ui";
 import { useComposure } from "../composureStore.js";
+
+const sections = [
+  { label: "Daily", path: "/review", end: true },
+  { label: "Composure", path: "/review/composure" },
+];
 
 export default function ReviewLayout() {
   const owner = useComposure((state) => state.owner);
@@ -14,10 +19,10 @@ export default function ReviewLayout() {
         description="Learn from the day without turning it into a judgment."
       />
 
-      <nav className="review-subnav" aria-label="Review sections">
-        <NavLink to="/review" end>Daily</NavLink>
-        <NavLink to="/review/composure">Composure</NavLink>
-      </nav>
+      <Subnav
+        label="Review sections"
+        items={sections}
+      />
 
       <Outlet key={owner ?? "anonymous"} />
     </div>

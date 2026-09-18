@@ -1,30 +1,3 @@
-.money-subnav {
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-2);
-  max-width: 100%;
-  margin-bottom: var(--space-8);
-  padding-bottom: var(--space-2);
-  overflow-x: auto;
-}
-
-.money-subnav a {
-  flex: 0 0 auto;
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-round);
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.money-subnav a:hover,
-.money-subnav a.active {
-  transform: none;
-  border-color: var(--color-text);
-  background: var(--color-text);
-  color: var(--color-text-inverse);
-}
-
 .money-overview-grid,
 .money-dashboard-grid,
 .money-budget-grid,
@@ -192,7 +165,7 @@
 .money-inline-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .money-form label,
@@ -218,13 +191,9 @@
 
 .money-form-wide,
 .money-form-actions,
-.money-form-error {
+.money-form > .state-message,
+.money-inline-form > .state-message {
   grid-column: 1 / -1;
-}
-
-.money-form-error {
-  margin: 0;
-  color: var(--color-danger);
 }
 
 .money-check {
@@ -253,15 +222,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   align-items: end;
   margin-bottom: var(--space-6);
-}
-
-.money-secondary-button {
-  background: var(--color-surface-subtle);
-  color: var(--color-text);
-}
-
-.money-danger-button {
-  background: var(--color-danger);
 }
 
 .money-category-list {
@@ -332,7 +292,8 @@
 
   .money-form-wide,
   .money-form-actions,
-  .money-form-error {
+  .money-form > .state-message,
+  .money-inline-form > .state-message {
     grid-column: auto;
   }
 

@@ -1,4 +1,5 @@
 import { Card } from "@ui";
+import { formatDayKey } from "@/shared/date";
 import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
@@ -79,7 +80,7 @@ export default function DailyReview() {
         <div className="review-history">
           {history.slice(-7).reverse().map((day) => (
             <div className="history-item" key={`${day.date}-${day.score}`}>
-              <span>{day.date}</span>
+              <span>{formatDayKey(day.date)}</span>
               <strong>{day.score}%</strong>
             </div>
           ))}

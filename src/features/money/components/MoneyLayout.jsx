@@ -1,13 +1,13 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-import { PageTitle } from "@ui";
+import { PageTitle, Subnav } from "@ui";
 import { useMoney } from "../store.js";
 
 const sections = [
-  ["Overview", "/money"],
-  ["Transactions", "/money/transactions"],
-  ["Budgets", "/money/budgets"],
-  ["Goals", "/money/goals"],
+  { label: "Overview", path: "/money", end: true },
+  { label: "Transactions", path: "/money/transactions" },
+  { label: "Budgets", path: "/money/budgets" },
+  { label: "Goals", path: "/money/goals" },
 ];
 
 export default function MoneyLayout() {
@@ -21,13 +21,7 @@ export default function MoneyLayout() {
         description="A clear, manual ledger for your financial life."
       />
 
-      <nav className="money-subnav" aria-label="Money sections">
-        {sections.map(([label, path], index) => (
-          <NavLink key={path} to={path} end={index === 0}>
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+      <Subnav label="Money sections" items={sections} />
 
       <Outlet key={owner ?? "anonymous"} />
     </div>

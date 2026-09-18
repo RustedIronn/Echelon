@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Card, EmptyState } from "@ui";
+import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { useTools } from "../store.js";
 import { createToolsId } from "../utils.js";
 import OccupiedNowPrompt from "./OccupiedNowPrompt.jsx";
@@ -25,7 +25,7 @@ export default function BrainDump() {
         <form onSubmit={(event) => { event.preventDefault(); if (captureBrainDump(text, { batchId })) { setText(""); setBatchId(createToolsId("brain")); setError(""); } else setError("Add at least one thought."); }}>
           <label className="tools-textarea-label"><span>Thoughts or tasks</span><textarea rows="6" value={text} onChange={(event) => setText(event.target.value)} placeholder={"reply to professor\nphysics revision\nbuy milk"} /></label>
           <Button type="submit">Capture</Button>
-          {error ? <p className="tools-form-error" role="alert">{error}</p> : null}
+          {error ? <ErrorState compact description={error} /> : null}
         </form>
       </Card>
 
@@ -39,10 +39,10 @@ export default function BrainDump() {
               <div className="tools-task-row" key={item.id}>
                 <strong>{item.text}</strong>
                 <div className="tools-actions">
-                  <Button className="tools-secondary" onClick={() => promote(item.id, "now")}>Move to Now</Button>
-                  <Button className="tools-secondary" onClick={() => promote(item.id, "next")}>Move to Next</Button>
-                  <Button className="tools-secondary" onClick={() => promote(item.id, "later")}>Move to Later</Button>
-                  <Button className="tools-secondary" onClick={() => deleteBrainDump(item.id)}>Delete</Button>
+                  <Button variant="secondary" onClick={() => promote(item.id, "now")}>Move to Now</Button>
+                  <Button variant="secondary" onClick={() => promote(item.id, "next")}>Move to Next</Button>
+                  <Button variant="secondary" onClick={() => promote(item.id, "later")}>Move to Later</Button>
+                  <Button variant="danger" onClick={() => deleteBrainDump(item.id)}>Delete</Button>
                 </div>
               </div>
             ))}

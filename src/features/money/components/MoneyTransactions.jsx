@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 
-import { Button, Card, EmptyState } from "@ui";
-import { getToday } from "../../../shared/date.js";
+import { Button, Card, EmptyState, ErrorState } from "@ui";
+import { formatDayKey, getToday } from "../../../shared/date.js";
 import { DEFAULT_CATEGORY_IDS } from "../constants.js";
 import { getCategoryDeletionState } from "../categories.js";
 import { useMoney } from "../store.js";
@@ -97,8 +97,8 @@ export default function MoneyTransactions() {
           <label><span>Date</span><input required type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} /></label>
           <label className="money-form-wide"><span>Description (optional)</span><input value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
           <label className="money-check"><input type="checkbox" checked={draft.recurring} onChange={(event) => setDraft({ ...draft, recurring: event.target.checked })} /><span>Recurring metadata</span></label>
-          <div className="money-form-actions"><Button type="submit">{editingId ? "Save Changes" : "Add Transaction"}</Button>{editingId ? <Button className="money-secondary-button" onClick={resetForm}>Cancel</Button> : null}</div>
-          {formError ? <p className="money-form-error" role="alert">{formError}</p> : null}
+          <div className="money-form-actions"><Button type="submit">{editingId ? "Save Changes" : "Add Transaction"}</Button>{editingId ? <Button variant="secondary" onClick={resetForm}>Cancel</Button> : null}</div>
+          {formError ? <ErrorState compact description={formError} /> : null}
         </form>
       </Card>
 
@@ -108,16 +108,16 @@ export default function MoneyTransactions() {
           <label><span>Month</span><input type="month" value={filters.month === "all" ? "" : filters.month} onChange={(event) => setFilters({ ...filters, month: event.target.value || "all" })} /></label>
           <label><span>Type</span><select value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}><option value="all">All types</option><option value="expense">Expenses</option><option value="income">Income</option></select></label>
           <label><span>Category</span><select value={filters.categoryId} onChange={(event) => setFilters({ ...filters, categoryId: event.target.value })}><option value="all">All categories</option>{data.categories.map((category) => <option value={category.id} key={category.id}>{category.name} · {category.type}</option>)}</select></label>
-          <Button className="money-secondary-button" onClick={() => setFilters({ ...filters, month: "all" })}>All months</Button>
+          <Button variant="secondary" onClick={() => setFilters({ ...filters, month: "all" })}>All months</Button>
         </div>
 
-        {visible.length ? <div className="money-transaction-list">{visible.map((transaction) => <div className="money-transaction-row" key={transaction.id}><div><strong>{transaction.description || categoryById.get(transaction.categoryId)?.name}</strong><span>{transaction.date} · {categoryById.get(transaction.categoryId)?.name}{transaction.recurring ? " · Recurring" : ""}</span></div><strong className={`money-amount is-${transaction.type}`}>{transaction.type === "expense" ? "−" : "+"}{formatInr(transaction.amountMinor)}</strong><div className="money-row-actions"><Button className="money-secondary-button" onClick={() => beginEdit(transaction)}>Edit</Button>{pendingDeleteId === transaction.id ? <><Button className="money-danger-button" onClick={() => { const deleted = deleteTransaction(transaction.id); setPendingDeleteId(null); if (deleted && editingId === transaction.id) resetForm(); }}>Confirm delete</Button><Button className="money-secondary-button" onClick={() => setPendingDeleteId(null)}>Cancel</Button></> : <Button className="money-secondary-button" onClick={() => setPendingDeleteId(transaction.id)}>Delete</Button>}</div></div>)}</div> : <EmptyState title="No matching transactions" description="Adjust the filters or add a transaction." />}
+        {visible.length ? <div className="money-transaction-list">{visible.map((transaction) => <div className="money-transaction-row" key={transaction.id}><div><strong>{transaction.description || categoryById.get(transaction.categoryId)?.name}</strong><span>{formatDayKey(transaction.date)} · {categoryById.get(transaction.categoryId)?.name}{transaction.recurring ? " · Recurring" : ""}</span></div><strong className={`money-amount is-${transaction.type}`}>{transaction.type === "expense" ? "−" : "+"}{formatInr(transaction.amountMinor)}</strong><div className="money-row-actions"><Button variant="secondary" onClick={() => beginEdit(transaction)}>Edit</Button>{pendingDeleteId === transaction.id ? <><Button variant="danger" onClick={() => { const deleted = deleteTransaction(transaction.id); setPendingDeleteId(null); if (deleted && editingId === transaction.id) resetForm(); }}>Confirm delete</Button><Button variant="secondary" onClick={() => setPendingDeleteId(null)}>Cancel</Button></> : <Button variant="secondary" onClick={() => setPendingDeleteId(transaction.id)}>Delete</Button>}</div></div>)}</div> : <EmptyState title="No matching transactions" description="Adjust the filters or add a transaction." />}
       </Card>
 
       <Card>
         <div className="section-header"><h2>Custom categories</h2><p>Referenced and default categories cannot be deleted.</p></div>
-        <form className="money-inline-form" onSubmit={(event) => { event.preventDefault(); if (addCategory(categoryDraft)) { setCategoryDraft({ ...categoryDraft, name: "" }); setCategoryError(""); } else setCategoryError("Use a unique category name."); }}><label><span>Name</span><input required value={categoryDraft.name} onChange={(event) => setCategoryDraft({ ...categoryDraft, name: event.target.value })} /></label><label><span>Type</span><select value={categoryDraft.type} onChange={(event) => setCategoryDraft({ ...categoryDraft, type: event.target.value })}><option value="expense">Expense</option><option value="income">Income</option></select></label><Button type="submit">Add Category</Button>{categoryError ? <p className="money-form-error" role="alert">{categoryError}</p> : null}</form>
-        <div className="money-category-list">{data.categories.filter((category) => !DEFAULT_CATEGORY_IDS.has(category.id)).map((category) => { const deletion = getCategoryDeletionState(category.id, data.transactions, data.budgets); return <div key={category.id}><span>{category.name} · {category.type}</span><Button className="money-secondary-button" disabled={!deletion.allowed} title={deletion.reason} onClick={() => removeCategory(category.id)}>Delete</Button>{!deletion.allowed ? <small>{deletion.reason}</small> : null}</div>; })}</div>
+        <form className="money-inline-form" onSubmit={(event) => { event.preventDefault(); if (addCategory(categoryDraft)) { setCategoryDraft({ ...categoryDraft, name: "" }); setCategoryError(""); } else setCategoryError("Use a unique category name."); }}><label><span>Name</span><input required value={categoryDraft.name} onChange={(event) => setCategoryDraft({ ...categoryDraft, name: event.target.value })} /></label><label><span>Type</span><select value={categoryDraft.type} onChange={(event) => setCategoryDraft({ ...categoryDraft, type: event.target.value })}><option value="expense">Expense</option><option value="income">Income</option></select></label><Button type="submit">Add Category</Button>{categoryError ? <ErrorState compact description={categoryError} /> : null}</form>
+        <div className="money-category-list">{data.categories.filter((category) => !DEFAULT_CATEGORY_IDS.has(category.id)).map((category) => { const deletion = getCategoryDeletionState(category.id, data.transactions, data.budgets); return <div key={category.id}><span>{category.name} · {category.type}</span><Button variant="danger" disabled={!deletion.allowed} title={deletion.reason} onClick={() => removeCategory(category.id)}>Delete</Button>{!deletion.allowed ? <small>{deletion.reason}</small> : null}</div>; })}</div>
       </Card>
     </div>
   );

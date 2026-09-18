@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button, Card, EmptyState } from "@ui";
-import { getToday, parseDayKey } from "@/shared/date";
+import { formatDayKey, getToday, parseDayKey } from "@/shared/date";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
 import {
   countComposureChecks,
@@ -13,17 +13,6 @@ import {
   COMPOSURE_NOTE_MAX_LENGTH,
 } from "../composureConstants.js";
 import { useComposure } from "../composureStore.js";
-
-const dayFormatter = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
-const formatDay = (day) => {
-  const date = parseDayKey(day);
-  return date ? dayFormatter.format(date) : day;
-};
 
 const formatRating = (rating) => rating === null ? "Not rated" : `${rating} / 5`;
 
@@ -87,7 +76,7 @@ function ComposureForm({ day, today, saveToday }) {
               </label>
             ))}
             {rating !== null ? (
-              <Button className="composure-clear-rating" onClick={() => setRating(null)}>
+              <Button variant="secondary" onClick={() => setRating(null)}>
                 Clear
               </Button>
             ) : null}
@@ -179,7 +168,7 @@ export default function ComposureReview() {
                     selectedDate === review.date ? null : review.date,
                   )}
                 >
-                  <span>{formatDay(review.date)}</span>
+                  <span>{formatDayKey(review.date)}</span>
                   <span>{countComposureChecks(review)} / {COMPOSURE_CHECKLIST.length} checks</span>
                   <span>Composure: {formatRating(review.composureRating)}</span>
                 </button>
@@ -196,7 +185,7 @@ export default function ComposureReview() {
         {selected ? (
           <Card className="composure-detail">
             <div className="section-header">
-              <h2>{formatDay(selected.date)}</h2>
+              <h2>{formatDayKey(selected.date)}</h2>
               <p>Composure: {formatRating(selected.composureRating)}</p>
             </div>
             <div className="composure-detail-columns">
