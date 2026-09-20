@@ -6,3 +6,6 @@ export {default as MotionCard} from "./MotionCard";
 export {default as EmptyState} from "./EmptyState";
 export {default as Subnav} from "./Subnav";
 export {LoadingState, ErrorState} from "./StatusState";
+export {default as ContextMenu} from "./ContextMenu";
+export {Stage, Mosaic, SectionLead} from "./Composition";
+export {default as PanelHeader} from "./PanelHeader";

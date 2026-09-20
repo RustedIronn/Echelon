@@ -1,27 +1,23 @@
 import {
-  BarChart3,
-  BookOpen,
-  CalendarDays,
+  CalendarRange,
   CheckSquare,
   Dumbbell,
   Home,
   Settings,
+  Sparkles,
   Timer,
   WalletCards,
-  Wrench,
 } from "lucide-react";
 
 export const appNavigation = Object.freeze([
   { id: "today", label: "Today", path: "/", icon: Home, desktopOrder: 0, mobilePrimaryOrder: 0 },
-  { id: "schedule", label: "Schedule", path: "/schedule", icon: CalendarDays, desktopOrder: 1, mobilePrimaryOrder: 1 },
+  { id: "plan", label: "Plan", path: "/plan", icon: CalendarRange, desktopOrder: 1, mobilePrimaryOrder: 1 },
   { id: "focus", label: "Focus", path: "/focus", icon: Timer, desktopOrder: 2, mobilePrimaryOrder: 2 },
   { id: "habits", label: "Habits", path: "/habits", icon: CheckSquare, desktopOrder: 3, mobilePrimaryOrder: 3 },
-  { id: "review", label: "Review", path: "/review", icon: BookOpen, desktopOrder: 4, mobileMoreOrder: 3 },
-  { id: "settings", label: "Settings", path: "/settings", icon: Settings, desktopOrder: 5, mobileMoreOrder: 5 },
-  { id: "analytics", label: "Analytics", path: "/analytics", icon: BarChart3, desktopOrder: 6, mobileMoreOrder: 4 },
-  { id: "workouts", label: "Workouts", path: "/workouts", icon: Dumbbell, desktopOrder: 7, mobileMoreOrder: 2 },
-  { id: "money", label: "Money", path: "/money", icon: WalletCards, desktopOrder: 8, mobileMoreOrder: 1 },
-  { id: "tools", label: "Tools", path: "/tools", icon: Wrench, desktopOrder: 9, mobileMoreOrder: 0 },
+  { id: "workouts", label: "Workouts", path: "/workouts", icon: Dumbbell, desktopOrder: 4, mobileMoreOrder: 0 },
+  { id: "money", label: "Money", path: "/money", icon: WalletCards, desktopOrder: 5, mobileMoreOrder: 1 },
+  { id: "insights", label: "Insights", path: "/insights", icon: Sparkles, desktopOrder: 6, mobileMoreOrder: 2 },
+  { id: "settings", label: "Settings", path: "/settings", icon: Settings, desktopOrder: 7, mobileMoreOrder: 3 },
 ]);
 
 const byOrder = (field) => (left, right) => left[field] - right[field];

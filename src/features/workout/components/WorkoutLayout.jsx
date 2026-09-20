@@ -1,19 +1,18 @@
 import { Outlet } from "react-router-dom";
 
-import { PageTitle, Subnav } from "@ui";
+import { PageTitle, Stage, Subnav } from "@ui";
 
 const sections = [
   { label: "Today", path: "/workouts/today" },
-  { label: "Calendar", path: "/workouts/calendar" },
   { label: "History", path: "/workouts/history" },
-  { label: "Progress", path: "/workouts/progress" },
-  { label: "Plans", path: "/workouts/plans" },
+  { label: "Plan", path: "/workouts/plans" },
 ];
 
 export default function WorkoutLayout() {
   return (
     <div className="page workout-app">
       <PageTitle
+        tone="ember"
         label="TRAINING"
         title="Workouts"
         description="Train, recover, and review your consistency."
@@ -21,9 +20,9 @@ export default function WorkoutLayout() {
 
       <Subnav label="Workout sections" items={sections} />
 
-      <div className="workout-view">
+      <Stage tone="ember" className="workout-view workout-stage">
         <Outlet />
-      </div>
+      </Stage>
     </div>
   );
 }

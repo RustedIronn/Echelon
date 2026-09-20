@@ -17,5 +17,6 @@
 @import "./features/notifications/notifications.css";
 @import "./features/money/money.css";
 @import "./features/tools/tools.css";
+@import "./features/planner/planner.css";
 
 @import "./core/auth/auth.css";

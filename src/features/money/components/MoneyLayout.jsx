@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 
-import { PageTitle, Subnav } from "@ui";
+import { PageTitle, Stage, Subnav } from "@ui";
 import { useMoney } from "../store.js";
 
 const sections = [
@@ -16,6 +16,7 @@ export default function MoneyLayout() {
   return (
     <div className="page money-app">
       <PageTitle
+        tone="ledger"
         label="MONEY"
         title="Money"
         description="A clear, manual ledger for your financial life."
@@ -23,7 +24,9 @@ export default function MoneyLayout() {
 
       <Subnav label="Money sections" items={sections} />
 
-      <Outlet key={owner ?? "anonymous"} />
+      <Stage tone="ledger" className="money-stage">
+        <Outlet key={owner ?? "anonymous"} />
+      </Stage>
     </div>
   );
 }

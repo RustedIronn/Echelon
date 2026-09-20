@@ -44,7 +44,7 @@ export default function WorkoutSession() {
     return (
       <Card>
         <div className="workout-session">
-          <h1>Workout Complete 🔥</h1>
+          <h1>Session complete</h1>
 
           <h2>{workout.title}</h2>
 

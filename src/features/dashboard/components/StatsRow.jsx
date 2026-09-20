@@ -47,7 +47,7 @@ export default function StatsRow({ tasks }) {
 
     {
       label: "Training",
-      value: `🔥 ${streak}`,
+      value: `${streak} day${streak === 1 ? "" : "s"}`,
       icon: Dumbbell,
       type: "movement",
     },

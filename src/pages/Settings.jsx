@@ -1,7 +1,8 @@
-import ScheduleEditor from "@features/schedule/components/ScheduleEditor";
 import ResetDay from "@features/schedule/components/ResetDay";
 import PageTitle from "@ui/PageTitle";
 import NotificationSettings from "@features/notifications/components/NotificationSettings";
+import ResetMode from "@features/tools/components/ResetMode";
+import MoneyCategorySettings from "@features/money/components/MoneyCategorySettings";
 
 export default function Settings() {
   return (
@@ -12,9 +13,17 @@ export default function Settings() {
         description="Adjust your system."
       />
 
-      <ScheduleEditor />
-
       <NotificationSettings />
+
+      <details className="settings-tool">
+        <summary><strong>Money categories</strong><span>Manage custom ledger categories</span></summary>
+        <MoneyCategorySettings />
+      </details>
+
+      <details className="settings-tool">
+        <summary><strong>Quick reset</strong><span>Open the temporary reset checklist</span></summary>
+        <ResetMode />
+      </details>
 
       <ResetDay />
     </div>

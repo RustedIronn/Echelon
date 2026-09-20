@@ -3,9 +3,9 @@ import Layout from "./layout/Layout";
 import Today from "../pages/Today";
 import Focus from "../pages/Focus";
 import Habits from "../pages/Habits";
-import Review from "../pages/Review";
 import DailyReview from "@features/review/components/DailyReview";
-import ComposureReview from "@features/review/components/ComposureReview";
+import InsightsLayout from "@features/insights/components/InsightsLayout";
+import InsightsOverview from "@features/insights/components/InsightsOverview";
 import Settings from "../pages/Settings";
 import Schedule from "../pages/Schedule";
 import Analytics from "../pages/Analytics";
@@ -15,18 +15,11 @@ import MoneyOverview from "@features/money/components/MoneyOverview";
 import MoneyTransactions from "@features/money/components/MoneyTransactions";
 import MoneyBudgets from "@features/money/components/MoneyBudgets";
 import MoneyGoals from "@features/money/components/MoneyGoals";
-import Tools from "@pages/Tools";
-import ToolsOverview from "@features/tools/components/ToolsOverview";
-import NowNextLater from "@features/tools/components/NowNextLater";
-import BrainDump from "@features/tools/components/BrainDump";
-import TaskBreakdown from "@features/tools/components/TaskBreakdown";
-import TimeBlindnessTimer from "@features/tools/components/TimeBlindnessTimer";
-import ResetMode from "@features/tools/components/ResetMode";
+import Planner from "@pages/Planner";
+import PlanLayout from "@features/plan/components/PlanLayout";
 import WorkoutToday from "@features/workout/components/WorkoutToday";
-import WorkoutCalendar from "@features/workout/components/WorkoutCalendar";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
 import WorkoutHistoryDetail from "@features/workout/components/WorkoutHistoryDetail";
-import WorkoutProgress from "@features/workout/components/WorkoutProgress";
 import WorkoutExerciseProgress from "@features/workout/components/WorkoutExerciseProgress";
 import WorkoutPlans from "@features/workout/components/WorkoutPlans";
 
@@ -49,23 +42,44 @@ export const router = createBrowserRouter([
       },
       {
         path: "review",
-        element: <Review />,
-        children: [
-          { index: true, element: <DailyReview /> },
-          { path: "composure", element: <ComposureReview /> },
-        ],
+        element: <Navigate to="/insights/daily" replace />,
+      },
+      {
+        path: "review/composure",
+        element: <Navigate to="/insights/daily" replace />,
       },
       {
         path: "settings",
         element: <Settings />,
       },
+      { path: "schedule", element: <Navigate to="/plan/schedule" replace /> },
+      { path: "planner", element: <Navigate to="/plan/planner" replace /> },
+      { path: "planner/today", element: <Navigate to="/plan/planner/today" replace /> },
+      { path: "planner/upcoming", element: <Navigate to="/plan/planner/upcoming" replace /> },
       {
-        path: "schedule",
-        element: <Schedule />,
+        path: "plan",
+        element: <PlanLayout />,
+        children: [
+          { index: true, element: <Navigate to="schedule" replace /> },
+          { path: "schedule", element: <Schedule embedded /> },
+          { path: "planner", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/today", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/upcoming", element: <Planner embedded basePath="/plan/planner" /> },
+        ],
       },
       {
         path: "analytics",
-        element: <Analytics />,
+        element: <Navigate to="/insights/trends" replace />,
+      },
+      {
+        path: "insights",
+        element: <InsightsLayout />,
+        children: [
+          { index: true, element: <InsightsOverview /> },
+          { path: "daily", element: <DailyReview /> },
+          { path: "composure", element: <Navigate to="/insights/daily" replace /> },
+          { path: "trends", element: <Analytics /> },
+        ],
       },
       {
         path: "workouts",
@@ -81,7 +95,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "calendar",
-            element: <WorkoutCalendar />,
+            element: <Navigate to="/workouts/history?view=calendar" replace />,
           },
           {
             path: "history",
@@ -93,7 +107,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "progress",
-            element: <WorkoutProgress />,
+            element: <Navigate to="/workouts/history?view=insights" replace />,
           },
           {
             path: "progress/exercise/:exerciseId",
@@ -115,18 +129,12 @@ export const router = createBrowserRouter([
           { path: "goals", element: <MoneyGoals /> },
         ],
       },
-      {
-        path: "tools",
-        element: <Tools />,
-        children: [
-          { index: true, element: <ToolsOverview /> },
-          { path: "now", element: <NowNextLater /> },
-          { path: "brain-dump", element: <BrainDump /> },
-          { path: "breakdown", element: <TaskBreakdown /> },
-          { path: "timer", element: <TimeBlindnessTimer /> },
-          { path: "reset", element: <ResetMode /> },
-        ],
-      },
+      { path: "tools", element: <Navigate to="/plan/planner" replace /> },
+      { path: "tools/now", element: <Navigate to="/" replace /> },
+      { path: "tools/brain-dump", element: <Navigate to="/plan/planner" replace /> },
+      { path: "tools/breakdown", element: <Navigate to="/plan/planner" replace /> },
+      { path: "tools/timer", element: <Navigate to="/focus" replace /> },
+      { path: "tools/reset", element: <Navigate to="/settings" replace /> },
     ],
   },
 ]);

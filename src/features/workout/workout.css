@@ -2,6 +2,43 @@
   margin-bottom: var(--space-6);
 }
 
+.workout-stage {
+  min-height: 28rem;
+}
+
+.workout-stage > .stack > :last-child,
+.workout-stage .card:last-child {
+  margin-bottom: 0;
+}
+
+.workout-active-workspace .workout-session { margin-bottom: 0; }
+
+.workout-plan-console {
+  display: grid;
+  gap: var(--space-6);
+  margin-bottom: 0;
+}
+
+.workout-plan-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr);
+  gap: var(--space-6);
+  align-items: end;
+  padding-top: var(--space-5);
+  border-top: 1px solid rgba(91, 68, 76, .16);
+}
+
+.workout-plan-action {
+  display: grid;
+  justify-items: end;
+}
+
+.workout-plan-action .workout-stats {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+
 .workout-view-header p {
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
@@ -45,6 +82,11 @@
 .workout-session {
   text-align: center;
   padding: var(--space-5);
+  border-radius: 30px 22px 38px 26px;
+  background:
+    radial-gradient(circle at 84% 16%, rgba(165, 76, 105, .2), transparent 14rem),
+    linear-gradient(140deg, rgba(216, 238, 232, .62), rgba(245, 224, 230, .5));
+  box-shadow: 0 18px 40px rgba(55, 79, 74, .1);
 }
 
 .workout-session h1 {
@@ -786,4 +828,26 @@
   .exercise-history-heading {
     flex-direction: column;
   }
+}
+.workout-training-run {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.workout-history-modes { display: inline-flex; gap: var(--space-1); padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-round); background: rgba(228, 216, 202, .5); }
+.workout-history-modes button { padding: 7px 12px; border: 0; border-radius: var(--radius-round); background: transparent; color: var(--color-text-muted); box-shadow: none; }
+.workout-history-modes button.is-active { background: rgba(78, 55, 75, .9); color: var(--color-text-inverse); }
+
+@media (max-width: 760px) {
+  .workout-plan-brief { grid-template-columns: 1fr; align-items: start; }
+  .workout-plan-action { justify-items: start; }
+  .workout-plan-action .workout-stats { justify-content: flex-start; }
+  .workout-plan-date-nav { grid-template-columns: 1fr 1fr; }
+  .workout-plan-date-nav > div { grid-column: 1 / -1; grid-row: 1; }
+}
+
+.workout-training-run svg {
+  color: #a66c45;
+  filter: drop-shadow(0 4px 8px rgba(166, 108, 69, .2));
 }

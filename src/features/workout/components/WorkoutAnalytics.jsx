@@ -1,4 +1,5 @@
 import { Card } from "@ui";
+import { Activity } from "lucide-react";
 
 import { useWorkout } from "@features/workout/store";
 
@@ -33,9 +34,12 @@ export default function WorkoutAnalytics() {
         </div>
 
         <div>
-          <strong>🔥 {streak}</strong>
+          <strong className="workout-training-run">
+            <Activity size={18} aria-hidden="true" />
+            {streak}
+          </strong>
 
-          <span>Day Streak</span>
+          <span>Training run</span>
         </div>
       </div>
     </Card>

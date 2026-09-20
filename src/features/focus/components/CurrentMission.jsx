@@ -1,13 +1,8 @@
-import { getCurrentScheduleItem } from "@features/schedule/time";
-import { useFocus } from "@features/focus/store";
 import { Button, EmptyState } from "@ui";
+import { getPrimaryMission } from "@features/focus/missions";
 
-export default function CurrentMission({ tasks }) {
-  const { start } = useFocus();
-
-  const current = getCurrentScheduleItem(tasks);
-
-  const mission = current || tasks.find((task) => !task.done);
+export default function CurrentMission({ tasks, onFocus }) {
+  const mission = getPrimaryMission(tasks);
 
   return (
     <section className="mission-card">
@@ -18,21 +13,19 @@ export default function CurrentMission({ tasks }) {
           <>
             <h1>{mission.title}</h1>
 
-            <span>
-              {mission.start}-{mission.end}
-            </span>
+            <span>{mission.end ? `${mission.start}–${mission.end}` : mission.start}</span>
 
             <p>{mission.description}</p>
           </>
         ) : (
           <EmptyState
-            title="Day Complete 🎉"
+            title="Day clear"
             description="You finished everything planned."
           />
         )}
       </div>
 
-      {mission && <Button onClick={() => start(mission)}>Start Focus</Button>}
+      {mission && <Button onClick={() => onFocus(mission)}>Open Focus</Button>}
     </section>
   );
 }

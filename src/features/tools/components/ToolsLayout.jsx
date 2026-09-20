@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 
-import { PageTitle, Subnav } from "@ui";
+import { PageTitle, Stage, Subnav } from "@ui";
 import { useTools } from "../store.js";
 
 const sections = [
@@ -18,14 +18,17 @@ export default function ToolsLayout() {
   return (
     <div className="page tools-app">
       <PageTitle
-        label="TOOLBOX"
-        title="What matters right now?"
-        description="A few quiet tools for finding the next workable step."
+        tone="play"
+        label="WORKBENCH"
+        title="Tools"
+        description="Find the next workable step, clear noise, or make time visible."
       />
 
       <Subnav label="Toolbox sections" items={sections} />
 
-      <Outlet key={owner ?? "anonymous"} />
+      <Stage tone="play" className="tools-stage">
+        <Outlet key={owner ?? "anonymous"} />
+      </Stage>
     </div>
   );
 }

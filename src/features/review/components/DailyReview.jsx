@@ -11,6 +11,8 @@ import useDailyReviews from "@features/review/store";
 
 import ReviewBreakdown from "./ReviewBreakdown";
 import { computeReviewBreakdown } from "../breakdown";
+import ComposureReview from "./ComposureReview";
+import { useComposure } from "../composureStore";
 
 export default function DailyReview() {
   const { tasks } = useToday();
@@ -33,6 +35,8 @@ export default function DailyReview() {
     workoutCompleted: review.workoutCompleted,
   });
   const { history } = useDailyReviews({ ...review, breakdown });
+  const composureReviews = useComposure((state) => state.data.reviews);
+  const composureByDate = new Map(composureReviews.map((entry) => [entry.date, entry]));
 
   return (
     <div className="stack">
@@ -69,6 +73,14 @@ export default function DailyReview() {
             {review.improvements.map((item) => <li key={item}>{item}</li>)}
           </ul>
         </div>
+
+        <div className="daily-composure-section">
+          <div className="section-header">
+            <h2>Composure</h2>
+            <p>Close the day by reflecting on your own response under pressure.</p>
+          </div>
+          <ComposureReview todayOnly embedded />
+        </div>
       </Card>
 
       <Card>
@@ -81,6 +93,7 @@ export default function DailyReview() {
           {history.slice(-7).reverse().map((day) => (
             <div className="history-item" key={`${day.date}-${day.score}`}>
               <span>{formatDayKey(day.date)}</span>
+              <span>{composureByDate.get(day.date)?.composureRating ? `Composure ${composureByDate.get(day.date).composureRating}/5` : "Composure not rated"}</span>
               <strong>{day.score}%</strong>
             </div>
           ))}

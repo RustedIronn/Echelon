@@ -14,7 +14,7 @@ import {
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function WorkoutCalendar() {
+export default function WorkoutCalendar({ embedded = false }) {
   const sessions = useWorkout((state) => state.sessions);
   const now = new Date();
   const [today, setToday] = useState(() => getToday(now));
@@ -50,10 +50,10 @@ export default function WorkoutCalendar() {
 
   return (
     <div className="stack">
-      <div className="section-header">
+      {!embedded ? <div className="section-header">
         <h2>Workout Calendar</h2>
         <p>Completed sessions by local calendar day.</p>
-      </div>
+      </div> : null}
 
       {sessions.length === 0 ? (
         <Card>

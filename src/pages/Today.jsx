@@ -1,55 +1,33 @@
+import { useNavigate } from "react-router-dom";
+
 import { useToday } from "@/features/schedule/todayStore";
-import { PageTitle } from "@ui";
-
+import { PageTitle, Stage } from "@ui";
 import CurrentMission from "@/features/focus/components/CurrentMission";
-import DayProgress from "@/features/dashboard/components/DayProgress";
-import StatsRow from "@/features/dashboard/components/StatsRow";
-import Timeline from "@/features/schedule/components/Timeline";
-import DailyOverview from "@/features/dashboard/components/DailyOverview";
-
-import NonNegotiables from "@/features/dashboard/components/NonNegotiables";
-import MinimumStandard from "@/features/dashboard/components/MinimumStandard";
-
-import WorkoutSession from "@features/workout/components/WorkoutSession";
-import WeekendPlan from "@features/schedule/components/WeekendPlan";
-import TodayWorkout from "@features/workout/components/TodayWorkout";
+import NextUp from "@/features/dashboard/components/NextUp";
+import TodaySummaries from "@/features/dashboard/components/TodaySummaries";
 
 export default function Today() {
   const { tasks, toggleTask } = useToday();
+  const navigate = useNavigate();
+  const openFocus = (mission) => {
+    navigate("/focus", { state: mission.source ? { mission } : { missionId: mission.id } });
+  };
 
   return (
     <div className="page">
       <PageTitle
+        tone="command"
         label="DAILY SYSTEM"
         title="Today"
-        description="Execute the plan. Improve the system."
+        description="What matters right now, and what comes next."
       />
 
-      <DailyOverview />
+      <Stage tone="command" className="today-stage">
+        <CurrentMission tasks={tasks} onFocus={openFocus} />
 
-      <div className="dashboard-grid">
-        <div className="dashboard-main">
-          <CurrentMission tasks={tasks} />
-
-          <DayProgress tasks={tasks} />
-        </div>
-
-        <div className="dashboard-side">
-          <StatsRow tasks={tasks} />
-        </div>
-      </div>
-
-      <Timeline tasks={tasks} toggleTask={toggleTask} />
-
-      <NonNegotiables />
-
-      <MinimumStandard />
-
-      <TodayWorkout />
-
-      <WorkoutSession />
-
-      <WeekendPlan />
+        <NextUp tasks={tasks} onFocus={openFocus} onToggle={toggleTask} limit={2} />
+        <TodaySummaries />
+      </Stage>
     </div>
   );
 }

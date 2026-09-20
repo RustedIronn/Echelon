@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { useSync } from "@/ui/useSync";
 
 import {
   mobileMoreNavigation,
@@ -12,6 +13,7 @@ export default function MobileNav() {
   const moreRef = useRef(null);
   const moreButtonRef = useRef(null);
   const location = useLocation();
+  const { status } = useSync();
   const moreActive = mobileMoreNavigation.some(
     ({ path }) => location.pathname.startsWith(path),
   );
@@ -39,9 +41,19 @@ export default function MobileNav() {
   }, [open]);
 
   return (
-    <nav className="mobile-nav" aria-label="Primary navigation">
+    <>
+      <header className="mobile-topbar">
+        <span className="mobile-topbar-brand">
+          <span className="mobile-topbar-mark"><img src="/assets/echelon.svg" alt="" /></span>
+          <span><strong>Echelon</strong><small>Personal orbit</small></span>
+        </span>
+        <span className={`mobile-sync mobile-sync--${status}`} aria-label={`Sync status: ${status}`}>
+          <span aria-hidden="true" />
+        </span>
+      </header>
+      <nav className="mobile-nav" aria-label="Primary navigation">
       {mobilePrimaryNavigation.map(({ id, label, path, icon: Icon }) => (
-        <NavLink key={id} to={path} onClick={() => setOpen(false)}>
+        <NavLink key={id} to={path} end={path === "/"} onClick={() => setOpen(false)}>
           <Icon size={22} />
 
           <span>{label}</span>
@@ -60,7 +72,8 @@ export default function MobileNav() {
           <span>More</span>
         </button>
         {open ? (
-          <div className="mobile-more-menu" id="mobile-more-menu">
+          <div className="mobile-more-menu" id="mobile-more-menu" role="dialog" aria-label="More destinations">
+            <p>More destinations</p>
             {mobileMoreNavigation.map(({ id, label, path, icon: Icon }) => (
               <NavLink key={id} to={path} onClick={() => setOpen(false)}>
                 <Icon size={18} />
@@ -70,6 +83,7 @@ export default function MobileNav() {
           </div>
         ) : null}
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }

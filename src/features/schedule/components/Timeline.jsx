@@ -1,9 +1,14 @@
 import { motion } from "framer-motion";
 import TimelineItem from "./TimelineItem";
-import { getCurrentScheduleItem } from "../time";
+import { getCurrentScheduleItem, getScheduleMinutes } from "../time";
 
-export default function Timeline({ tasks, toggleTask }) {
+export default function Timeline({ tasks, toggleTask, onFocus }) {
   const current = getCurrentScheduleItem(tasks);
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const next = tasks.find(
+    (task) => !task.done && getScheduleMinutes(task.start) > currentMinutes,
+  );
 
   return (
     <div className="timeline">
@@ -25,7 +30,10 @@ export default function Timeline({ tasks, toggleTask }) {
           <TimelineItem
             task={task}
             toggleTask={toggleTask}
+            onFocus={onFocus}
             current={current?.id === task.id}
+            next={next?.id === task.id}
+            past={!task.done && getScheduleMinutes(task.end) <= currentMinutes}
           />
         </motion.div>
       ))}

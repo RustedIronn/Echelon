@@ -16,7 +16,7 @@ import { useComposure } from "../composureStore.js";
 
 const formatRating = (rating) => rating === null ? "Not rated" : `${rating} / 5`;
 
-function ComposureForm({ day, today, saveToday }) {
+function ComposureForm({ day, today, saveToday, embedded = false }) {
   const [checks, setChecks] = useState(
     () => today?.checks ?? createEmptyComposureChecks(),
   );
@@ -35,8 +35,10 @@ function ComposureForm({ day, today, saveToday }) {
     setStatus(saved ? "Saved for today." : "Unable to save this review.");
   };
 
+  const Surface = embedded ? "section" : Card;
+
   return (
-    <Card className="composure-form-card">
+    <Surface className={`composure-form-card ${embedded ? "is-embedded" : ""}`.trim()}>
       <div className="section-header">
         <h2>Today</h2>
         <p>A brief review of your own choices.</p>
@@ -100,11 +102,11 @@ function ComposureForm({ day, today, saveToday }) {
           {status ? <span role="status">{status}</span> : null}
         </div>
       </form>
-    </Card>
+    </Surface>
   );
 }
 
-export default function ComposureReview() {
+export default function ComposureReview({ todayOnly = false, embedded = false }) {
   const { data, saveToday } = useComposure();
   const [day, setDay] = useState(() => getToday());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -129,6 +131,10 @@ export default function ComposureReview() {
   const selected = selectedDate
     ? data.reviews.find((review) => review.date === selectedDate) ?? null
     : null;
+
+  if (todayOnly) {
+    return <ComposureForm key={`${data.reviews.length}-${day}`} day={day} today={today} saveToday={saveToday} embedded={embedded} />;
+  }
 
   return (
     <div className="composure-layout">

@@ -1,13 +1,76 @@
 .mission-card {
-  background: var(--color-text);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 260px;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(243, 187, 109, .3), transparent 16rem),
+    linear-gradient(125deg, #302334 0%, #764455 58%, #9b694d 120%);
   color: var(--color-text-inverse);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-8);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 34px 52px 30px 46px;
+  padding: var(--space-10);
   margin-bottom: var(--space-6);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-5);
+  box-shadow: 0 28px 64px rgba(51, 37, 86, .25);
+}
+
+.focus-mode-shell {
+  margin-bottom: var(--space-6);
+  border: 1px solid rgba(232, 212, 188, .12);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .012) 0 1px, transparent 1px 5px),
+    radial-gradient(circle at 50% 12%, rgba(195, 139, 75, .12), transparent 24rem),
+    linear-gradient(145deg, rgba(36, 33, 38, .84), rgba(56, 45, 54, .68));
+  box-shadow: inset 0 0 0 8px rgba(30, 27, 31, .1), 0 26px 60px rgba(39, 31, 40, .2);
+}
+
+.focus-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, .34fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.focus-workspace .focus-mode-shell { margin-bottom: 0; }
+.focus-history-panel { position: sticky; top: var(--space-4); margin-bottom: 0; }
+.focus-session-list { display: grid; }
+
+
+.focus-mode-shell .focus-card:last-child,
+.focus-mode-shell .mission-selector:last-child {
+  margin-bottom: 0;
+}
+
+.mission-card::before,
+.mission-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.mission-card::before {
+  width: 210px;
+  height: 210px;
+  right: -52px;
+  bottom: -92px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 42% 58% 34% 66%;
+  transform: rotate(24deg);
+}
+
+.mission-card::after {
+  width: 90px;
+  height: 90px;
+  top: 24px;
+  right: 23%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  filter: blur(2px);
 }
 
 .mission-card p:first-child {
@@ -18,7 +81,9 @@
 }
 
 .mission-card h1 {
-  font-size: var(--text-4xl);
+  max-width: 15ch;
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
+  line-height: .98;
   margin: 10px 0;
 }
 
@@ -28,8 +93,11 @@
 }
 
 .mission-card button {
-  background: var(--color-text-inverse);
+  min-height: 52px;
+  padding-inline: var(--space-6);
+  background: rgba(255, 255, 255, .9);
   color: var(--color-text);
+  box-shadow: 0 12px 28px rgba(20, 20, 40, .22);
 }
 
 .session-item {
@@ -46,17 +114,100 @@
   font-size: var(--text-md);
 }
 
+.session-item small {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text-muted);
+}
+
 .session-item:last-child {
   border-bottom: none;
 }
 
+@media (max-width: 980px) {
+  .focus-workspace { grid-template-columns: 1fr; }
+  .focus-history-panel { position: static; }
+}
+
 .focus-card {
-  background: var(--color-text);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  min-height: 390px;
+  place-content: center;
+  background:
+    radial-gradient(circle at 20% 22%, rgba(119, 195, 184, .3), transparent 18rem),
+    radial-gradient(circle at 83% 74%, rgba(190, 91, 122, .27), transparent 17rem),
+    linear-gradient(145deg, #14282c, #343244 52%, #713e52);
   color: var(--color-text-inverse);
-  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(240, 220, 194, .16);
+  border-radius: 44px 30px 52px 34px;
   padding: var(--space-12) var(--space-8);
   text-align: center;
   margin-bottom: var(--space-6);
+  box-shadow: 0 34px 72px rgba(28, 23, 29, .34), inset 0 0 0 6px rgba(19, 18, 21, .13), inset 0 1px 0 rgba(255, 232, 199, .12);
+}
+
+.focus-card::before,
+.focus-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 50%;
+}
+
+.focus-card::before {
+  width: 290px;
+  height: 290px;
+  left: -130px;
+  top: -120px;
+}
+
+.focus-card::after {
+  width: 180px;
+  height: 180px;
+  right: -65px;
+  bottom: -76px;
+}
+
+.focus-card.is-active::before {
+  animation: focus-orbit 9s linear infinite;
+  box-shadow: 0 0 70px rgba(180, 136, 231, .13);
+}
+
+.focus-card.is-active .focus-label {
+  color: #b9f0df;
+  opacity: 1;
+}
+
+.focus-card.is-paused {
+  background:
+    radial-gradient(circle at 22% 24%, rgba(211, 150, 109, .25), transparent 18rem),
+    linear-gradient(145deg, #25202a, #533747 60%, #69553c);
+}
+
+.focus-card.is-paused .focus-time {
+  opacity: .72;
+}
+
+.focus-card.is-ready {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(154, 184, 130, .24), transparent 16rem),
+    linear-gradient(145deg, #201d2e, #4f3c65 58%, #536448);
+}
+
+.focus-card.is-complete {
+  background:
+    radial-gradient(circle at 22% 20%, rgba(244, 191, 106, .28), transparent 17rem),
+    radial-gradient(circle at 82% 72%, rgba(132, 174, 116, .25), transparent 16rem),
+    linear-gradient(145deg, #2c2830, #66503d 58%, #48624d);
+}
+
+.focus-card.is-complete .focus-time {
+  color: #fff0be;
+  font-size: clamp(4rem, 9vw, 7rem);
 }
 
 .focus-label {
@@ -71,7 +222,8 @@
   font-size: var(--text-display);
   font-weight: var(--weight-bold);
   letter-spacing: -.05em;
-  margin: var(--space-6) 0;
+  margin: var(--space-6) 0 var(--space-3);
+  text-shadow: 0 0 38px rgba(191, 166, 255, .28);
 }
 
 .focus-card h2 {
@@ -79,15 +231,117 @@
   margin-bottom: var(--space-6);
 }
 
-.focus-card button {
+.focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.focus-card .button--primary {
   background: var(--color-text-inverse);
   color: var(--color-text);
   padding: 14px var(--space-7);
   border-radius: var(--radius-sm);
 }
 
+.focus-card .button--secondary {
+  border-color: rgba(255, 255, 255, .35);
+  background: transparent;
+  color: var(--color-text-inverse);
+}
+
+.mission-selector {
+  margin-bottom: var(--space-5);
+  border-color: rgba(121, 89, 199, .18);
+  background: linear-gradient(125deg, rgba(226, 215, 203, .7), rgba(194, 183, 196, .58));
+}
+
+.mission-selector.is-compact {
+  margin: 0;
+  padding: var(--space-4);
+  background: rgba(229, 216, 201, .12);
+  border-color: rgba(244, 225, 201, .12);
+}
+
+.mission-selector.is-compact .section-header { margin-bottom: var(--space-3); }
+.mission-selector.is-compact .mission-options { display: flex; overflow-x: auto; padding-bottom: var(--space-1); }
+.mission-selector.is-compact .mission-option { flex: 0 0 min(260px, 82vw); padding: var(--space-3); }
+.focus-awareness-tool { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+.focus-awareness-tool > summary { cursor: pointer; font-family: var(--font-display); font-weight: var(--weight-semibold); }
+.tools-awareness-compact { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.tools-awareness-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.tools-awareness-status > strong { margin-right: auto; font: 600 var(--text-xl) var(--font-mono); }
+
+.mission-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.mission-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(228, 216, 203, .56);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.mission-option:hover,
+.mission-option:focus-visible,
+.mission-option.is-selected {
+  border-color: var(--color-focus);
+  background: rgba(235, 226, 251, .78);
+  opacity: 1;
+  transform: none;
+  box-shadow: 0 10px 24px rgba(94, 70, 150, .12);
+}
+
+.mission-option-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-round);
+  background: var(--mission-background);
+  color: var(--mission-color);
+}
+
+.mission-option strong,
+.mission-option small {
+  display: block;
+}
+
+@keyframes focus-orbit {
+  to {
+    transform: rotate(360deg) scale(1.08);
+  }
+}
+
+.mission-option small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
 @media (max-width: 600px) {
   .focus-time {
     font-size: 64px;
+  }
+
+  .mission-options {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

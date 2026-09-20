@@ -14,7 +14,7 @@ const exercisePath = (exerciseId) =>
 const deltaText = (value, label) =>
   `${value > 0 ? "+" : ""}${value} ${label}`;
 
-export default function WorkoutProgress() {
+export default function WorkoutProgress({ embedded = false }) {
   const sessions = useWorkout((state) => state.sessions);
   const summary = getTrackedProgressSummary(sessions);
   const weekly = getWeeklyTrackedAggregates(sessions).slice(-8);
@@ -25,10 +25,10 @@ export default function WorkoutProgress() {
 
   return (
     <div className="stack">
-      <div className="section-header">
+      {!embedded ? <div className="section-header">
         <h2>Workout Progress</h2>
         <p>Overall history and completed tracked-session insights.</p>
-      </div>
+      </div> : null}
 
       <div className="workout-progress-section-label">
         <h3>Overall workout history</h3>
