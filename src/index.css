@@ -5,8 +5,6 @@
 
 @import "./app/layout/layout.css";
 
-@import "./ui/ui.css";
-
 @import "./features/dashboard/dashboard.css";
 @import "./features/analytics/analytics.css";
 @import "./features/focus/focus.css";
@@ -18,5 +16,8 @@
 @import "./features/money/money.css";
 @import "./features/tools/tools.css";
 @import "./features/planner/planner.css";
+
+/* Shared component contracts load after feature layouts so controls remain coherent. */
+@import "./ui/ui.css";
 
 @import "./core/auth/auth.css";

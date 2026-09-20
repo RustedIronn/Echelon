@@ -1,30 +1,40 @@
 :root {
   /* Color Ã¢â‚¬â€ surfaces */
-  --color-bg: #C8BFBA;
-  --color-surface: #EEE7DE;
-  --color-surface-subtle: #D6CBC3;
-  --color-surface-hover: #E4D8CE;
+  --color-bg: #c5c8d0;
+  --color-surface: #f1f2f5;
+  --color-surface-subtle: #e2e4ea;
+  --color-surface-hover: #d7dae3;
 
   /* Color Ã¢â‚¬â€ text */
-  --color-text: #29252A;
-  --color-text-muted: #6E666B;
+  --color-text: #1e2230;
+  --color-text-muted: #4f5667;
   --color-text-inverse: #FFFFFF;
 
   /* Color Ã¢â‚¬â€ borders */
-  --color-border: #BDB0AB;
+  --color-border: rgba(35, 30, 45, .14);
+  --color-border-strong: rgba(35, 30, 45, .24);
+  --color-popover: #f7f7f9;
 
   /* Color Ã¢â‚¬â€ semantic */
-  --color-foundation: #70696E;
-  --color-movement: #AE7838;
-  --color-nourishment: #6C8050;
-  --color-focus: #3D746F;
-  --color-build: #6B668F;
-  --color-unwind: #865C71;
-  --color-danger: #7C2D2D;
-  --color-orbit: #765B8D;
-  --color-orbit-soft: #D9CDDC;
-  --color-sky: #4F8587;
-  --color-rose: #A85F72;
+  --color-foundation: #687083;
+  --color-movement: #a16075;
+  --color-nourishment: #4e806f;
+  --color-focus: #257d84;
+  --color-build: #7166a4;
+  --color-unwind: #875778;
+  --color-danger: #9a3d4b;
+  --color-orbit: #7565a6;
+  --color-orbit-soft: #ddd9ed;
+  --color-sky: #397f96;
+  --color-rose: #a34f79;
+  --accent-command: #bf6d83;
+  --accent-plan: #247b83;
+  --accent-focus: #9b78c1;
+  --accent-habits: #4e806f;
+  --accent-workout: #bd6958;
+  --accent-money: #397f6f;
+  --accent-insights: #7a5b94;
+  --accent-settings: #657086;
 
   /* Cockpit materials */
   --cockpit-smoke: #3f383d;
@@ -38,10 +48,10 @@
   --rail-color: rgba(74, 62, 68, .25);
 
   /* Color Ã¢â‚¬â€ semantic surfaces */
-  --color-focus-subtle: #D7EBE8;
-  --color-build-subtle: #DDE4F5;
-  --color-movement-subtle: #F6E7C1;
-  --color-nourishment-subtle: #E4EED5;
+  --color-focus-subtle: #d6e9eb;
+  --color-build-subtle: #e0def0;
+  --color-movement-subtle: #eadce3;
+  --color-nourishment-subtle: #d8e8e1;
 
   /* Typography */
   --font-sans: "IBM Plex Sans", sans-serif;
@@ -94,10 +104,10 @@
   /* Radius */
   --radius-xs: 0.5rem;
   --radius-sm: 0.75rem;
-  --radius-md: 0.875rem;
+  --radius-md: 0.75rem;
   --radius-lg: 1.125rem;
-  --radius-xl: 1.375rem;
-  --radius-2xl: 1.5rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.125rem;
   --radius-round: 999px;
 
   /* Shadow */
@@ -112,7 +122,7 @@
   --alpha-muted: 0.60;
   --alpha-soft: 0.12;
 
-  --glass-panel-bg: rgba(231, 221, 211, .62);
+  --glass-panel-bg: rgba(238, 240, 244, .88);
   --glass-sidebar-bg: rgba(210, 199, 198, var(--alpha-sidebar));
   --glass-mobile-nav-bg: rgba(224, 214, 207, var(--alpha-mobile-nav));
 
@@ -130,8 +140,9 @@
   --ease-out: ease-out;
 
   /* Layout */
-  --sidebar-width: 17.5rem;
-  --content-max-width: 78rem;
+  --sidebar-width: 15.25rem;
+  --content-max-width: 74rem;
+  --content-reading-width: 56rem;
   --mobile-nav-height: 4.375rem;
 
   /* Z-index */

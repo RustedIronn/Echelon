@@ -1,21 +1,18 @@
 .mission-card {
   position: relative;
-  isolation: isolate;
   overflow: hidden;
-  min-height: 260px;
-  background:
-    radial-gradient(circle at 88% 22%, rgba(243, 187, 109, .3), transparent 16rem),
-    linear-gradient(125deg, #302334 0%, #764455 58%, #9b694d 120%);
+  min-height: 176px;
+  background: #2d303b;
   color: var(--color-text-inverse);
-  border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 34px 52px 30px 46px;
-  padding: var(--space-10);
-  margin-bottom: var(--space-6);
+  border: 0;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-5);
-  box-shadow: 0 28px 64px rgba(51, 37, 86, .25);
+  box-shadow: none;
 }
 
 .focus-mode-shell {
@@ -47,10 +44,7 @@
 
 .mission-card::before,
 .mission-card::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
+  display: none;
 }
 
 .mission-card::before {
@@ -93,11 +87,9 @@
 }
 
 .mission-card button {
-  min-height: 52px;
-  padding-inline: var(--space-6);
-  background: rgba(255, 255, 255, .9);
-  color: var(--color-text);
-  box-shadow: 0 12px 28px rgba(20, 20, 40, .22);
+  min-height: 40px;
+  padding-inline: 16px;
+  box-shadow: none;
 }
 
 .session-item {
@@ -345,3 +337,166 @@
     flex-direction: column;
   }
 }
+
+/* Focus is one primary timer surface with a compact feed beneath it. */
+.focus-workspace { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.focus-mode-shell { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.focus-card { min-height: 340px; margin: 0; padding: 32px 24px; border-radius: 18px; box-shadow: none; }
+.focus-card::before, .focus-card::after { display: none; }
+.focus-history-panel { position: static; margin: 0; padding: 16px 24px; }
+.focus-session-list { grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 0 24px; }
+.mission-selector.is-compact { margin-top: 16px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(255,255,255,.06); }
+.mission-selector.is-compact .mission-option { border-radius: 8px; background: rgba(255,255,255,.06); box-shadow: none; }
+.focus-card .button--primary { min-height: 40px; padding: 0 16px; border-radius: 8px; background: #56364f; color: #fff; }
+.focus-card .button--secondary { border-color: rgba(255,255,255,.18); border-radius: 8px; background: rgba(255,255,255,.08); color: #fff; }
+.focus-card {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(55, 151, 157, .16), transparent 20rem),
+    radial-gradient(circle at 86% 78%, rgba(166, 74, 119, .13), transparent 18rem),
+    #262b36;
+}
+.focus-time { color: #f3f5f9; }
+.focus-label { color: #87c8c6; }
+
+/* The focus room is intentionally narrower than the rest of the app. */
+.focus-page .page-header,
+.focus-workspace {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+.focus-workspace { gap: 20px; }
+
+.focus-card {
+  min-height: 410px;
+  border: 1px solid rgba(200, 184, 220, .16);
+  background:
+    radial-gradient(circle at 13% 15%, rgba(43, 139, 143, .2), transparent 17rem),
+    radial-gradient(circle at 88% 88%, rgba(167, 72, 112, .17), transparent 17rem),
+    #252833;
+  box-shadow: 0 28px 70px rgba(30, 31, 41, .24), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.focus-card::before {
+  display: block;
+  width: 210px;
+  height: 210px;
+  left: -126px;
+  top: 82px;
+  border-color: rgba(110, 192, 187, .14);
+}
+
+.focus-card::after {
+  display: block;
+  width: 120px;
+  height: 120px;
+  right: 34px;
+  bottom: -76px;
+  border-color: rgba(210, 127, 158, .15);
+}
+
+.focus-time {
+  margin-block: 18px 10px;
+  font-size: clamp(4.75rem, 11vw, 7.5rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-history-panel {
+  border-color: color-mix(in srgb, var(--page-accent) 16%, var(--color-border));
+  background: rgba(241,242,245,.82);
+}
+
+.focus-history-panel .panel-header { align-items: center; }
+.focus-session-list .session-item { padding-block: 11px; }
+.mission-selector.is-compact { background: rgba(255,255,255,.045); }
+.mission-selector.is-compact .mission-option { border-color: rgba(255,255,255,.1); color: #f4f2f6; }
+.mission-selector.is-compact .mission-option small { color: #b8b7c0; }
+
+@media (max-width: 760px) {
+  .focus-card { min-height: 360px; padding-inline: 18px; }
+  .focus-time { font-size: clamp(4rem, 22vw, 6rem); }
+}
+
+/* Release layout: contain intrinsic widths and keep the session in view. */
+.focus-page,
+.focus-page .page-header,
+.focus-workspace,
+.focus-mode-shell,
+.focus-card,
+.mission-selector,
+.mission-options,
+.mission-option,
+.focus-history-panel,
+.focus-session-list,
+.session-item {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.focus-workspace { width: min(100%, 50rem); }
+.focus-mode-shell { width: 100%; overflow: visible; }
+.focus-card {
+  display: flex;
+  width: 100%;
+  min-height: 320px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 32px 24px;
+  border: 0;
+  background: #292d38;
+  box-shadow: none;
+}
+.focus-card::before,
+.focus-card::after { display: none; }
+.focus-card h2,
+.focus-card p { max-width: 34rem; overflow-wrap: anywhere; }
+.focus-actions { width: 100%; max-width: 32rem; }
+
+.mission-selector.is-compact {
+  width: 100%;
+  padding: 16px;
+  overflow: visible;
+  border: 0;
+  background: #343844;
+}
+.mission-selector.is-compact .mission-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: 8px;
+  overflow: visible;
+  padding: 0;
+}
+.mission-selector.is-compact .section-header h2 { color: #f3f4f7; }
+.mission-selector.is-compact .mission-option {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  overflow: hidden;
+}
+.mission-option > span:last-child { min-width: 0; }
+.mission-option strong,
+.mission-option small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.focus-history-panel { padding: 16px 20px; background: var(--color-surface); }
+.focus-session-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.session-item { gap: 12px; }
+.session-item > div { min-width: 0; }
+.session-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .focus-workspace { width: 100%; }
+  .focus-card { min-height: 290px; padding: 24px 16px; }
+  .focus-actions { align-items: stretch; flex-direction: column; }
+  .mission-selector.is-compact .mission-options,
+  .focus-session-list { grid-template-columns: minmax(0, 1fr); }
+  .mission-selector.is-compact .mission-option { min-width: 0; }
+}
+
+.focus-card.is-ready { background: #292d38; }
+.focus-card.is-active { background: #26343a; }
+.focus-card.is-paused { background: #39313a; }
+.focus-card.is-complete { background: #2d3935; }

@@ -7,7 +7,7 @@ export default function Habits() {
   const completed = habits.filter((habit) => habit.done).length;
 
   return (
-    <div className="page">
+    <div className="page habits-page">
       <PageTitle
         tone="garden"
         label="CONSISTENCY"
@@ -21,8 +21,9 @@ export default function Habits() {
           title={`${completed} of ${habits.length} complete`}
           description="Each action is small. Together they shape the texture of the day."
           actions={(
-          <div className="habit-orbit" aria-hidden="true">
-            <span style={{ "--habit-progress": habits.length ? `${(completed / habits.length) * 360}deg` : "0deg" }} />
+          <div className="habit-progress-meter" aria-label={`${completed} of ${habits.length} habits complete`}>
+            <strong>{completed}/{habits.length}</strong>
+            <span><i style={{ width: habits.length ? `${(completed / habits.length) * 100}%` : "0%" }} /></span>
           </div>
           )}
         />

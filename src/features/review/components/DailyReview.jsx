@@ -1,4 +1,5 @@
 import { Card } from "@ui";
+import { Link } from "react-router-dom";
 import { formatDayKey } from "@/shared/date";
 import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@features/habits/store";
@@ -91,11 +92,11 @@ export default function DailyReview() {
 
         <div className="review-history">
           {history.slice(-7).reverse().map((day) => (
-            <div className="history-item" key={`${day.date}-${day.score}`}>
+            <Link className="history-item" key={`${day.date}-${day.score}`} to={`/insights/composure?date=${day.date}`}>
               <span>{formatDayKey(day.date)}</span>
               <span>{composureByDate.get(day.date)?.composureRating ? `Composure ${composureByDate.get(day.date).composureRating}/5` : "Composure not rated"}</span>
               <strong>{day.score}%</strong>
-            </div>
+            </Link>
           ))}
         </div>
       </Card>

@@ -29,7 +29,7 @@ export default function Focus() {
   ) ?? defaultMission;
 
   return (
-    <div className="page">
+    <div className="page focus-page">
       <PageTitle
         tone="focus"
         label="DEEP WORK"
@@ -45,8 +45,8 @@ export default function Focus() {
           ) : null}
         </Stage>
 
-        <Card material="soft" shape="slab" className="focus-history-panel">
-          <PanelHeader eyebrow="Log" title="Recent sessions" description="The last five completed focus sessions." />
+        <Card className="focus-history-panel">
+          <PanelHeader eyebrow="Log" title="Recent sessions" />
           {sessions.length ? (
             <div className="focus-session-list">
               {sessions.slice(-5).reverse().map((session) => (

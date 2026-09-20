@@ -835,9 +835,9 @@
   gap: var(--space-2);
 }
 
-.workout-history-modes { display: inline-flex; gap: var(--space-1); padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-round); background: rgba(228, 216, 202, .5); }
+.workout-history-modes { display: inline-flex; gap: var(--space-1); padding: 4px; border: 1px solid var(--color-border); border-radius: var(--radius-round); background: #dfe2e8; }
 .workout-history-modes button { padding: 7px 12px; border: 0; border-radius: var(--radius-round); background: transparent; color: var(--color-text-muted); box-shadow: none; }
-.workout-history-modes button.is-active { background: rgba(78, 55, 75, .9); color: var(--color-text-inverse); }
+.workout-history-modes button.is-active { background: #553b68; color: var(--color-text-inverse); }
 
 @media (max-width: 760px) {
   .workout-plan-brief { grid-template-columns: 1fr; align-items: start; }
@@ -847,7 +847,30 @@
   .workout-plan-date-nav > div { grid-column: 1 / -1; grid-row: 1; }
 }
 
-.workout-training-run svg {
-  color: #a66c45;
-  filter: drop-shadow(0 4px 8px rgba(166, 108, 69, .2));
+.workout-training-run svg { color: #8f5378; }
+
+/* Training surfaces emphasize the prescribed session and measurable state. */
+.workout-plan-console { border-color: rgba(89,74,123,.2); background: rgba(238,240,244,.92); }
+.workout-plan-brief { border-top-color: var(--color-border); }
+.workout-view-header p { color: #6b5b92; }
+.workout-plan-schedule-label { color: #287983; }
+.workout-session {
+  border: 1px solid rgba(35,30,45,.16); border-radius: 18px;
+  background: linear-gradient(145deg, rgba(220,229,235,.96), rgba(228,220,235,.9)); box-shadow: none;
 }
+.workout-item { background: rgba(238,240,244,.8); }
+.workout-progress-fill { background: #4f9183; }
+
+.workout-stage {
+  border-color: rgba(189,105,88,.2);
+  background: rgba(240,235,236,.78);
+}
+.workout-plan-console {
+  border-left: 5px solid var(--accent-workout);
+  background: #ece3e3;
+  box-shadow: 0 18px 40px rgba(66,47,52,.08);
+}
+.workout-view-header { border-bottom: 2px solid rgba(189,105,88,.22); }
+.workout-stage { border: 0; background: rgba(241,242,245,.68); }
+.workout-plan-console { border: 0; border-left: 4px solid var(--accent-workout); box-shadow: none; }
+.workout-session { background: var(--color-surface); }

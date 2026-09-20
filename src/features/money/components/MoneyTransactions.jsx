@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { MoreVertical, Plus } from "lucide-react";
 
-import { Button, Card, EmptyState, ErrorState, PanelHeader } from "@ui";
+import { Button, Card, ContextMenu, Drawer, EmptyState, ErrorState, PanelHeader } from "@ui";
 import { formatDayKey, getToday } from "../../../shared/date.js";
 import { useMoney } from "../store.js";
 import { createMoneyId, filterTransactions, formatInr, minorToInput } from "../transactions.js";
@@ -29,13 +29,6 @@ export default function MoneyTransactions() {
     setFormOpen(false); setDraft(newDraft(data.categories)); setDraftId(createMoneyId("transaction"));
     setEditingId(null); setFormError("");
   };
-
-  useEffect(() => {
-    if (!formOpen) return undefined;
-    const dismiss = (event) => { if (event.key === "Escape") closeForm(); };
-    document.addEventListener("keydown", dismiss);
-    return () => document.removeEventListener("keydown", dismiss);
-  }, [formOpen, data.categories]);
 
   const submit = (event) => {
     event.preventDefault();
@@ -71,13 +64,14 @@ export default function MoneyTransactions() {
         {visible.length ? <div className="money-transaction-list">{visible.map((transaction) => <div className="money-transaction-row" key={transaction.id}>
           <div><strong>{transaction.description || categoryById.get(transaction.categoryId)?.name}</strong><span>{formatDayKey(transaction.date)} · {categoryById.get(transaction.categoryId)?.name}{transaction.recurring ? " · Recurring" : ""}</span></div>
           <strong className={`money-amount is-${transaction.type}`}>{transaction.type === "expense" ? "−" : "+"}{formatInr(transaction.amountMinor)}</strong>
-          <div className="money-row-actions"><Button variant="secondary" onClick={() => beginEdit(transaction)}>Edit</Button>{pendingDeleteId === transaction.id ? <><Button variant="danger" onClick={() => { deleteTransaction(transaction.id); setPendingDeleteId(null); if (editingId === transaction.id) closeForm(); }}>Confirm delete</Button><Button variant="secondary" onClick={() => setPendingDeleteId(null)}>Cancel</Button></> : <Button variant="secondary" onClick={() => setPendingDeleteId(transaction.id)}>Delete</Button>}</div>
+          <div className="money-row-actions">{pendingDeleteId === transaction.id ? <><Button variant="danger" onClick={() => { deleteTransaction(transaction.id); setPendingDeleteId(null); if (editingId === transaction.id) closeForm(); }}>Confirm delete</Button><Button variant="ghost" onClick={() => setPendingDeleteId(null)}>Cancel</Button></> : <ContextMenu label={`Actions for ${transaction.description || "transaction"}`} items={[
+            { id: "edit", label: "Edit", onSelect: () => beginEdit(transaction) },
+            { id: "delete", label: "Delete", tone: "danger", onSelect: () => setPendingDeleteId(transaction.id) },
+          ]}>{({ contextProps, triggerProps }) => <span {...contextProps}><button {...triggerProps}><MoreVertical size={18} aria-hidden="true" /></button></span>}</ContextMenu>}</div>
         </div>)}</div> : <EmptyState compact title="No matching transactions" description="Adjust the filters or add a transaction." />}
       </Card>
 
-      {formOpen ? <div className="money-drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeForm(); }}>
-        <aside className="money-transaction-drawer" role="dialog" aria-modal="true" aria-labelledby="money-transaction-form-title">
-          <div className="money-drawer-heading"><div><span>Ledger entry</span><h2 id="money-transaction-form-title">{editingId ? "Edit transaction" : "Add transaction"}</h2></div><button type="button" onClick={closeForm} aria-label="Close transaction form"><X size={20} /></button></div>
+      <Drawer open={formOpen} onClose={closeForm} title={editingId ? "Edit transaction" : "Add transaction"} className="money-transaction-drawer">
           <form className="money-form" onSubmit={submit}>
             <label><span>Type</span><select value={draft.type} onChange={(event) => { const type = event.target.value; setDraft({ ...draft, type, categoryId: data.categories.find((item) => item.type === type)?.id ?? "" }); }}><option value="expense">Expense</option><option value="income">Income</option></select></label>
             <label><span>Amount (₹)</span><input autoFocus required inputMode="decimal" placeholder="337.50" value={draft.amount} onChange={(event) => setDraft({ ...draft, amount: event.target.value })} /></label>
@@ -88,8 +82,7 @@ export default function MoneyTransactions() {
             <div className="money-form-actions"><Button type="submit">{editingId ? "Save changes" : "Add transaction"}</Button><Button variant="secondary" onClick={closeForm}>Cancel</Button></div>
             {formError ? <ErrorState compact description={formError} /> : null}
           </form>
-        </aside>
-      </div> : null}
+      </Drawer>
     </div>
   );
 }

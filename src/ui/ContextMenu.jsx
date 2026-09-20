@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const MENU_WIDTH = 208;
-const MENU_HEIGHT_ESTIMATE = 220;
 
 export default function ContextMenu({ label, items, children }) {
   const menuId = useId();
@@ -12,10 +11,15 @@ export default function ContextMenu({ label, items, children }) {
 
   const close = () => setPosition(null);
   const openAt = (left, top) => {
+    const menuHeight = Math.min(window.innerHeight - 16, items.length * 40 + 10);
     setPosition({
       left: Math.max(8, Math.min(left, window.innerWidth - MENU_WIDTH - 8)),
-      top: Math.max(8, Math.min(top, window.innerHeight - MENU_HEIGHT_ESTIMATE)),
+      top: Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8)),
     });
+  };
+  const closeAndRestore = () => {
+    close();
+    requestAnimationFrame(() => triggerRef.current?.focus());
   };
 
   useEffect(() => {
@@ -32,8 +36,7 @@ export default function ContextMenu({ label, items, children }) {
     };
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setPosition(null);
-        triggerRef.current?.focus();
+        closeAndRestore();
         return;
       }
 
@@ -109,7 +112,7 @@ export default function ContextMenu({ label, items, children }) {
                   className={item.tone === "danger" ? "is-danger" : ""}
                   disabled={item.disabled}
                   onClick={() => {
-                    close();
+                    closeAndRestore();
                     item.onSelect();
                   }}
                 >

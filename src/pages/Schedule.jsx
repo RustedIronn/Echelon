@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useSchedule } from "@features/schedule/scheduleStore";
 import { useToday } from "@features/schedule/todayStore";
 import ScheduleEditor from "@features/schedule/components/ScheduleEditor";
 import Timeline from "@features/schedule/components/Timeline";
-import { Button, PageTitle, PanelHeader } from "@ui";
+import { Button, Drawer, PageTitle, PanelHeader } from "@ui";
 
 export default function Schedule({ embedded = false }) {
   const schedule = useSchedule((state) => state.schedule);
@@ -19,15 +19,8 @@ export default function Schedule({ embedded = false }) {
     navigate("/focus", { state: { missionId: mission.id } });
   };
 
-  useEffect(() => {
-    if (!editing) return undefined;
-    const closeOnEscape = (event) => { if (event.key === "Escape") setEditing(false); };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [editing]);
-
   return (
-    <div className="page">
+    <div className="page schedule-page">
       {!embedded ? <PageTitle
         tone="planner"
         label="PLANNER"
@@ -54,9 +47,9 @@ export default function Schedule({ embedded = false }) {
         <Timeline tasks={tasks} toggleTask={toggleTask} onFocus={openFocus} />
       </section>
 
-      {editing ? <div className="planner-editor-overlay" role="dialog" aria-modal="true" aria-label="Edit recurring schedule" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(false); }}>
-        <div className="planner-editor-content"><ScheduleEditor onClose={() => setEditing(false)} /></div>
-      </div> : null}
+      <Drawer open={editing} onClose={() => setEditing(false)} title="Edit recurring schedule" className="schedule-editor-drawer">
+        <ScheduleEditor onClose={() => setEditing(false)} />
+      </Drawer>
     </div>
   );
 }

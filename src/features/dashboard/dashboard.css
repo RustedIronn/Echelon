@@ -607,3 +607,55 @@
   .today-planner-heading { align-items: flex-start; flex-direction: column; }
   .today-planner-items { grid-template-columns: 1fr; }
 }
+
+/* Visual-system reset: mission leads, queue reads as one continuous section. */
+.mission-card { min-height: 220px; padding: 32px; border-radius: 18px; box-shadow: none; }
+.next-up-card { margin: 0 0 24px; padding: 0 0 16px; border-bottom: 1px solid var(--color-border); background: transparent; }
+.next-up-card .panel-header { margin-bottom: 8px; }
+.today-task-list { gap: 0; }
+.today-task-row { border: 0; border-bottom: 1px solid var(--color-border); border-radius: 0; background: transparent; box-shadow: none; }
+.today-summary-card { min-height: 112px; padding: 16px; border-radius: 12px; background: var(--color-surface); box-shadow: none; }
+.today-habit-orbit, .today-workout-signal, .today-workout-signal.is-complete { background: var(--color-surface); }
+
+.mission-card {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(91, 179, 176, .18), transparent 15rem),
+    linear-gradient(128deg, #292d39, #44384f 62%, #3e5961);
+  color: #f7f8fb;
+}
+.today-summary-card { background: rgba(238,240,244,.86); }
+.today-habit-meter { background: conic-gradient(#4f9183 var(--habit-progress), rgba(35,30,45,.1) 0); }
+.next-up-card { border-color: rgba(35,30,45,.16); background: transparent; }
+
+/* Command desk: one dark mission, then a quiet working rail. */
+.today-stage {
+  border-color: rgba(191,109,131,.2);
+  background: rgba(235,237,241,.72);
+  box-shadow: 0 22px 52px rgba(45,45,57,.1);
+}
+.mission-card {
+  border: 1px solid rgba(198,173,201,.14);
+  background:
+    radial-gradient(circle at 86% 18%, rgba(55,156,155,.2), transparent 14rem),
+    radial-gradient(circle at 12% 110%, rgba(194,92,128,.2), transparent 17rem),
+    #292d38;
+  box-shadow: 0 24px 52px rgba(35,36,47,.2);
+}
+.next-up-card { padding-inline: 4px; }
+.today-summary-card { border-top: 3px solid color-mix(in srgb, var(--page-accent) 48%, transparent); }
+
+.today-stage { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.mission-card {
+  min-height: 176px;
+  padding: 24px;
+  border: 0;
+  background: #2d303b;
+  box-shadow: none;
+}
+.mission-card::before,
+.mission-card::after { display: none; }
+.mission-card h1 { font-size: clamp(2.25rem,5vw,3.75rem); }
+.today-task-row:hover,
+.today-task-row:focus-within { background: rgba(35,30,45,.035); transform: none; }
+.today-task-focus { min-height: 40px; }
+.today-summary-card { border: 0; border-top: 3px solid rgba(85,59,104,.28); box-shadow: none; }

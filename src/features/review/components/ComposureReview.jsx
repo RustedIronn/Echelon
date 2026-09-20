@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Button, Card, EmptyState } from "@ui";
 import { formatDayKey, getToday, parseDayKey } from "@/shared/date";
@@ -109,17 +110,18 @@ function ComposureForm({ day, today, saveToday, embedded = false }) {
 export default function ComposureReview({ todayOnly = false, embedded = false }) {
   const { data, saveToday } = useComposure();
   const [day, setDay] = useState(() => getToday());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedDate = searchParams.get("date");
   const today = data.reviews.find((review) => review.date === day) ?? null;
 
   useEffect(() => {
     const handleRollover = () => {
       setDay(getToday());
-      setSelectedDate(null);
+      setSearchParams({}, { replace: true });
     };
     window.addEventListener(DAY_ROLLOVER_EVENT, handleRollover);
     return () => window.removeEventListener(DAY_ROLLOVER_EVENT, handleRollover);
-  }, []);
+  }, [setSearchParams]);
 
   const metrics = useMemo(
     () => getComposureWeeklyMetrics(
@@ -170,8 +172,9 @@ export default function ComposureReview({ todayOnly = false, embedded = false })
                   type="button"
                   key={review.id}
                   className={selectedDate === review.date ? "is-selected" : ""}
-                  onClick={() => setSelectedDate(
-                    selectedDate === review.date ? null : review.date,
+                  aria-expanded={selectedDate === review.date}
+                  onClick={() => setSearchParams(
+                    selectedDate === review.date ? {} : { date: review.date },
                   )}
                 >
                   <span>{formatDayKey(review.date)}</span>

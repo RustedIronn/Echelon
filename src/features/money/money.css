@@ -306,13 +306,6 @@
 
 .money-ledger-card { margin-bottom: 0; }
 .money-filter-grid.is-compact { margin: var(--space-4) 0; }
-.money-drawer-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; justify-items: end; background: rgba(29, 25, 29, .42); backdrop-filter: blur(5px); }
-.money-transaction-drawer { width: min(520px, 100%); height: 100%; overflow-y: auto; padding: var(--space-7); border-left: 1px solid rgba(255,255,255,.18); background: rgba(225, 214, 202, .94); box-shadow: -24px 0 64px rgba(35, 29, 35, .24); }
-.money-drawer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
-.money-drawer-heading span { font: 500 var(--text-xs) var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-text-muted); }
-.money-drawer-heading h2 { margin: var(--space-1) 0 0; }
-.money-drawer-heading > button { display: grid; width: 40px; height: 40px; place-items: center; padding: 0; border-radius: 50%; }
-
 @media (max-width: 760px) {
   .money-overview-grid,
   .money-dashboard-grid,
@@ -356,3 +349,35 @@
     padding: var(--space-5);
   }
 }
+
+/* Ledger rows are flat; editing is isolated in one neutral side sheet. */
+.money-ledger-card { padding: 0; overflow: hidden; }
+.money-ledger-card > .panel-header { padding: 24px 24px 0; }
+.money-filter-grid.is-compact { padding: 0 24px 16px; border-bottom: 1px solid var(--color-border); }
+.money-transaction-list { padding: 0 24px; }
+.money-transaction-row { min-height: 64px; padding: 12px 0; }
+.money-row-actions { min-width: 40px; justify-content: flex-end; }
+.money-transaction-drawer { background: #f4f0eb; box-shadow: -12px 0 30px rgba(35,30,45,.14); }
+.money-balance-card {
+  border-color: rgba(92,74,125,.22);
+  background: linear-gradient(135deg, rgba(224,225,239,.95), rgba(216,233,232,.84));
+  box-shadow: none;
+}
+.money-transaction-drawer { background: #eef0f4; }
+
+.money-stage { border-color: rgba(57,127,111,.2); background: rgba(235,240,239,.78); }
+.money-balance-card { border-left: 5px solid var(--accent-money); background: #e0e9e8; }
+.drawer.money-transaction-drawer {
+  align-self: start;
+  width: min(540px,calc(100% - 32px));
+  height: auto;
+  max-height: calc(100vh - 32px);
+  margin: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.money-filter-grid.is-compact { grid-template-columns: repeat(3,minmax(0,1fr)) auto; gap: 12px; margin: 12px 0 0; }
+.money-filter-grid.is-compact > * { min-width: 0; }
+.money-stage { border: 0; background: rgba(241,242,245,.68); }
+.money-balance-card { border: 0; border-left: 4px solid var(--accent-money); box-shadow: none; }
+@media (max-width: 760px) { .money-filter-grid.is-compact { grid-template-columns: minmax(0,1fr); } }

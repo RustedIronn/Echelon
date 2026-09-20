@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide-react";
 
-import { Button, Card, ContextMenu, EmptyState, PageTitle, PanelHeader, Stage } from "@ui";
+import { Button, Card, ContextMenu, EmptyState, NavDropdown, PageTitle, PanelHeader, Stage } from "@ui";
 import { formatDayKey, getToday } from "@/shared/date";
 import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../constants";
 import { usePlanner } from "../store";
@@ -14,8 +14,14 @@ import {
 } from "../tasks";
 import { useTools } from "@features/tools/store";
 import { createToolsId } from "@features/tools/utils";
+import NowNextLater from "@features/tools/components/NowNextLater";
+import BrainDump from "@features/tools/components/BrainDump";
+import TaskBreakdown from "@features/tools/components/TaskBreakdown";
 
 const getView = (pathname) => {
+  if (pathname.endsWith("/lanes")) return "lanes";
+  if (pathname.endsWith("/brain-dump")) return "brain-dump";
+  if (pathname.endsWith("/breakdowns")) return "breakdowns";
   if (pathname.endsWith("/today")) return "today";
   if (pathname.endsWith("/upcoming")) return "upcoming";
   return "inbox";
@@ -121,19 +127,33 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
   };
   const openFocus = (task) => navigate("/focus", { state: { mission: toFocusMission(task) } });
   const Workspace = embedded ? "div" : Stage;
+  const toolView = view === "lanes"
+    ? <NowNextLater />
+    : view === "brain-dump"
+      ? <BrainDump />
+      : view === "breakdowns"
+        ? <TaskBreakdown />
+        : null;
 
   return (
     <div className="page planner-page">
       {!embedded ? <PageTitle tone="planner" label="ONE-OFFS" title="Planner" description="Capture what does not belong in your recurring routine." /> : null}
 
-      <nav className="subnav" aria-label="Planner views">
-        {PLANNER_VIEWS.map((item) => {
+      <div className="planner-view-navigation">
+        <nav className="subnav" aria-label="Planner views">
+        {PLANNER_VIEWS.slice(0, 3).map((item) => {
           const suffix = item.id === "inbox" ? "" : `/${item.id}`;
           return <NavLink key={item.id} to={`${basePath}${suffix}`} end={item.id === "inbox"}>{item.label}</NavLink>;
         })}
-      </nav>
+        </nav>
+        <NavDropdown
+          label="Organize"
+          items={PLANNER_VIEWS.slice(3).map((item) => ({ ...item, path: `${basePath}/${item.id}` }))}
+        />
+      </div>
 
-      <Workspace {...(!embedded ? { tone: "soft" } : {})} className="planner-workspace">
+      <Workspace {...(!embedded ? { tone: "soft" } : {})} className={`planner-workspace ${toolView ? "planner-workspace--tool" : ""}`.trim()}>
+        {toolView ?? <>
         <Card material="feature" className="planner-capture">
           <div className="planner-capture-heading">
             <div><span>Quick capture</span><h2>Put one thing somewhere real.</h2></div>
@@ -163,6 +183,7 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
             )) : <EmptyState title={`Nothing in ${view}`} description={view === "inbox" ? "Unscheduled ideas will wait here." : "This view is clear."} />}
           </div>
         </section>
+        </>}
       </Workspace>
     </div>
   );

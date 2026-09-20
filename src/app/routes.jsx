@@ -4,6 +4,7 @@ import Today from "../pages/Today";
 import Focus from "../pages/Focus";
 import Habits from "../pages/Habits";
 import DailyReview from "@features/review/components/DailyReview";
+import ComposureReview from "@features/review/components/ComposureReview";
 import InsightsLayout from "@features/insights/components/InsightsLayout";
 import InsightsOverview from "@features/insights/components/InsightsOverview";
 import Settings from "../pages/Settings";
@@ -46,7 +47,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "review/composure",
-        element: <Navigate to="/insights/daily" replace />,
+        element: <Navigate to="/insights/composure" replace />,
       },
       {
         path: "settings",
@@ -65,6 +66,9 @@ export const router = createBrowserRouter([
           { path: "planner", element: <Planner embedded basePath="/plan/planner" /> },
           { path: "planner/today", element: <Planner embedded basePath="/plan/planner" /> },
           { path: "planner/upcoming", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/lanes", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/brain-dump", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/breakdowns", element: <Planner embedded basePath="/plan/planner" /> },
         ],
       },
       {
@@ -77,7 +81,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <InsightsOverview /> },
           { path: "daily", element: <DailyReview /> },
-          { path: "composure", element: <Navigate to="/insights/daily" replace /> },
+          { path: "composure", element: <ComposureReview /> },
           { path: "trends", element: <Analytics /> },
         ],
       },
@@ -129,10 +133,10 @@ export const router = createBrowserRouter([
           { path: "goals", element: <MoneyGoals /> },
         ],
       },
-      { path: "tools", element: <Navigate to="/plan/planner" replace /> },
-      { path: "tools/now", element: <Navigate to="/" replace /> },
-      { path: "tools/brain-dump", element: <Navigate to="/plan/planner" replace /> },
-      { path: "tools/breakdown", element: <Navigate to="/plan/planner" replace /> },
+      { path: "tools", element: <Navigate to="/plan/planner/lanes" replace /> },
+      { path: "tools/now", element: <Navigate to="/plan/planner/lanes" replace /> },
+      { path: "tools/brain-dump", element: <Navigate to="/plan/planner/brain-dump" replace /> },
+      { path: "tools/breakdown", element: <Navigate to="/plan/planner/breakdowns" replace /> },
       { path: "tools/timer", element: <Navigate to="/focus" replace /> },
       { path: "tools/reset", element: <Navigate to="/settings" replace /> },
     ],

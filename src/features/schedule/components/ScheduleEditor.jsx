@@ -14,14 +14,6 @@ import {
 
 function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule, onClose }) {
   const [draft, setDraft] = useState(() => createScheduleDraft(schedule));
-  const dayMap = draft.map((task) => {
-    const duration = getScheduleItemDuration(task);
-    return {
-      task,
-      duration: Number.isFinite(duration) && duration > 0 ? duration : 1,
-      category: categories[task.category] ?? categories.foundation,
-    };
-  });
 
   const resetDraft = () => {
     setDraft(createScheduleDraft(schedule));
@@ -41,27 +33,6 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule, onClos
         <h2>Edit daily plan</h2>
 
         <p>Adjust the draft, then apply it once the whole day looks right.</p>
-      </div>
-
-      <div
-        className="planner-day-map"
-        role="img"
-        aria-label={`Full day structure with ${draft.length} blocks`}
-      >
-        {dayMap.map(({ task, duration, category }) => (
-          <span
-            key={task.id}
-            style={{
-              "--map-color": category.color,
-              "--map-tint": category.background,
-              flexGrow: duration,
-            }}
-            title={`${task.title}: ${task.start}–${task.end}`}
-          >
-            <i aria-hidden="true" />
-            <small>{task.title}</small>
-          </span>
-        ))}
       </div>
 
       <div className="planner-timeline">

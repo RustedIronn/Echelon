@@ -6,6 +6,7 @@ import { useComposure } from "@features/review/composureStore";
 const sections = [
   { label: "Overview", path: "/insights", end: true },
   { label: "Daily Review", path: "/insights/daily" },
+  { label: "Composure", path: "/insights/composure" },
   { label: "Trends", path: "/insights/trends" },
 ];
 

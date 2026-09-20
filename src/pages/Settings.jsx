@@ -6,7 +6,7 @@ import MoneyCategorySettings from "@features/money/components/MoneyCategorySetti
 
 export default function Settings() {
   return (
-    <div className="page">
+    <div className="page settings-page">
       <PageTitle
         label="CONTROL"
         title="Settings"

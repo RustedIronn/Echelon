@@ -42,7 +42,8 @@
 .planner-capture label { display: grid; gap: var(--space-2); }
 .planner-capture form { gap: var(--space-4); }
 .planner-capture label > span { color: var(--color-text-muted); font-size: var(--text-sm); }
-.planner-capture-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); align-items: end; }
+.planner-capture-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); align-items: end; }
+.planner-capture-meta label:nth-child(3) { grid-column: 1 / -1; }
 .planner-capture-meta button { grid-column: 1 / -1; justify-self: start; }
 
 .planner-list-section { min-width: 0; padding: var(--space-3); }
@@ -128,4 +129,56 @@
   .planner-capture-meta { grid-template-columns: 1fr 1fr; }
   .planner-capture-meta label:last-of-type { grid-column: 1 / -1; }
   .planner-reschedule { grid-template-columns: 1fr 1fr; }
+}
+
+/* Quick Capture stays compact beside the task list. */
+.planner-workspace { gap: 24px; background: transparent; }
+.planner-capture { padding: 16px; border-radius: 12px; background: var(--color-surface); box-shadow: none; }
+.planner-capture-heading { margin-bottom: 12px; }
+.planner-capture-heading svg { display: none; }
+.planner-capture-heading h2 { font-size: var(--text-lg); }
+.planner-capture form { gap: 12px; }
+.planner-capture textarea { min-height: 64px; }
+.planner-task { padding: 12px; border: 1px solid var(--color-border); border-left: 3px solid var(--priority-color); border-radius: 12px; background: var(--color-surface); box-shadow: none; transform: none !important; }
+.planner-task::before { display: none; }
+.planner-task-toggle:hover { transform: none; }
+.planner-list-section { padding: 0; }
+.planner-capture, .planner-task { background: rgba(238,240,244,.9); }
+
+.planner-workspace {
+  padding: 20px;
+  border: 1px solid rgba(36,123,131,.18);
+  border-radius: 18px;
+  background: rgba(236,240,242,.7);
+}
+.planner-capture {
+  border-top: 4px solid var(--accent-plan);
+  background: #f2f3f5;
+}
+.planner-task { background: rgba(247,247,249,.9); }
+.planner-task:hover { border-color: color-mix(in srgb,var(--priority-color) 35%,var(--color-border)); }
+.planner-workspace { border: 0; background: transparent; }
+.planner-capture { border: 0; border-top: 3px solid var(--accent-plan); box-shadow: none; }
+.planner-list-section .state-message { padding-block: 20px; }
+
+@media (max-width: 600px) {
+  .planner-workspace { padding: 12px; border-radius: 14px; }
+}
+.planner-view-navigation {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.planner-view-navigation .subnav { margin-bottom: 0; }
+.planner-workspace--tool { max-width: 58rem; }
+
+@media (max-width: 620px) {
+  .planner-view-navigation { align-items: stretch; flex-direction: column; }
+  .planner-view-navigation .subnav { width: 100%; }
+  .planner-view-navigation .nav-dropdown > button { width: 100%; justify-content: space-between; border: 1px solid var(--color-border); background: var(--color-surface); }
+  .planner-view-navigation .nav-dropdown__menu { right: auto; left: 0; width: min(100%, 320px); }
 }

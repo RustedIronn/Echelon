@@ -14,7 +14,7 @@ export default function Today() {
   };
 
   return (
-    <div className="page">
+    <div className="page today-page">
       <PageTitle
         tone="command"
         label="DAILY SYSTEM"
