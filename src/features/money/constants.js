@@ -1,4 +1,5 @@
-export const MONEY_VERSION = 1;
+// Version 2 allows one categoryId:null budget for overall monthly spending.
+export const MONEY_VERSION = 2;
 export const MONEY_STORAGE_KEY = "echelon_money_v1";
 
 export const TRANSACTION_TYPES = ["expense", "income"];

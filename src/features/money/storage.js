@@ -77,7 +77,9 @@ export function createEmptyMoneyDocument() {
 }
 
 export function normalizeMoneyDocument(value) {
-  if (!value || value.version !== MONEY_VERSION) return createEmptyMoneyDocument();
+  // Keep the existing UID-scoped key. Version 1 category budgets hydrate into
+  // the version 2 document; only new overall budgets use categoryId:null.
+  if (!value || ![1, MONEY_VERSION].includes(value.version)) return createEmptyMoneyDocument();
 
   const categories = normalizeCategories(value.categories);
   const transactions = [];
@@ -111,7 +113,7 @@ export function normalizeMoneyCloudDocument(value) {
       : normalizeUpdatedAt(value.updatedAt) === value.updatedAt);
 
   if (
-    value?.version !== MONEY_VERSION ||
+    ![1, MONEY_VERSION].includes(value?.version) ||
     !hasValidMetadata ||
     !Array.isArray(value.transactions) ||
     !Array.isArray(value.categories) ||

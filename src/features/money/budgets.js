@@ -18,7 +18,7 @@ export function normalizeBudgets(value, categories) {
   return value.reduce((budgets, budget) => {
     if (
       !isValidMoneyId(budget?.id) ||
-      !expenseIds.has(budget?.categoryId) ||
+      !(budget?.categoryId === null || expenseIds.has(budget?.categoryId)) ||
       usedCategories.has(budget.categoryId) ||
       !Number.isSafeInteger(budget?.monthlyLimitMinor) ||
       budget.monthlyLimitMinor <= 0
@@ -37,7 +37,7 @@ export function normalizeBudgets(value, categories) {
 }
 
 export function setMonthlyBudget(budgets, categoryId, amount, categories) {
-  const category = categories.find(
+  const category = categoryId === null || categories.some(
     (item) => item.id === categoryId && item.type === "expense",
   );
   const monthlyLimitMinor = parseMoneyToMinor(amount);
@@ -66,7 +66,7 @@ export function calculateBudgetUsage(budget, transactions, month) {
   const spentMinor = filterTransactions(transactions, {
     month,
     type: "expense",
-    categoryId: budget.categoryId,
+    ...(budget.categoryId === null ? {} : { categoryId: budget.categoryId }),
   }).reduce((total, transaction) => total + transaction.amountMinor, 0);
   const remainingMinor = budget.monthlyLimitMinor - spentMinor;
   const ratio = spentMinor / budget.monthlyLimitMinor;

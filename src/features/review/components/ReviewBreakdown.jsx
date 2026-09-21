@@ -1,12 +1,13 @@
 import { Card } from "@ui";
 
-export default function ReviewBreakdown({ breakdown }) {
+export default function ReviewBreakdown({ breakdown, compact = false }) {
+  const Wrapper = compact ? "section" : Card;
   return (
-    <Card>
+    <Wrapper className={compact ? "review-contribution" : undefined}>
       <div className="section-header">
-        <h2>Breakdown</h2>
+        <h2>What contributed</h2>
 
-        <p>Where your score came from.</p>
+        <p>Existing execution-score components, shown separately.</p>
       </div>
 
       <div className="review-breakdown">
@@ -18,6 +19,6 @@ export default function ReviewBreakdown({ breakdown }) {
           </div>
         ))}
       </div>
-    </Card>
+    </Wrapper>
   );
 }

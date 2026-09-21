@@ -6,6 +6,8 @@ import { calculateBudgetUsage } from "../budgets.js";
 import { useMoney } from "../store.js";
 import { formatInr } from "../transactions.js";
 
+const minorToInput = (minor) => `${Math.trunc(minor / 100)}.${String(minor % 100).padStart(2, "0")}`;
+
 export default function MoneyBudgets() {
   const { data, setBudget, deleteBudget } = useMoney();
   const expenseCategories = data.categories.filter(
@@ -13,7 +15,7 @@ export default function MoneyBudgets() {
   );
   const [month, setMonth] = useState(getToday().slice(0, 7));
   const [draft, setDraft] = useState({
-    categoryId: expenseCategories[0]?.id ?? "",
+    categoryId: "overall",
     amount: "",
   });
   const [formError, setFormError] = useState("");
@@ -28,14 +30,14 @@ export default function MoneyBudgets() {
     <div className="stack">
       <Card>
         <div className="section-header">
-          <h2>Monthly category budgets</h2>
-          <p>Spent and remaining values come directly from expense transactions.</p>
+          <h2>Monthly spending limits</h2>
+          <p>Set one overall limit, category limits, or only the categories you want to watch.</p>
         </div>
         <form
           className="money-inline-form"
           onSubmit={(event) => {
             event.preventDefault();
-            if (setBudget(draft.categoryId, draft.amount)) {
+            if (setBudget(draft.categoryId === "overall" ? null : draft.categoryId, draft.amount)) {
               setDraft({ ...draft, amount: "" });
               setFormError("");
             } else {
@@ -44,13 +46,14 @@ export default function MoneyBudgets() {
           }}
         >
           <label>
-            <span>Category</span>
+            <span>Scope</span>
             <select
               value={draft.categoryId}
               onChange={(event) =>
                 setDraft({ ...draft, categoryId: event.target.value })
               }
             >
+              <option value="overall">Overall spending</option>
               {expenseCategories.map((category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
               ))}
@@ -66,7 +69,7 @@ export default function MoneyBudgets() {
               onChange={(event) => setDraft({ ...draft, amount: event.target.value })}
             />
           </label>
-          <Button type="submit">Set Budget</Button>
+          <Button type="submit">Save limit</Button>
           {formError ? <ErrorState compact description={formError} /> : null}
         </form>
       </Card>
@@ -81,8 +84,8 @@ export default function MoneyBudgets() {
           {usage.map((budget) => (
             <Card className={`money-budget-card is-${budget.status}`} key={budget.id}>
               <div className="money-section-heading">
-                <div><h3>{categoryById.get(budget.categoryId)?.name}</h3><p>{budget.percent}% used</p></div>
-                <Button variant="danger" onClick={() => deleteBudget(budget.id)}>Remove</Button>
+                <div><h3>{budget.categoryId === null ? "Overall spending" : categoryById.get(budget.categoryId)?.name}</h3><p>{budget.percent}% used</p></div>
+                <div className="money-budget-actions"><Button variant="secondary" onClick={() => setDraft({ categoryId: budget.categoryId ?? "overall", amount: minorToInput(budget.monthlyLimitMinor) })}>Edit</Button><Button variant="danger" onClick={() => deleteBudget(budget.id)}>Remove</Button></div>
               </div>
               <div className="money-progress" aria-label={`${budget.percent}% of budget used`}>
                 <i style={{ width: `${budget.visualPercent}%` }} />
@@ -96,7 +99,7 @@ export default function MoneyBudgets() {
           ))}
         </div>
       ) : (
-        <Card><EmptyState title="No budgets yet" description="Set a monthly expense-category limit above." /></Card>
+        <Card><EmptyState title="No budgets yet" description="Set an overall or category spending limit above." /></Card>
       )}
     </div>
   );

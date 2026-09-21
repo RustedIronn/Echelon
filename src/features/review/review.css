@@ -322,3 +322,31 @@
 .review-app .stage,
 .review-layout { border-color: rgba(122,91,148,.2); }
 .review-score { border-left: 4px solid var(--accent-insights); }
+
+.daily-review-workspace { min-width: 0; }
+.daily-review-workspace__top { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 20px; }
+.daily-review-workspace__top h2 { margin: 0 0 4px; }
+.daily-review-workspace__top p { margin: 0; color: var(--color-text-muted); }
+.daily-review-workspace__columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, 300px); gap: 32px; align-items: start; }
+.daily-review-main, .daily-review-history { min-width: 0; }
+.daily-review-summary { display: flex; align-items: center; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border); }
+.daily-review-summary strong { font: 600 clamp(2rem, 5vw, 3.25rem)/1 var(--font-display); color: var(--color-text); }
+.daily-review-summary span { line-height: 1.3; }
+.daily-review-summary small { color: var(--color-text-muted); }
+.daily-review-main .review-breakdown { margin: 20px 0; gap: 8px; }
+.daily-review-main .review-breakdown div { text-align: left; padding: 8px 0; border-top: 2px solid var(--color-border); }
+.daily-review-main .review-breakdown strong { font-size: 1.25rem; }
+.daily-review-reflections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
+.daily-review-reflections h3, .daily-review-history h3 { margin: 0 0 10px; }
+.daily-review-reflections p, .daily-review-reflections li { color: var(--color-text-muted); }
+.daily-review-history .history-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.daily-review-history .history-item small { grid-column: 1; color: var(--color-text-muted); }
+.daily-review-history .history-item strong { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.daily-review-history .history-item[aria-current="date"] { color: var(--color-accent); border-color: currentColor; }
+@media (max-width: 760px) {
+  .daily-review-workspace__columns { grid-template-columns: minmax(0, 1fr); }
+  .daily-review-workspace__top { align-items: start; flex-direction: column; }
+}
+@media (max-width: 500px) {
+  .daily-review-reflections { grid-template-columns: minmax(0, 1fr); }
+}

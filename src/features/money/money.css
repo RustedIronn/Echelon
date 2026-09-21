@@ -381,3 +381,4 @@
 .money-stage { border: 0; background: rgba(241,242,245,.68); }
 .money-balance-card { border: 0; border-left: 4px solid var(--accent-money); box-shadow: none; }
 @media (max-width: 760px) { .money-filter-grid.is-compact { grid-template-columns: minmax(0,1fr); } }
+.money-budget-actions { display: flex; flex-wrap: wrap; gap: 8px; }

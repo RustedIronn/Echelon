@@ -1,6 +1,5 @@
-import { Card } from "@ui";
-import { Link } from "react-router-dom";
-import { formatDayKey } from "@/shared/date";
+import { Link, useSearchParams } from "react-router-dom";
+import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
 import { useToday } from "@/features/schedule/todayStore";
 import { useHabits } from "@features/habits/store";
 import { useFocus } from "@features/focus/store";
@@ -16,6 +15,7 @@ import ComposureReview from "./ComposureReview";
 import { useComposure } from "../composureStore";
 
 export default function DailyReview() {
+  const [searchParams] = useSearchParams();
   const { tasks } = useToday();
   const { habits } = useHabits();
   const { sessions } = useFocus();
@@ -36,70 +36,35 @@ export default function DailyReview() {
     workoutCompleted: review.workoutCompleted,
   });
   const { history } = useDailyReviews({ ...review, breakdown });
+  const selectedDate = searchParams.get("date");
+  const selectedReview = selectedDate && isValidDayKey(selectedDate) && selectedDate !== getToday()
+    ? history.find((item) => item.date === selectedDate)
+    : null;
+  const displayed = selectedReview ?? { ...review, breakdown };
   const composureReviews = useComposure((state) => state.data.reviews);
   const composureByDate = new Map(composureReviews.map((entry) => [entry.date, entry]));
 
   return (
-    <div className="stack">
-      <Card>
-        <div className="section-header">
-          <h2>Automated Review</h2>
-          <p>Generated from today&apos;s execution.</p>
-        </div>
-
-        <div className="review-score">
-          <strong>{review.score}%</strong>
-          <span>Execution Score</span>
-        </div>
-
-        <ReviewBreakdown breakdown={breakdown} />
-
-        {review.todayWorkout && (
-          <div className="review-workout">
-            <h3>Training</h3>
-            <p>{review.todayWorkout.workout}</p>
+    <div className="daily-review-workspace">
+      <div className="daily-review-workspace__top"><div><h2>{selectedReview ? formatDayKey(selectedReview.date) : "Today’s review"}</h2><p>{selectedReview ? "Saved reflection" : "Generated from today’s activity"}</p></div><Link to="/insights/analysis">Explore in Analysis →</Link></div>
+      <div className="daily-review-workspace__columns">
+        <section className="daily-review-main" aria-label="Daily execution review">
+          <div className="daily-review-summary"><strong>{displayed.score}%</strong><span>Execution score<br /><small>Tasks · Habits · Focus · Workout</small></span></div>
+          {displayed.breakdown?.length ? <ReviewBreakdown breakdown={displayed.breakdown} compact /> : <p>Contribution details were not stored for this older review.</p>}
+          {!selectedReview && review.todayWorkout ? <p className="review-workout">Training: {review.todayWorkout.workout}</p> : null}
+          <div className="daily-review-reflections">
+            <section><h3>What went well</h3>{displayed.wins?.length ? <ul>{displayed.wins.map((item) => <li key={item}>{item}</li>)}</ul> : <p>No wins recorded for this day.</p>}</section>
+            <section><h3>What to adjust</h3>{displayed.improvements?.length ? <ul>{displayed.improvements.map((item) => <li key={item}>{item}</li>)}</ul> : <p>No improvements recorded for this day.</p>}</section>
           </div>
-        )}
-
-        <div className="review-section">
-          <h3>What went well</h3>
-          <ul>
-            {review.wins.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </div>
-
-        <div className="review-section">
-          <h3>Needs improvement</h3>
-          <ul>
-            {review.improvements.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </div>
-
-        <div className="daily-composure-section">
-          <div className="section-header">
-            <h2>Composure</h2>
-            <p>Close the day by reflecting on your own response under pressure.</p>
-          </div>
-          <ComposureReview todayOnly embedded />
-        </div>
-      </Card>
-
-      <Card>
-        <div className="section-header">
-          <h2>Recent Reviews</h2>
-          <p>Your consistency over time.</p>
-        </div>
-
-        <div className="review-history">
-          {history.slice(-7).reverse().map((day) => (
-            <Link className="history-item" key={`${day.date}-${day.score}`} to={`/insights/composure?date=${day.date}`}>
-              <span>{formatDayKey(day.date)}</span>
-              <span>{composureByDate.get(day.date)?.composureRating ? `Composure ${composureByDate.get(day.date).composureRating}/5` : "Composure not rated"}</span>
-              <strong>{day.score}%</strong>
-            </Link>
-          ))}
-        </div>
-      </Card>
+          {selectedReview ? <Link to="/insights/daily">Back to today</Link> : <div className="daily-composure-section"><div className="section-header"><h2>Composure</h2><p>Reflect on your own response under pressure.</p></div><ComposureReview todayOnly embedded /></div>}
+        </section>
+        <aside className="daily-review-history" aria-label="Browse saved reviews">
+          <h3>Previous reviews</h3>
+          {history.length ? <div className="review-history">{history.slice().reverse().map((day) => <Link className="history-item" key={day.date} to={`/insights/daily?date=${day.date}`} aria-current={day.date === selectedDate ? "date" : undefined}>
+            <span>{formatDayKey(day.date)}</span><small>{composureByDate.get(day.date)?.composureRating ? `Composure ${composureByDate.get(day.date).composureRating}/5` : ""}</small><strong>{day.score}%</strong>
+          </Link>)}</div> : <p>No saved reviews yet.</p>}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -82,7 +82,7 @@ export default function MoneyOverview() {
             <div className="money-compact-list">
               {budgets.map((budget) => (
                 <div key={budget.id}>
-                  <span>{categoryById.get(budget.categoryId)?.name}</span>
+                  <span>{budget.categoryId === null ? "Overall spending" : categoryById.get(budget.categoryId)?.name}</span>
                   <strong className={`is-${budget.status}`}>{budget.percent}%</strong>
                 </div>
               ))}
