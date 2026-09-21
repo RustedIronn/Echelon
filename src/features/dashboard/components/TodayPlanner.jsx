@@ -1,12 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowUpRight, Check, Circle, Crosshair, ListTodo } from "lucide-react";
 
 import { Button, Card, EmptyState } from "@ui";
 import { usePlanner } from "@features/planner/store";
 import { getTodayPlannerTasks, toFocusMission } from "@features/planner/tasks";
+import { useFocusSurface } from "@features/focus/surface";
 
 export default function TodayPlanner() {
-  const navigate = useNavigate();
+  const openFocus = useFocusSurface((state) => state.openFor);
   const { document, toggleTask } = usePlanner();
   const tasks = getTodayPlannerTasks(document.tasks);
   const open = tasks.filter((task) => !task.completedAt);
@@ -25,7 +26,7 @@ export default function TodayPlanner() {
                 {task.completedAt ? <Check size={16} /> : <Circle size={16} />}
               </button>
               <div><strong>{task.title}</strong><small>{task.time || "Flexible"} · {task.priority}</small></div>
-              {!task.completedAt ? <Button variant="ghost" onClick={() => navigate("/focus", { state: { mission: toFocusMission(task) } })}><Crosshair size={15} /> Focus</Button> : null}
+              {!task.completedAt ? <Button variant="ghost" onClick={() => openFocus(toFocusMission(task))}><Crosshair size={15} /> Focus</Button> : null}
             </article>
           ))}
         </div>

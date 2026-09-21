@@ -23,6 +23,8 @@
 .sidebar-nav a.active::before { content: ""; position: absolute; left: -20px; width: 3px; height: 22px; background: #b994ce; box-shadow: 0 0 14px rgba(185,148,206,.5); }
 
 .sidebar-dock { margin-top: auto; padding-top: 24px; }
+.sidebar-session-link { width: 100%; min-width: 0; margin-bottom: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #f2f3f6; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-session-link:hover { background: rgba(255,255,255,.14); color: #fff; }
 .sync-status { display: flex; align-items: center; gap: 8px; margin: 0 10px 12px; color: #9fa6b4; font-size: var(--text-xs); }
 .sync-status > span, .mobile-sync > span { width: 7px; height: 7px; border-radius: 50%; background: #88838a; }
 .sync-status--synced > span, .mobile-sync--synced > span { background: #678454; }
@@ -45,6 +47,8 @@
   .mobile-topbar-brand small { color: var(--color-text-muted); font-size: 10px; }
   .mobile-topbar-mark img { width: 30px; height: 30px; }
   .mobile-sync { display: grid; width: 32px; height: 32px; place-items: center; }
+  .mobile-session-link { min-height: 36px; padding: 0 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #f5f5f7; }
+  .mobile-session-link:hover { background: rgba(255,255,255,.14); color: #fff; }
   .mobile-nav { position: fixed; z-index: var(--z-nav); left: 0; right: 0; bottom: 0; display: flex; height: 72px; align-items: center; justify-content: space-around; padding: 8px 12px; border-top: 1px solid rgba(255,255,255,.08); background: rgba(39,42,52,.97); backdrop-filter: blur(16px); }
   .mobile-nav > a, .mobile-more > button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 8px; border: 0; background: transparent; color: var(--color-text-muted); box-shadow: none; font-size: 11px; text-decoration: none; }
   .mobile-nav > a.active, .mobile-more > button.active { color: #d7b9df; }

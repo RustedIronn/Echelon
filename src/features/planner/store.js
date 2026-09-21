@@ -9,6 +9,8 @@ import {
   createPlannerTask,
   deletePlannerTask,
   reschedulePlannerTask,
+  setPlannerTaskPriority,
+  plannerTaskFromLegacyLane,
   togglePlannerTask,
 } from "./tasks";
 
@@ -38,6 +40,15 @@ export const usePlanner = create((set, get) => ({
     return tasks === state.document.tasks ? false : commit(set, { ...state.document, tasks });
   },
 
+  importLegacyLaneTask: (legacyTask) => {
+    const state = get();
+    if (!hasOwnedAccess(state.owner)) return false;
+    const task = plannerTaskFromLegacyLane(legacyTask);
+    if (!task) return false;
+    if (state.document.tasks.some((item) => item.id === task.id)) return true;
+    return commit(set, { ...state.document, tasks: [...state.document.tasks, task] });
+  },
+
   toggleTask: (id, now = new Date()) => {
     const state = get();
     if (!hasOwnedAccess(state.owner)) return false;
@@ -49,6 +60,13 @@ export const usePlanner = create((set, get) => ({
     const state = get();
     if (!hasOwnedAccess(state.owner)) return false;
     const tasks = reschedulePlannerTask(state.document.tasks, id, date, time, now);
+    return tasks === state.document.tasks ? false : commit(set, { ...state.document, tasks });
+  },
+
+  setPriority: (id, priority, now = new Date()) => {
+    const state = get();
+    if (!hasOwnedAccess(state.owner)) return false;
+    const tasks = setPlannerTaskPriority(state.document.tasks, id, priority, now);
     return tasks === state.document.tasks ? false : commit(set, { ...state.document, tasks });
   },
 

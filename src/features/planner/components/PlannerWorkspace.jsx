@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide-react";
 
-import { Button, Card, ContextMenu, EmptyState, NavDropdown, PageTitle, PanelHeader, Stage } from "@ui";
+import { Button, Card, ContextMenu, EmptyState, PageTitle, PanelHeader, Stage } from "@ui";
 import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
 import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../constants";
 import { usePlanner } from "../store";
@@ -12,40 +12,32 @@ import {
   shiftPlannerDate,
   toFocusMission,
 } from "../tasks";
-import { useTools } from "@features/tools/store";
-import { createToolsId } from "@features/tools/utils";
-import NowNextLater from "@features/tools/components/NowNextLater";
-import BrainDump from "@features/tools/components/BrainDump";
-import TaskBreakdown from "@features/tools/components/TaskBreakdown";
+import { useFocusSurface } from "@features/focus/surface";
+import BreakdownPanel from "@features/tools/components/BreakdownPanel";
 
 const getView = (pathname) => {
-  if (pathname.endsWith("/lanes")) return "lanes";
-  if (pathname.endsWith("/brain-dump")) return "brain-dump";
-  if (pathname.endsWith("/breakdowns")) return "breakdowns";
   if (pathname.endsWith("/today")) return "today";
   if (pathname.endsWith("/upcoming")) return "upcoming";
+  if (pathname.endsWith("/completed")) return "completed";
   return "inbox";
 };
 
-function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus }) {
+function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus, onPriority, scheduleOnOpen = false }) {
   const today = getToday();
   const tomorrow = shiftPlannerDate(today, 1);
-  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduling, setRescheduling] = useState(scheduleOnOpen);
   const [nextDate, setNextDate] = useState(task.date ?? today);
   const [nextTime, setNextTime] = useState(task.time ?? "");
   const [breakdownOpen, setBreakdownOpen] = useState(false);
-  const [stepText, setStepText] = useState("");
-  const [stepId, setStepId] = useState(() => createToolsId("step"));
-  const { data: toolsData, addBreakdown, addBreakdownStep, toggleBreakdownStep, removeBreakdownStep } = useTools();
-  const breakdownId = `breakdown:${task.id}`;
-  const breakdown = toolsData.breakdowns.find((item) => item.id === breakdownId);
   const when = task.date
     ? `${formatDayKey(task.date)}${task.time ? ` · ${task.time}` : ""}`
     : "Unscheduled";
 
   const items = [
     { id: "focus", label: "Open in Focus", onSelect: () => onFocus(task) },
-    { id: "breakdown", label: "Break down task", onSelect: () => { if (!breakdown) addBreakdown(task.title, { id: breakdownId }); setBreakdownOpen(true); } },
+    { id: "priority-high", label: "Make high priority", disabled: task.priority === "high", onSelect: () => onPriority(task.id, "high") },
+    { id: "priority-normal", label: "Set normal priority", disabled: task.priority === "normal", onSelect: () => onPriority(task.id, "normal") },
+    { id: "breakdown", label: "Break down task", onSelect: () => setBreakdownOpen(true) },
     { id: "today", label: "Move to today", onSelect: () => onReschedule(task.id, today, task.time) },
     { id: "tomorrow", label: "Move to tomorrow", onSelect: () => onReschedule(task.id, tomorrow, task.time) },
     {
@@ -94,13 +86,7 @@ function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus }) {
           {breakdownOpen ? (
             <section className="planner-breakdown" aria-label={`Steps for ${task.title}`}>
               <div className="planner-breakdown-heading"><strong>Small steps</strong><button type="button" onClick={() => setBreakdownOpen(false)}>Done</button></div>
-              {breakdown?.steps?.length ? <div className="planner-breakdown-steps">{breakdown.steps.map((step) => (
-                <div key={step.id}><label><input type="checkbox" checked={step.completed} onChange={() => toggleBreakdownStep(breakdownId, step.id)} /><span>{step.text}</span></label><button type="button" onClick={() => removeBreakdownStep(breakdownId, step.id)}>Remove</button></div>
-              ))}</div> : <p>No steps yet. Add only the next useful move.</p>}
-              <form onSubmit={(event) => { event.preventDefault(); if (addBreakdownStep(breakdownId, stepText, { id: stepId })) { setStepText(""); setStepId(createToolsId("step")); } }}>
-                <label><span className="sr-only">New step</span><input value={stepText} onChange={(event) => setStepText(event.target.value)} placeholder="Add a small next step" /></label>
-                <Button type="submit">Add step</Button>
-              </form>
+              <BreakdownPanel parent={{ type: "planner", id: task.id }} title={task.title} />
             </section>
           ) : null}
         </div>
@@ -112,12 +98,13 @@ function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus }) {
 export default function PlannerWorkspace({ embedded = false, basePath = "/planner" }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const openFocusSurface = useFocusSurface((state) => state.openFor);
   const view = getView(location.pathname);
   const captureParams = new URLSearchParams(location.search);
   const requestedDate = captureParams.get("date");
   const captureRequested = captureParams.get("capture") === "1" && isValidDayKey(requestedDate);
   const linkedTaskId = captureParams.get("task");
-  const { document, addTask, toggleTask, rescheduleTask, deleteTask } = usePlanner();
+  const { document, addTask, toggleTask, rescheduleTask, deleteTask, setPriority } = usePlanner();
   const visibleTasks = getPlannerTasksForView(document.tasks, view);
   const linkedTask = linkedTaskId
     ? document.tasks.find((task) => task.id === linkedTaskId) ?? null
@@ -152,15 +139,8 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
       navigate(`${destination}?task=${encodeURIComponent(submittedId)}`, { replace: true });
     }
   };
-  const openFocus = (task) => navigate("/focus", { state: { mission: toFocusMission(task) } });
+  const openFocus = (task) => openFocusSurface(toFocusMission(task));
   const Workspace = embedded ? "div" : Stage;
-  const toolView = view === "lanes"
-    ? <NowNextLater />
-    : view === "brain-dump"
-      ? <BrainDump />
-      : view === "breakdowns"
-        ? <TaskBreakdown />
-        : null;
 
   return (
     <div className="page planner-page">
@@ -168,19 +148,15 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
 
       <div className="planner-view-navigation">
         <nav className="subnav" aria-label="Planner views">
-        {PLANNER_VIEWS.slice(0, 3).map((item) => {
+        {PLANNER_VIEWS.map((item) => {
           const suffix = item.id === "inbox" ? "" : `/${item.id}`;
           return <NavLink key={item.id} to={`${basePath}${suffix}`} end={item.id === "inbox"}>{item.label}</NavLink>;
         })}
         </nav>
-        <NavDropdown
-          label="Organize"
-          items={PLANNER_VIEWS.slice(3).map((item) => ({ ...item, path: `${basePath}/${item.id}` }))}
-        />
       </div>
 
-      <Workspace {...(!embedded ? { tone: "soft" } : {})} className={`planner-workspace ${toolView ? "planner-workspace--tool" : ""}`.trim()}>
-        {toolView ?? <>
+      <Workspace {...(!embedded ? { tone: "soft" } : {})} className="planner-workspace">
+        {captureParams.get("noteKept") === "1" ? <p role="status">Task created. The original long note remains in Notes / Capture so no text is lost.</p> : null}
         <Card material="feature" className="planner-capture">
           <div className="planner-capture-heading">
             <div><span>Quick capture</span><h2>Put one thing somewhere real.</h2></div>
@@ -200,7 +176,7 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
 
         <section className="planner-list-section">
           <PanelHeader
-            eyebrow={view === "inbox" ? "Unscheduled" : view === "today" ? "On the desk" : "On the horizon"}
+            eyebrow={view === "inbox" ? "Unscheduled" : view === "today" ? "On the desk" : view === "completed" ? "Finished" : "On the horizon"}
             title={linkedTask && !visibleTasks.some((task) => task.id === linkedTask.id)
               ? "Selected item"
               : PLANNER_VIEWS.find((item) => item.id === view)?.label}
@@ -208,11 +184,10 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
           />
           <div className="planner-task-list">
             {tasks.length ? tasks.map((task) => (
-              <PlannerTask key={task.id} task={task} onToggle={toggleTask} onReschedule={rescheduleTask} onDelete={deleteTask} onFocus={openFocus} />
+              <PlannerTask key={task.id} task={task} onToggle={toggleTask} onReschedule={rescheduleTask} onDelete={deleteTask} onFocus={openFocus} onPriority={setPriority} scheduleOnOpen={linkedTask?.id === task.id && captureParams.get("schedule") === "1"} />
             )) : <EmptyState title={`Nothing in ${view}`} description={view === "inbox" ? "Unscheduled ideas will wait here." : "This view is clear."} />}
           </div>
         </section>
-        </>}
       </Workspace>
     </div>
   );

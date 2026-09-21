@@ -1,4 +1,4 @@
-export const TOOLS_VERSION = 1;
+export const TOOLS_VERSION = 2;
 export const TOOLS_STORAGE_KEY = "echelon_tools_v1";
 
 export const TASK_LANES = ["now", "next", "later"];

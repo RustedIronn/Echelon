@@ -1,8 +1,6 @@
 import { Button, EmptyState } from "@ui";
-import { getPrimaryMission } from "@features/focus/missions";
 
-export default function CurrentMission({ tasks, onFocus }) {
-  const mission = getPrimaryMission(tasks);
+export default function CurrentMission({ mission, onFocus }) {
 
   return (
     <section className="mission-card">
@@ -13,7 +11,7 @@ export default function CurrentMission({ tasks, onFocus }) {
           <>
             <h1>{mission.title}</h1>
 
-            <span>{mission.end ? `${mission.start}–${mission.end}` : mission.start}</span>
+            <span>{mission.source === "planner" ? `Planner · ${mission.priority} priority${mission.start !== "Flexible" ? ` · ${mission.start}` : ""}` : mission.end ? `${mission.start}–${mission.end}` : mission.start}</span>
 
             <p>{mission.description}</p>
           </>

@@ -39,7 +39,7 @@ export default function TodaySummaries() {
         <div className="today-support-copy">
           <span>{trainedToday ? "Training logged" : workout ? "Today’s training" : "Recovery day"}</span>
           <strong>{trainedToday ? "Body work complete" : workout?.title ?? "Restore and reset"}</strong>
-          <small>{trainedToday ? "Stored in workout history" : workout ? `${workout.exercises.length} exercises · about ${workoutMinutes} min` : "No prescribed workout today"}</small>
+          <small>{trainedToday ? "Stored in workout history" : workout ? `${workout.exercises.length} exercises · ${workoutMinutes === null ? "flexible duration" : `about ${workoutMinutes} min`}` : "No prescribed workout today"}</small>
           <Link to="/workouts/today">{trainedToday ? "View session" : workout ? "Open workout" : "Open training"} <ArrowUpRight size={14} /></Link>
         </div>
       </Card>

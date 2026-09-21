@@ -1,9 +1,8 @@
 import { EmptyState, PanelHeader } from "@ui";
-import { getMissionQueue } from "@features/focus/missions";
 import TodayTaskRow from "./TodayTaskRow";
 
-export default function NextUp({ tasks, onFocus, onToggle, limit = 3 }) {
-  const next = getMissionQueue(tasks).slice(0, limit);
+export default function NextUp({ items, onFocus, onToggle, limit = 3 }) {
+  const next = items.slice(0, limit);
 
   return (
     <section className="next-up-card">
@@ -15,7 +14,7 @@ export default function NextUp({ tasks, onFocus, onToggle, limit = 3 }) {
               key={task.id}
               task={task}
               onFocus={onFocus}
-              onToggle={onToggle}
+              onToggle={() => onToggle(task)}
               status={index === 0 ? "next" : "later"}
             />
           ))}

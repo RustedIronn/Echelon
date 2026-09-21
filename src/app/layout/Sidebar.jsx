@@ -5,15 +5,19 @@ import { useSync } from "@/ui/useSync";
 import { useAuth } from "@core/auth/store";
 import { logout } from "@core/auth/service";
 import { desktopNavigation } from "./navigation";
+import { useFocus } from "@features/focus/store";
+import { useFocusSurface } from "@features/focus/surface";
 
 const navigationGroups = [
-  { label: "Run the day", ids: ["today", "plan", "calendar", "focus", "habits"] },
+  { label: "Run the day", ids: ["today", "plan", "calendar", "habits"] },
   { label: "Review and manage", ids: ["workouts", "money", "insights", "settings"] },
 ];
 
 export default function Sidebar() {
   const { user } = useAuth();
   const { status } = useSync();
+  const sessionTask = useFocus((state) => state.task);
+  const openFocus = useFocusSurface((state) => state.openFor);
 
   return (
     <aside className="sidebar">
@@ -44,6 +48,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-dock">
+        {sessionTask ? <button type="button" className="sidebar-session-link" onClick={() => openFocus()}>Resume focus · {sessionTask.title}</button> : null}
         <div
           className={`sync-status sync-status--${status}`}
           role="status"

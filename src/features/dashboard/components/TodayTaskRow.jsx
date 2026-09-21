@@ -7,7 +7,8 @@ import { getScheduleItemDuration } from "@features/schedule/time";
 export default function TodayTaskRow({ task, onFocus, onToggle, compact = false, status }) {
   const category = categories[task.category] ?? categories.foundation;
   const Icon = category.icon;
-  const duration = getScheduleItemDuration(task);
+  const planner = task.source === "planner";
+  const duration = planner ? null : getScheduleItemDuration(task);
   const actions = [
     {
       id: "focus",
@@ -44,7 +45,7 @@ export default function TodayTaskRow({ task, onFocus, onToggle, compact = false,
               <strong>{task.title}</strong>
               {status ? <small>{task.done ? "Complete" : status}</small> : null}
             </span>
-            <span>{task.start}–{task.end} · {duration}m · {category.name}</span>
+            <span>{planner ? `Planner · ${task.start === "Flexible" ? "Any time" : task.start} · ${task.priority} priority` : `${task.start}–${task.end} · ${duration}m · ${category.name}`}</span>
           </div>
           {!compact && !task.done ? (
             <Button

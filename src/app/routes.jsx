@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./layout/Layout";
 import Today from "../pages/Today";
-import Focus from "../pages/Focus";
+import FocusCompatibility from "@features/focus/components/FocusCompatibility";
 import Habits from "../pages/Habits";
 import Calendar from "../pages/Calendar";
 import DailyReview from "@features/review/components/DailyReview";
@@ -18,6 +18,7 @@ import MoneyTransactions from "@features/money/components/MoneyTransactions";
 import MoneyBudgets from "@features/money/components/MoneyBudgets";
 import MoneyGoals from "@features/money/components/MoneyGoals";
 import Planner from "@pages/Planner";
+import NotesWorkspace from "@features/tools/components/NotesWorkspace";
 import PlanLayout from "@features/plan/components/PlanLayout";
 import WorkoutToday from "@features/workout/components/WorkoutToday";
 import WorkoutHistory from "@features/workout/components/WorkoutHistory";
@@ -36,7 +37,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "focus",
-        element: <Focus />,
+        element: <FocusCompatibility />,
       },
       {
         path: "habits",
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
       { path: "planner", element: <Navigate to="/plan/planner" replace /> },
       { path: "planner/today", element: <Navigate to="/plan/planner/today" replace /> },
       { path: "planner/upcoming", element: <Navigate to="/plan/planner/upcoming" replace /> },
+      { path: "planner/completed", element: <Navigate to="/plan/planner/completed" replace /> },
       {
         path: "plan",
         element: <PlanLayout />,
@@ -71,14 +73,16 @@ export const router = createBrowserRouter([
           { path: "planner", element: <Planner embedded basePath="/plan/planner" /> },
           { path: "planner/today", element: <Planner embedded basePath="/plan/planner" /> },
           { path: "planner/upcoming", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/lanes", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/brain-dump", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/breakdowns", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner/completed", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "notes", element: <NotesWorkspace /> },
+          { path: "planner/lanes", element: <Navigate to="/plan/planner" replace /> },
+          { path: "planner/brain-dump", element: <Navigate to="/plan/notes" replace /> },
+          { path: "planner/breakdowns", element: <Navigate to="/plan/notes?legacyBreakdowns=1" replace /> },
         ],
       },
       {
         path: "analytics",
-        element: <Navigate to="/insights/trends" replace />,
+        element: <Navigate to="/insights/analysis" replace />,
       },
       {
         path: "insights",
@@ -87,7 +91,8 @@ export const router = createBrowserRouter([
           { index: true, element: <InsightsOverview /> },
           { path: "daily", element: <DailyReview /> },
           { path: "composure", element: <ComposureReview /> },
-          { path: "trends", element: <Analytics /> },
+          { path: "analysis", element: <Analytics /> },
+          { path: "trends", element: <Navigate to="/insights/analysis" replace /> },
         ],
       },
       {
@@ -138,10 +143,10 @@ export const router = createBrowserRouter([
           { path: "goals", element: <MoneyGoals /> },
         ],
       },
-      { path: "tools", element: <Navigate to="/plan/planner/lanes" replace /> },
-      { path: "tools/now", element: <Navigate to="/plan/planner/lanes" replace /> },
-      { path: "tools/brain-dump", element: <Navigate to="/plan/planner/brain-dump" replace /> },
-      { path: "tools/breakdown", element: <Navigate to="/plan/planner/breakdowns" replace /> },
+      { path: "tools", element: <Navigate to="/plan/notes" replace /> },
+      { path: "tools/now", element: <Navigate to="/plan/planner" replace /> },
+      { path: "tools/brain-dump", element: <Navigate to="/plan/notes" replace /> },
+      { path: "tools/breakdown", element: <Navigate to="/plan/notes?legacyBreakdowns=1" replace /> },
       { path: "tools/timer", element: <Navigate to="/focus" replace /> },
       { path: "tools/reset", element: <Navigate to="/settings" replace /> },
     ],

@@ -319,3 +319,16 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.focus-surface-drawer { width: min(520px, 100%); }
+.focus-surface { display: grid; gap: 16px; min-width: 0; }
+.focus-surface .focus-card { min-height: 240px; padding: 24px 16px; }
+.focus-surface .focus-time { font-size: clamp(3.5rem, 13vw, 5.5rem); }
+.focus-surface__missions h3 { margin: 0 0 8px; font-size: var(--text-md); }
+.focus-surface__mission-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 190px; overflow-y: auto; }
+.focus-surface__mission-list button { min-width: 0; justify-content: flex-start; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.focus-surface__mission-list button:hover, .focus-surface__mission-list button.is-selected { background: var(--color-surface-subtle); color: var(--color-text); border-color: var(--color-focus); }
+.focus-surface__history { border-top: 1px solid var(--color-border); padding-top: 12px; }
+.focus-surface__history summary { cursor: pointer; }
+.focus-surface__history ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.focus-surface__history li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+@media (max-width: 520px) { .focus-surface__mission-list { grid-template-columns: minmax(0, 1fr); } }

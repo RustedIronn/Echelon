@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { hasMatchingOwnership } from "@core/auth/ownership";
+import { useAuth } from "@core/auth/store";
 
 import {
   getStorageOwner,
@@ -8,9 +10,11 @@ import {
   addBrainDumpItems,
   createBrainDumpItems,
   deleteBrainDumpItem,
+  normalizeBrainDumpItem,
   promoteBrainDumpItem,
 } from "./brainDump.js";
 import {
+  attachBreakdown,
   addBreakdown,
   addBreakdownStep,
   createBreakdown,
@@ -23,6 +27,7 @@ import {
   toggleBreakdownStep,
 } from "./breakdowns.js";
 import { DEFAULT_RESET_STEPS } from "./constants.js";
+import { createNote, setNoteArchived, updateNote } from "./notes.js";
 import { defaultResetPreferences, editResetStep } from "./reset.js";
 import { loadToolsDocument, saveToolsDocument } from "./storage.js";
 import {
@@ -48,7 +53,8 @@ import { createToolsId } from "./utils.js";
 const getOwnedData = (get) => {
   const owner = getStorageOwner();
   const state = get();
-  return owner && state.owner === owner ? state.data : null;
+  return hasMatchingOwnership(useAuth.getState().user?.uid ?? null, owner, state.owner)
+    ? state.data : null;
 };
 
 const commit = (set, data) => {
@@ -62,6 +68,40 @@ export const useTools = create((set, get) => ({
   owner: getStorageOwner(),
   data: loadToolsDocument(),
   timer: IDLE_TIMER,
+
+  addNote: (input, metadata = {}) => {
+    const current = getOwnedData(get);
+    if (!current) return false;
+    const note = createNote(input, { id: metadata.id ?? createToolsId("note"), now: metadata.now });
+    if (!note || current.notes.some((item) => item.id === note.id)) return false;
+    return commit(set, { ...current, notes: [...current.notes, note] });
+  },
+
+  updateNote: (id, patch, now = new Date()) => {
+    const current = getOwnedData(get);
+    if (!current) return false;
+    const notes = updateNote(current.notes, id, patch, now);
+    return notes === current.notes ? false : commit(set, { ...current, notes });
+  },
+
+  archiveNote: (id, archived) => {
+    const current = getOwnedData(get);
+    if (!current) return false;
+    const notes = setNoteArchived(current.notes, id, archived);
+    return notes === current.notes ? false : commit(set, { ...current, notes });
+  },
+
+  deleteNote: (id) => {
+    const current = getOwnedData(get);
+    if (!current || !current.notes.some((note) => note.id === id)) return false;
+    return commit(set, { ...current, notes: current.notes.filter((note) => note.id !== id) });
+  },
+
+  markLaneMigrated: (id) => {
+    const current = getOwnedData(get);
+    if (!current || current.migratedLaneIds.includes(id) || !current.tasks.some((task) => task.id === id)) return false;
+    return commit(set, { ...current, migratedLaneIds: [...current.migratedLaneIds, id] });
+  },
 
   addTask: (input, metadata = {}) => {
     const current = getOwnedData(get);
@@ -130,6 +170,21 @@ export const useTools = create((set, get) => ({
       : commit(set, { ...current, brainDump });
   },
 
+  captureNote: (text, metadata = {}) => {
+    const current = getOwnedData(get);
+    if (!current) return false;
+    const timestamp = new Date(metadata.now ?? Date.now()).toISOString();
+    const item = normalizeBrainDumpItem({
+      id: metadata.id ?? createToolsId("note"),
+      text,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    if (!item) return false;
+    const brainDump = addBrainDumpItems(current.brainDump, [item]);
+    return brainDump === current.brainDump ? false : commit(set, { ...current, brainDump });
+  },
+
   deleteBrainDump: (id) => {
     const current = getOwnedData(get);
     if (!current) return false;
@@ -167,6 +222,7 @@ export const useTools = create((set, get) => ({
     const breakdown = createBreakdown(title, {
       id: metadata.id ?? createToolsId("breakdown"),
       now: metadata.now,
+      parent: metadata.parent,
     });
     const breakdowns = addBreakdown(current.breakdowns, breakdown);
     return breakdowns === current.breakdowns
@@ -242,6 +298,13 @@ export const useTools = create((set, get) => ({
     return breakdowns === current.breakdowns
       ? false
       : commit(set, { ...current, breakdowns });
+  },
+
+  attachBreakdown: (id, parent) => {
+    const current = getOwnedData(get);
+    if (!current) return false;
+    const breakdowns = attachBreakdown(current.breakdowns, id, parent);
+    return breakdowns === current.breakdowns ? false : commit(set, { ...current, breakdowns });
   },
 
   sendBreakdownStep: (breakdownId, lane, options = {}) => {

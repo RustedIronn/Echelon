@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useSync } from "@/ui/useSync";
+import { useFocus } from "@features/focus/store";
+import { useFocusSurface } from "@features/focus/surface";
 
 import {
   mobileMoreNavigation,
@@ -14,6 +16,8 @@ export default function MobileNav() {
   const moreButtonRef = useRef(null);
   const location = useLocation();
   const { status } = useSync();
+  const sessionTask = useFocus((state) => state.task);
+  const openFocus = useFocusSurface((state) => state.openFor);
   const moreActive = mobileMoreNavigation.some(
     ({ path }) => location.pathname.startsWith(path),
   );
@@ -50,6 +54,7 @@ export default function MobileNav() {
         <span className={`mobile-sync mobile-sync--${status}`} aria-label={`Sync status: ${status}`}>
           <span aria-hidden="true" />
         </span>
+        {sessionTask ? <button type="button" className="mobile-session-link" onClick={() => openFocus()} aria-label={`Resume focus on ${sessionTask.title}`}>Session</button> : null}
       </header>
       <nav className="mobile-nav" aria-label="Primary navigation">
       {mobilePrimaryNavigation.map(({ id, label, path, icon: Icon }) => (

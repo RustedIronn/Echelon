@@ -77,6 +77,21 @@ export function createPlannerTask(input, options = {}) {
   });
 }
 
+export function plannerTaskFromLegacyLane(task, today = getToday()) {
+  if (!task || typeof task.id !== "string") return null;
+  return normalizePlannerTask({
+    id: `planner:legacy:${task.id}`,
+    title: task.text,
+    notes: "",
+    date: task.lane === "now" ? today : null,
+    time: null,
+    priority: task.lane === "now" ? "high" : task.lane === "later" ? "low" : "normal",
+    completedAt: task.completedAt,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  });
+}
+
 export function addPlannerTask(tasks, task) {
   if (!task || tasks.some((item) => item.id === task.id)) return tasks;
   return [...tasks, task];
@@ -117,9 +132,21 @@ export function deletePlannerTask(tasks, id) {
   return tasks.filter((task) => task.id !== id);
 }
 
+export function setPlannerTaskPriority(tasks, id, priority, now = new Date()) {
+  if (!PRIORITIES.has(priority)) return tasks;
+  let changed = false;
+  const next = tasks.map((task) => {
+    if (task.id !== id || task.priority === priority) return task;
+    changed = true;
+    return { ...task, priority, updatedAt: new Date(now).toISOString() };
+  });
+  return changed ? next : tasks;
+}
+
 export function getPlannerTasksForView(tasks, view, now = new Date()) {
   const today = getToday(now);
   const filtered = tasks.filter((task) => {
+    if (view === "completed") return Boolean(task.completedAt);
     if (view === "today") return task.date === today;
     if (view === "upcoming") return task.date && task.date > today && !task.completedAt;
     return !task.date && !task.completedAt;
@@ -130,6 +157,10 @@ export function getPlannerTasksForView(tasks, view, now = new Date()) {
     const leftDate = left.date ?? "9999-12-31";
     const rightDate = right.date ?? "9999-12-31";
     if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+    if (!left.date && left.priority !== right.priority) {
+      const rank = { high: 0, normal: 1, low: 2 };
+      return rank[left.priority] - rank[right.priority];
+    }
     if ((left.time ?? "99:99") !== (right.time ?? "99:99")) return (left.time ?? "99:99").localeCompare(right.time ?? "99:99");
     return left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id);
   });

@@ -1,23 +1,20 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useSchedule } from "@features/schedule/scheduleStore";
 import { useToday } from "@features/schedule/todayStore";
 import ScheduleEditor from "@features/schedule/components/ScheduleEditor";
 import Timeline from "@features/schedule/components/Timeline";
 import { Button, Drawer, PageTitle, PanelHeader } from "@ui";
+import { useFocusSurface } from "@features/focus/surface";
 
 export default function Schedule({ embedded = false }) {
   const schedule = useSchedule((state) => state.schedule);
   const tasks = useToday((state) => state.tasks);
   const toggleTask = useToday((state) => state.toggleTask);
-  const navigate = useNavigate();
+  const openFocus = useFocusSurface((state) => state.openFor);
   const [editing, setEditing] = useState(false);
   const first = schedule.at(0);
   const last = schedule.at(-1);
-  const openFocus = (mission) => {
-    navigate("/focus", { state: { missionId: mission.id } });
-  };
 
   return (
     <div className="page schedule-page">

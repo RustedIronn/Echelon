@@ -30,7 +30,15 @@ export function normalizeBreakdown(value) {
       }, [])
     : [];
 
-  return { id: value.id, title, steps, createdAt, updatedAt };
+  const inferredParent = value.id.startsWith("breakdown:planner:")
+    ? { type: "planner", id: value.id.slice("breakdown:".length) }
+    : value.id.startsWith("breakdown:note:")
+      ? { type: "note", id: value.id.slice("breakdown:note:".length) }
+      : null;
+  const parent = ["planner", "note"].includes(value.parent?.type) && isValidToolsId(value.parent?.id)
+    ? { type: value.parent.type, id: value.parent.id }
+    : inferredParent;
+  return { id: value.id, title, parent, steps, createdAt, updatedAt };
 }
 
 export function normalizeBreakdowns(value) {
@@ -52,6 +60,7 @@ export function createBreakdown(title, metadata = {}) {
   return normalizeBreakdown({
     id: metadata.id,
     title,
+    parent: metadata.parent ?? null,
     steps: [],
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -155,6 +164,18 @@ export function firstIncompleteStep(breakdown) {
 export function deleteBreakdown(items, id) {
   if (!items.some((item) => item.id === id)) return items;
   return items.filter((item) => item.id !== id);
+}
+
+export function attachBreakdown(items, id, parent, now = new Date()) {
+  if (!["planner", "note"].includes(parent?.type) || !isValidToolsId(parent?.id) || Number.isNaN(now.getTime())) return items;
+  if (items.some((item) => item.id !== id && item.parent?.type === parent.type && item.parent?.id === parent.id)) return items;
+  let changed = false;
+  const next = items.map((item) => {
+    if (item.id !== id || (item.parent?.type === parent.type && item.parent?.id === parent.id)) return item;
+    changed = true;
+    return { ...item, parent: { type: parent.type, id: parent.id }, updatedAt: now.toISOString() };
+  });
+  return changed ? next : items;
 }
 
 export function sendBreakdownStepToLane(

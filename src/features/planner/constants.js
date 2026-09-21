@@ -11,7 +11,5 @@ export const PLANNER_VIEWS = Object.freeze([
   { id: "inbox", label: "Inbox", path: "/planner" },
   { id: "today", label: "Today", path: "/planner/today" },
   { id: "upcoming", label: "Upcoming", path: "/planner/upcoming" },
-  { id: "lanes", label: "Now / Next / Later", path: "/planner/lanes", description: "Choose the foreground and shape the queue." },
-  { id: "brain-dump", label: "Brain Dump", path: "/planner/brain-dump", description: "Capture thoughts before sorting them." },
-  { id: "breakdowns", label: "Breakdowns", path: "/planner/breakdowns", description: "Turn intimidating work into small steps." },
+  { id: "completed", label: "Completed", path: "/planner/completed" },
 ]);
