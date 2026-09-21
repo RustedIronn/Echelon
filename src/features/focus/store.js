@@ -90,7 +90,7 @@ export const useFocus = create((set, get) => ({
     });
     if (!persisted) return false;
 
-    syncToCloud((uid) => saveFocusSession(uid, session));
+    syncToCloud("focus", (uid) => saveFocusSession(uid, session));
     useToast.getState().show("Focus session saved");
     set({ ...result.runtime, sessions });
     return true;

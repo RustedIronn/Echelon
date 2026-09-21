@@ -3,6 +3,7 @@ import Layout from "./layout/Layout";
 import Today from "../pages/Today";
 import Focus from "../pages/Focus";
 import Habits from "../pages/Habits";
+import Calendar from "../pages/Calendar";
 import DailyReview from "@features/review/components/DailyReview";
 import ComposureReview from "@features/review/components/ComposureReview";
 import InsightsLayout from "@features/insights/components/InsightsLayout";
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: "habits",
         element: <Habits />,
+      },
+      {
+        path: "calendar",
+        element: <Calendar />,
       },
       {
         path: "review",
@@ -99,7 +104,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "calendar",
-            element: <Navigate to="/workouts/history?view=calendar" replace />,
+            element: <Navigate to="/calendar" replace />,
           },
           {
             path: "history",

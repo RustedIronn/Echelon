@@ -91,7 +91,6 @@ export default function useNotificationScheduler() {
           plan.missed,
           NOTIFICATION_STATUSES.missed,
         );
-        return;
       }
 
       notificationState.setReminders(plan.schedulable);

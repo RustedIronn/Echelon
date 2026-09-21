@@ -2,6 +2,11 @@ import { create } from "zustand";
 
 export const SYNC_SOURCES = Object.freeze([
   "bootstrap",
+  "today",
+  "schedule",
+  "habits",
+  "focus",
+  "workout",
   "money",
   "review",
 ]);

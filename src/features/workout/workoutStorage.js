@@ -152,8 +152,7 @@ export function progressFields(state) {
 export function saveWorkout(sessions) {
   const safeSessions = normalizeWorkoutHistory(sessions);
 
-  saveData(KEY, safeSessions);
-  return safeSessions;
+  return saveData(KEY, safeSessions) ? safeSessions : null;
 }
 
 export function getWorkouts() {
@@ -166,7 +165,9 @@ export function getWorkouts() {
 export function saveProgress(progress) {
   const safeProgress = normalizeWorkoutProgress(progress);
 
-  if (safeProgress) saveData(PROGRESS_KEY, safeProgress);
+  return safeProgress && saveData(PROGRESS_KEY, safeProgress)
+    ? safeProgress
+    : null;
 }
 
 export function getProgress() {
@@ -174,5 +175,5 @@ export function getProgress() {
 }
 
 export function clearProgress() {
-  removeData(PROGRESS_KEY);
+  return removeData(PROGRESS_KEY);
 }

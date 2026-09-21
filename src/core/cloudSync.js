@@ -5,18 +5,31 @@ import { getStorageOwner } from "../shared/storage";
 // Background cloud write shared by legacy stores. The active auth and storage
 // owner must agree before transport begins, and failures remain visible in the
 // shared sync status.
-export function syncToCloud(fn) {
+export function syncToCloud(source, fn) {
   const user = useAuth.getState().user;
   if (!user || getStorageOwner() !== user.uid) return Promise.resolve(false);
 
+  useSync.getState().setSyncStatus(source, "syncing", user.uid);
+
   return Promise.resolve()
     .then(() => fn(user.uid))
-    .then(() => true)
+    .then(() => {
+      if (
+        useAuth.getState().user?.uid === user.uid &&
+        getStorageOwner() === user.uid
+      ) {
+        useSync.getState().setSyncStatus(source, "synced", user.uid);
+      }
+      return true;
+    })
     .catch((error) => {
       console.error("Cloud sync failed:", error);
 
-      if (useAuth.getState().user?.uid === user.uid) {
-        useSync.getState().setSyncStatus("bootstrap", "error", user.uid);
+      if (
+        useAuth.getState().user?.uid === user.uid &&
+        getStorageOwner() === user.uid
+      ) {
+        useSync.getState().setSyncStatus(source, "error", user.uid);
       }
 
       return false;

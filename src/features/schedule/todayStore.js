@@ -94,7 +94,7 @@ export const useToday = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
+    syncToCloud("today", (uid) => saveTodayCloud(uid, getToday(), document));
     useToast
       .getState()
       .show(currentTask?.done ? "Task reopened" : "Task completed");
@@ -112,7 +112,7 @@ export const useToday = create((set, get) => ({
     }, state);
 
     if (!saveData("echelon_today", document)) return false;
-    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
+    syncToCloud("today", (uid) => saveTodayCloud(uid, getToday(), document));
 
     set({
       tasks,
@@ -143,7 +143,7 @@ export const useToday = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveTodayCloud(uid, getToday(), document));
+    syncToCloud("today", (uid) => saveTodayCloud(uid, getToday(), document));
     return true;
   },
 

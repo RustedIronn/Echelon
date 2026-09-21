@@ -12,7 +12,7 @@ import {
   updateScheduleDraft,
 } from "../editor";
 
-function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule, onClose }) {
+function ScheduleEditorForm({ schedule, onApply, onClose, onStatus }) {
   const [draft, setDraft] = useState(() => createScheduleDraft(schedule));
 
   const resetDraft = () => {
@@ -21,10 +21,11 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule, onClos
   };
   const applyDraft = () => {
     const committed = prepareScheduleCommit(draft);
-    if (committed && replaceSchedule(committed)) {
-      refreshSchedule();
-      onClose?.();
+    if (!committed) {
+      onStatus("Check every start and end time before applying the schedule.");
+      return;
     }
+    onApply(committed);
   };
 
   return (
@@ -118,15 +119,32 @@ function ScheduleEditorForm({ schedule, replaceSchedule, refreshSchedule, onClos
 export default function ScheduleEditor({ onClose }) {
   const { owner, schedule, revision, updatedAt, replaceSchedule } = useSchedule();
   const { refreshSchedule } = useToday();
+  const [status, setStatus] = useState("");
   const committedVersion = getScheduleEditorKey({ owner, revision, updatedAt });
+  const applySchedule = (committed) => {
+    setStatus("");
+    if (!replaceSchedule(committed)) {
+      setStatus("The schedule could not be saved. Your previous schedule is unchanged.");
+      return false;
+    }
+    if (!refreshSchedule()) {
+      setStatus("The recurring schedule was saved, but Today could not refresh. Apply again to retry Today.");
+      return false;
+    }
+    onClose?.();
+    return true;
+  };
 
   return (
-    <ScheduleEditorForm
-      key={committedVersion}
-      schedule={schedule}
-      replaceSchedule={replaceSchedule}
-      refreshSchedule={refreshSchedule}
-      onClose={onClose}
-    />
+    <>
+      {status ? <p className="editor-status" role="alert">{status}</p> : null}
+      <ScheduleEditorForm
+        key={committedVersion}
+        schedule={schedule}
+        onApply={applySchedule}
+        onClose={onClose}
+        onStatus={setStatus}
+      />
+    </>
   );
 }

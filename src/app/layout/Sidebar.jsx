@@ -7,7 +7,7 @@ import { logout } from "@core/auth/service";
 import { desktopNavigation } from "./navigation";
 
 const navigationGroups = [
-  { label: "Run the day", ids: ["today", "plan", "focus", "habits"] },
+  { label: "Run the day", ids: ["today", "plan", "calendar", "focus", "habits"] },
   { label: "Review and manage", ids: ["workouts", "money", "insights", "settings"] },
 ];
 

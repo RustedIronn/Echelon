@@ -49,8 +49,9 @@ const applyTrackingUpdate = (state, update) => {
   const tracking = update(state.tracking);
   if (tracking === state.tracking) return state;
 
-  saveProgress(progressFields({ ...state, tracking }));
-  return { tracking };
+  return saveProgress(progressFields({ ...state, tracking }))
+    ? { tracking }
+    : state;
 };
 
 export const useWorkout = create((set) => ({
@@ -78,8 +79,10 @@ export const useWorkout = create((set) => ({
       async (sessions, uid) => {
         const merged = mergeWorkoutHistories(getWorkouts(), sessions);
 
+        if (!saveWorkout(merged)) {
+          throw new Error("Unable to persist reconciled Workout history.");
+        }
         set({ sessions: merged });
-        saveWorkout(merged);
 
         if (JSON.stringify(merged) !== JSON.stringify(sessions)) {
           await saveWorkoutHistoryCloud(uid, merged);
@@ -97,8 +100,7 @@ export const useWorkout = create((set) => ({
       );
 
       if (next === state) return state;
-      saveProgress(progressFields(next));
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   togglePause: () =>
@@ -107,9 +109,9 @@ export const useWorkout = create((set) => ({
 
       const paused = !state.paused;
 
-      saveProgress(progressFields({ ...state, paused }));
-
-      return { paused };
+      return saveProgress(progressFields({ ...state, paused }))
+        ? { paused }
+        : state;
     }),
 
   // Leaves the active session and returns to the Workouts page, but keeps
@@ -121,9 +123,9 @@ export const useWorkout = create((set) => ({
 
       const progress = progressFields(state);
 
-      saveProgress(progress);
-
-      return { active: false, savedProgress: progress };
+      return saveProgress(progress)
+        ? { active: false, savedProgress: progress }
+        : state;
     }),
 
   // Rehydrates a previously saved session. Always resumes paused, even if it
@@ -149,9 +151,7 @@ export const useWorkout = create((set) => ({
 
       if (next === state) return state;
 
-      saveProgress(progressFields(next));
-
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   updateTrackedSet: (exerciseId, setId, field, value) =>
@@ -167,8 +167,7 @@ export const useWorkout = create((set) => ({
 
       if (next === state) return state;
 
-      saveProgress(progressFields(next));
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   reopenTrackedSet: (exerciseId, setId) =>
@@ -204,8 +203,7 @@ export const useWorkout = create((set) => ({
       const next = skipTrackedRestState(state);
       if (next === state) return state;
 
-      saveProgress(progressFields(next));
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   restartTrackedRest: () =>
@@ -213,8 +211,7 @@ export const useWorkout = create((set) => ({
       const next = restartTrackedRestState(state);
       if (next === state) return state;
 
-      saveProgress(progressFields(next));
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   continueTrackedWorkout: () =>
@@ -222,8 +219,7 @@ export const useWorkout = create((set) => ({
       const next = continueTrackedWorkoutState(state);
       if (next === state) return state;
 
-      saveProgress(progressFields(next));
-      return next;
+      return saveProgress(progressFields(next)) ? next : state;
     }),
 
   // Completion is locally authoritative; the cloud write remains background
@@ -237,9 +233,10 @@ export const useWorkout = create((set) => ({
 
     const updated = mergeWorkoutHistories(state.sessions, [completed]);
 
-    saveWorkout(updated);
-    syncToCloud((uid) => saveWorkoutHistoryCloud(uid, updated));
-    clearProgress();
+    if (!saveWorkout(updated)) return false;
+    if (!clearProgress()) return false;
+
+    syncToCloud("workout", (uid) => saveWorkoutHistoryCloud(uid, updated));
 
     set({
       active: false,
@@ -251,6 +248,7 @@ export const useWorkout = create((set) => ({
       savedProgress: null,
       tracking: null,
     });
+    return true;
   },
 
   tick: () =>
@@ -304,13 +302,13 @@ export const useWorkout = create((set) => ({
       }
 
       // persisted every tick — worst case on a crash you lose ~1 second
-      saveProgress(progressFields({ ...state, ...next }));
-
-      return next;
+      return saveProgress(progressFields({ ...state, ...next }))
+        ? next
+        : { paused: true };
     }),
 
   reset: () => {
-    clearProgress();
+    if (!clearProgress()) return false;
 
     set({
       active: false,
@@ -326,6 +324,7 @@ export const useWorkout = create((set) => ({
       savedProgress: null,
       tracking: null,
     });
+    return true;
   },
 }));
 

@@ -95,6 +95,13 @@
 .timeline-item.completed .dot { background: var(--category-color); color: #fff; }
 
 .schedule-editor-drawer { width: min(720px,100%); }
+.editor-status {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  color: var(--color-text);
+}
 .schedule-editor-drawer .drawer-header { background: #eef0f4; }
 .schedule-editor-drawer .card { margin: 0; padding: 0; border: 0; background: transparent; }
 .planner-timeline { display: grid; gap: 0; }

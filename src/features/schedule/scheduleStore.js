@@ -69,7 +69,7 @@ export const useSchedule = create((set, get) => ({
       revision: document.revision,
       updatedAt: document.updatedAt,
     });
-    syncToCloud((uid) => saveScheduleCloud(uid, document));
+    syncToCloud("schedule", (uid) => saveScheduleCloud(uid, document));
     return true;
   },
 

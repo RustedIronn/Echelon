@@ -8,14 +8,13 @@ import {
   getRecordedExercises,
   sortWorkoutHistory,
 } from "../history";
-import WorkoutCalendar from "./WorkoutCalendar";
 import WorkoutProgress from "./WorkoutProgress";
 
 export default function WorkoutHistory() {
   const sessions = useWorkout((state) => state.sessions);
   const history = sortWorkoutHistory(sessions);
   const [searchParams, setSearchParams] = useSearchParams();
-  const view = ["list", "calendar", "insights"].includes(searchParams.get("view"))
+  const view = ["list", "insights"].includes(searchParams.get("view"))
     ? searchParams.get("view")
     : "list";
 
@@ -27,15 +26,15 @@ export default function WorkoutHistory() {
   return (
     <div className="stack">
       <div className="section-header">
-        <div><h2>Workout History</h2><p>Browse sessions, calendar context, and tracked progress.</p></div>
+        <div><h2>Workout History</h2><p>Browse completed sessions and tracked progress.</p></div>
         <div className="workout-history-modes" aria-label="History view">
-          {[{ id: "list", label: "Sessions" }, { id: "calendar", label: "Calendar" }, { id: "insights", label: "Insights" }].map((item) => (
+          {[{ id: "list", label: "Sessions" }, { id: "insights", label: "Insights" }].map((item) => (
             <button type="button" key={item.id} className={view === item.id ? "is-active" : ""} aria-pressed={view === item.id} onClick={() => setView(item.id)}>{item.label}</button>
           ))}
         </div>
       </div>
 
-      {view === "calendar" ? <WorkoutCalendar embedded /> : view === "insights" ? <WorkoutProgress embedded /> : history.length === 0 ? (
+      {view === "insights" ? <WorkoutProgress embedded /> : history.length === 0 ? (
         <Card>
           <EmptyState
             title="No completed workouts yet"

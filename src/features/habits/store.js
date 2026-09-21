@@ -63,7 +63,7 @@ export const useHabits = create((set, get) => ({
       revision: persisted.revision,
       updatedAt: persisted.updatedAt,
     });
-    syncToCloud((uid) => saveHabits(uid, persisted));
+    syncToCloud("habits", (uid) => saveHabits(uid, persisted));
     return true;
   },
 

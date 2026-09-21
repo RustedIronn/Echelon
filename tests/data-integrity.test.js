@@ -638,6 +638,11 @@ test("sync sources update independently without hiding another source error", ()
   assert.equal(sync.setSyncStatus("review", "synced", "A"), true);
   assert.deepEqual(useSync.getState().sources, {
     bootstrap: "idle",
+    today: "idle",
+    schedule: "idle",
+    habits: "idle",
+    focus: "idle",
+    workout: "idle",
     money: "error",
     review: "synced",
   });
@@ -673,24 +678,23 @@ test("navigation registry preserves desktop and five-slot mobile destinations", 
     desktopNavigation.map(({ id }) => id),
     [
       "today",
-      "schedule",
+      "plan",
+      "calendar",
       "focus",
       "habits",
-      "review",
-      "settings",
-      "analytics",
       "workouts",
       "money",
-      "tools",
+      "insights",
+      "settings",
     ],
   );
   assert.deepEqual(
     mobilePrimaryNavigation.map(({ id }) => id),
-    ["today", "schedule", "focus", "habits"],
+    ["today", "plan", "focus", "habits"],
   );
   assert.deepEqual(
     mobileMoreNavigation.map(({ id }) => id),
-    ["tools", "money", "workouts", "review", "analytics", "settings"],
+    ["calendar", "workouts", "money", "insights", "settings"],
   );
 });
 

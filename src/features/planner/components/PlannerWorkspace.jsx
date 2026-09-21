@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide-react";
 
 import { Button, Card, ContextMenu, EmptyState, NavDropdown, PageTitle, PanelHeader, Stage } from "@ui";
-import { formatDayKey, getToday } from "@/shared/date";
+import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
 import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../constants";
 import { usePlanner } from "../store";
 import {
@@ -113,17 +113,44 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
   const location = useLocation();
   const navigate = useNavigate();
   const view = getView(location.pathname);
+  const captureParams = new URLSearchParams(location.search);
+  const requestedDate = captureParams.get("date");
+  const captureRequested = captureParams.get("capture") === "1" && isValidDayKey(requestedDate);
+  const linkedTaskId = captureParams.get("task");
   const { document, addTask, toggleTask, rescheduleTask, deleteTask } = usePlanner();
-  const tasks = getPlannerTasksForView(document.tasks, view);
+  const visibleTasks = getPlannerTasksForView(document.tasks, view);
+  const linkedTask = linkedTaskId
+    ? document.tasks.find((task) => task.id === linkedTaskId) ?? null
+    : null;
+  const tasks = linkedTask && !visibleTasks.some((task) => task.id === linkedTask.id)
+    ? [linkedTask, ...visibleTasks]
+    : visibleTasks;
   const [draftId, setDraftId] = useState(() => createPlannerId());
-  const [draft, setDraft] = useState({ title: "", notes: "", date: "", time: "", priority: "normal" });
+  const [draft, setDraft] = useState({ title: "", notes: "", date: captureRequested ? requestedDate : "", time: "", priority: "normal" });
+
+  useEffect(() => {
+    if (!captureRequested) return;
+    setDraft((current) => ({ ...current, date: requestedDate, time: "" }));
+  }, [captureRequested, requestedDate]);
 
   const updateDraft = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
   const submit = (event) => {
     event.preventDefault();
-    if (!addTask(draft, { id: draftId })) return;
+    const submittedId = draftId;
+    const submittedDate = draft.date;
+    if (!addTask(draft, { id: submittedId })) return;
     setDraft({ title: "", notes: "", date: "", time: "", priority: "normal" });
     setDraftId(createPlannerId());
+
+    if (isValidDayKey(submittedDate)) {
+      const today = getToday();
+      const destination = submittedDate === today
+        ? `${basePath}/today`
+        : submittedDate > today
+          ? `${basePath}/upcoming`
+          : basePath;
+      navigate(`${destination}?task=${encodeURIComponent(submittedId)}`, { replace: true });
+    }
   };
   const openFocus = (task) => navigate("/focus", { state: { mission: toFocusMission(task) } });
   const Workspace = embedded ? "div" : Stage;
@@ -160,7 +187,7 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
             <Send size={24} aria-hidden="true" />
           </div>
           <form onSubmit={submit}>
-            <label className="planner-title-field"><span>Title</span><input value={draft.title} maxLength="140" required onChange={(event) => updateDraft("title", event.target.value)} placeholder="What needs doing?" /></label>
+            <label className="planner-title-field"><span>Title</span><input autoFocus={captureRequested} value={draft.title} maxLength="140" required onChange={(event) => updateDraft("title", event.target.value)} placeholder="What needs doing?" /></label>
             <label><span>Notes</span><textarea rows="2" maxLength="500" value={draft.notes} onChange={(event) => updateDraft("notes", event.target.value)} placeholder="Optional context" /></label>
             <div className="planner-capture-meta">
               <label><span>Date</span><input type="date" value={draft.date} onChange={(event) => updateDraft("date", event.target.value)} /></label>
@@ -174,7 +201,9 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
         <section className="planner-list-section">
           <PanelHeader
             eyebrow={view === "inbox" ? "Unscheduled" : view === "today" ? "On the desk" : "On the horizon"}
-            title={PLANNER_VIEWS.find((item) => item.id === view)?.label}
+            title={linkedTask && !visibleTasks.some((task) => task.id === linkedTask.id)
+              ? "Selected item"
+              : PLANNER_VIEWS.find((item) => item.id === view)?.label}
             actions={<div className="planner-view-count"><Clock3 size={16} aria-hidden="true" /><strong>{tasks.length}</strong> items</div>}
           />
           <div className="planner-task-list">

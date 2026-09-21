@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Card, Button, EmptyState } from "@ui";
 
@@ -10,6 +11,7 @@ import {
   shiftWorkoutPlanDate,
 } from "@features/workout/utils";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
+import { isValidDayKey } from "@/shared/date";
 
 import ExerciseList from "./ExerciseList";
 import WorkoutSession from "./WorkoutSession";
@@ -21,8 +23,10 @@ import {
 } from "../tracking";
 
 export default function WorkoutToday() {
+  const [searchParams] = useSearchParams();
   const [today, setToday] = useState(() => getDefaultWorkoutPlanDate());
-  const [selectedDate, setSelectedDate] = useState(today);
+  const requestedDate = searchParams.get("date");
+  const [selectedDate, setSelectedDate] = useState(() => isValidDayKey(requestedDate) ? requestedDate : today);
   const workout = getWorkoutForDate(selectedDate);
   const duration = getWorkoutDuration(workout);
   const { active, phase, startWorkout, savedProgress, continueWorkout, reset } =
@@ -46,6 +50,10 @@ export default function WorkoutToday() {
     window.addEventListener(DAY_ROLLOVER_EVENT, handleRollover);
     return () => window.removeEventListener(DAY_ROLLOVER_EVENT, handleRollover);
   }, [today]);
+
+  useEffect(() => {
+    if (isValidDayKey(requestedDate)) setSelectedDate(requestedDate);
+  }, [requestedDate]);
 
   const moveSelectedDate = (offset) => {
     setSelectedDate(

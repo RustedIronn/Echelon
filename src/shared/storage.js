@@ -140,8 +140,13 @@ export function removeData(key) {
   const storageKey = resolveKey(key);
   if (!storageKey) return false;
 
-  localStorage.removeItem(storageKey);
-  return true;
+  try {
+    localStorage.removeItem(storageKey);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to remove local data for "${storageKey}".`, error);
+    return false;
+  }
 }
 
 export function migrateStorage() {
