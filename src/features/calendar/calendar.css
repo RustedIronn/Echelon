@@ -181,8 +181,7 @@
 
 .calendar-event {
   --event-accent: var(--calendar-routine);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
@@ -298,12 +297,13 @@
   }
 
   .calendar-event {
-    grid-template-columns: auto minmax(0, 1fr);
+    flex-wrap: wrap;
     padding-inline: var(--space-4);
   }
 
-  .calendar-event__status {
-    grid-column: 2;
-    text-align: left;
-  }
+  .calendar-event__main { flex-basis: 100%; }
+
+  .calendar-event__status { text-align: left; }
 }
+.calendar-event__main { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.calendar-event > button { flex: 0 0 auto; }

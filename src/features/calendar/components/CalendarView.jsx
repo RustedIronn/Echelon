@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { Button, EmptyState, PageTitle } from "@ui";
 import { formatDayKey, getToday } from "@/shared/date";
 import { usePlanner } from "@features/planner/store";
+import { toFocusMission } from "@features/planner/tasks";
+import { useFocusSurface } from "@features/focus/surface";
 import { useToday } from "@features/schedule/todayStore";
 import { useWorkout } from "@features/workout/store";
 import { deriveCalendarEvents, groupCalendarEvents } from "../events";
@@ -17,6 +19,7 @@ const sourceMeta = {
 };
 
 export default function CalendarView() {
+  const openFocus = useFocusSurface((state) => state.openFor);
   const now = new Date();
   const today = getToday(now);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -100,8 +103,15 @@ export default function CalendarView() {
               {agenda.map((event) => {
                 const meta = sourceMeta[event.source];
                 const Icon = meta.icon;
+                const plannerTask = event.source === "planner"
+                  ? plannerTasks.find((task) => `planner:${task.id}` === event.id)
+                  : null;
+                const focusMission = plannerTask && !plannerTask.completedAt
+                  ? toFocusMission(plannerTask)
+                  : null;
                 return (
-                  <Link className={`calendar-event calendar-event--${event.source}`} to={event.href} key={event.id}>
+                  <div className={`calendar-event calendar-event--${event.source}`} key={event.id}>
+                  <Link className="calendar-event__main" to={event.href}>
                     <span className="calendar-event__icon"><Icon size={17} aria-hidden="true" /></span>
                     <span className="calendar-event__copy">
                       <small>{event.time ? `${event.time} · ` : ""}{meta.label}</small>
@@ -109,6 +119,8 @@ export default function CalendarView() {
                     </span>
                     <span className={`calendar-event__status ${event.status === "completed" ? "is-completed" : ""}`.trim()}>{event.status}</span>
                   </Link>
+                  {focusMission ? <Button variant="tertiary" onClick={() => openFocus(focusMission)} aria-label={`Focus on ${focusMission.title}`}>Focus</Button> : null}
+                  </div>
                 );
               })}
             </div>
