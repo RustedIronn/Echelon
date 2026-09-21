@@ -21,6 +21,7 @@ import {
   deriveCurrentExerciseState,
   WORKOUT_TRACKING_VERSION,
 } from "../tracking";
+import { WORKOUT_RUNNER_VERSION } from "../runner";
 
 export default function WorkoutToday() {
   const [searchParams] = useSearchParams();
@@ -32,6 +33,7 @@ export default function WorkoutToday() {
   const { active, phase, startWorkout, savedProgress, continueWorkout, reset } =
     useWorkout();
   const savedTracking = savedProgress?.tracking;
+  const savedRunner = savedProgress?.runner?.version === WORKOUT_RUNNER_VERSION ? savedProgress.runner : null;
   const savedExercise =
     savedTracking?.version === WORKOUT_TRACKING_VERSION
       ? deriveCurrentExerciseState(
@@ -86,8 +88,8 @@ export default function WorkoutToday() {
         <div className="workout-plan-brief">
           <header className="workout-view-header">
             <p>{selectedDate === today ? "TODAY'S PLAN" : "SELECTED PLAN"}</p>
-            <h2>{savedProgress?.workout ? `Resume ${savedProgress.workout.title}` : workout?.title ?? "Recovery day"}</h2>
-            <span>{savedProgress?.workout ? "Your active snapshot is ready to continue." : workout?.description ?? "There is no prescribed workout for this day."}</span>
+            <h2>{savedProgress?.workout ? `${savedRunner?.phase === "finished" ? "Save" : "Resume"} ${savedProgress.workout.title}` : workout?.title ?? "Recovery day"}</h2>
+            <span>{savedProgress?.workout ? savedRunner?.phase === "finished" ? "The finished run is ready for your optional reflection and saving." : "Your active snapshot is ready to continue." : workout?.description ?? "There is no prescribed workout for this day."}</span>
             <small className="workout-plan-schedule-label">{scheduleLabel}</small>
           </header>
 
@@ -95,14 +97,14 @@ export default function WorkoutToday() {
             {savedProgress?.workout ? (
               <>
                 <div className="workout-stats">
-                  {savedExercise ? <span>Exercise {savedProgress.exerciseIndex + 1}/{savedTracking.exercises.length} · {savedExercise.sets.filter((set) => set.completed).length}/{savedExercise.sets.length} sets</span> : <span>Round {savedProgress.round}/{savedProgress.workout.rounds}</span>}
+                  {savedRunner ? <span>{savedRunner.phase === "finished" ? "Finished · ready to save" : `Round ${savedRunner.round}/${savedProgress.workout.rounds} · exercise ${savedRunner.exerciseIndex + 1}/${savedProgress.workout.exercises.length}`}</span> : savedExercise ? <span>Exercise {savedProgress.exerciseIndex + 1}/{savedTracking.exercises.length} · {savedExercise.sets.filter((set) => set.completed).length}/{savedExercise.sets.length} sets</span> : <span>Round {savedProgress.round}/{savedProgress.workout.rounds}</span>}
                   <span>{Math.floor(savedProgress.elapsed / 60)}m elapsed</span>
                 </div>
-                <div className="workout-actions"><Button onClick={continueWorkout}>Continue</Button><Button variant="danger" onClick={reset}>Discard</Button></div>
+                <div className="workout-actions"><Button onClick={continueWorkout}>{savedRunner?.phase === "finished" ? "Review session" : "Continue"}</Button><Button variant="danger" onClick={reset}>Discard</Button></div>
               </>
             ) : workout ? (
               <>
-                <div className="workout-stats"><span>{workout.exercises.length} exercises</span><span>{workout.rounds} rounds</span><span>~{duration} min</span></div>
+                <div className="workout-stats"><span>{workout.exercises.length} exercises</span><span>{workout.rounds} rounds</span><span>{duration === null ? "Flexible duration" : `~${duration} min`}</span></div>
                 <Button onClick={() => startWorkout(workout, selectedDate)}>{selectedDate === today ? "Start workout" : "Start this workout"}</Button>
               </>
             ) : (

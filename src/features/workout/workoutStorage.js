@@ -5,6 +5,7 @@ import {
   WORKOUT_TRACKING_VERSION,
 } from "./tracking.js";
 import { isValidDayKey } from "../../shared/date.js";
+import { normalizeCompletedRunnerSummary, normalizeRunnerWorkout, normalizeWorkoutRunner, runnerStateFields, WORKOUT_RUNNER_VERSION } from "./runner.js";
 
 const KEY = "echelon_workouts";
 const PROGRESS_KEY = "echelon_workout_progress";
@@ -20,10 +21,15 @@ export function normalizeWorkoutHistory(sessions) {
       Number.isFinite(Number(session.duration)) &&
       Number(session.duration) >= 0,
     )
-    .map((session) => ({
-      ...session,
-      duration: Number(session.duration),
-    }));
+    .map((session) => {
+      const normalized = { ...session, duration: Number(session.duration) };
+      if (session.runner !== undefined) {
+        const runner = normalizeCompletedRunnerSummary(session.runner);
+        if (runner) normalized.runner = runner;
+        else delete normalized.runner;
+      }
+      return normalized;
+    });
 }
 
 const historyKey = (session) =>
@@ -52,6 +58,17 @@ export function mergeWorkoutHistories(localSessions, cloudSessions) {
 
 export function normalizeWorkoutProgress(progress) {
   const workout = progress?.workout;
+  if (progress?.runner !== undefined && progress?.runner !== null) {
+    if (progress.runner.version !== WORKOUT_RUNNER_VERSION) return null;
+    const startedAt = progress.startedAt;
+    const validStartedAt = startedAt instanceof Date ? !Number.isNaN(startedAt.getTime()) : typeof startedAt === "string" && !Number.isNaN(Date.parse(startedAt));
+    const runnerWorkout = normalizeRunnerWorkout(workout);
+    const runner = normalizeWorkoutRunner(progress.runner, runnerWorkout);
+    if (!validStartedAt || !runner) return null;
+    const normalized = { workout: runnerWorkout, startedAt, ...runnerStateFields(runner) };
+    if (isValidDayKey(progress.planDate)) normalized.planDate = progress.planDate;
+    return normalized;
+  }
   const exercises = workout?.exercises;
   const rounds = Number(workout?.rounds);
   const round = Number(progress?.round);
@@ -136,6 +153,9 @@ export function normalizeWorkoutProgress(progress) {
 }
 
 export function progressFields(state) {
+  if (state?.runner?.version === WORKOUT_RUNNER_VERSION) {
+    return normalizeWorkoutProgress({ workout: state.workout, startedAt: state.startedAt, planDate: state.planDate, runner: state.runner });
+  }
   return normalizeWorkoutProgress({
     workout: state?.workout,
     startedAt: state?.startedAt,

@@ -9,9 +9,9 @@ export default function ExerciseCard({ exercise, index }) {
         <h3>{exercise.name}</h3>
 
         <p>
-          {exercise.duration}s work
+          {exercise.mode === "manual" ? "Complete manually" : `${exercise.workSeconds ?? exercise.duration}s ${exercise.mode === "hold" ? "hold" : exercise.mode === "duration" ? "activity" : "work"}`}
           {" • "}
-          {exercise.rest}s rest
+          {exercise.restSeconds ?? exercise.rest}s rest
         </p>
 
         <p className="exercise-description">{exercise.description}</p>

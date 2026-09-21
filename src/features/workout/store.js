@@ -34,6 +34,17 @@ import {
   WORKOUT_TRACKING_VERSION,
 } from "./tracking";
 import { subscribeStorageOwner } from "@/shared/storage";
+import {
+  advanceWorkoutRunner,
+  completeRunnerExercise,
+  pauseWorkoutRunner,
+  restorePausedWorkoutRunner,
+  resumeWorkoutRunner,
+  runnerStateFields,
+  skipRunnerRest,
+  updateRunnerReflection,
+  WORKOUT_RUNNER_VERSION,
+} from "./runner";
 
 const savedProgress = getProgress();
 
@@ -54,7 +65,15 @@ const applyTrackingUpdate = (state, update) => {
     : state;
 };
 
-export const useWorkout = create((set) => ({
+const applyRunnerUpdate = (state, update, allowFinished = false) => {
+  if ((!state.active && !(allowFinished && state.phase === "finished")) || state.runner?.version !== WORKOUT_RUNNER_VERSION) return state;
+  const runner = update(state.runner, state.workout);
+  if (!runner || runner === state.runner) return state;
+  const next = { ...state, ...runnerStateFields(runner) };
+  return saveProgress(progressFields(next)) ? next : state;
+};
+
+export const useWorkout = create((set, get) => ({
   active: false,
   paused: false,
   workout: null,
@@ -67,6 +86,7 @@ export const useWorkout = create((set) => ({
   phase: "idle",
   seconds: 0,
   tracking: null,
+  runner: null,
 
   // A saved-but-not-active session, if one exists on load or after
   // stopWorkout. The Workouts page uses this to offer "Continue" instead of
@@ -107,6 +127,12 @@ export const useWorkout = create((set) => ({
     set((state) => {
       if (!state.active || !state.workout) return state;
 
+      if (state.runner?.version === WORKOUT_RUNNER_VERSION) {
+        return applyRunnerUpdate(state, (runner, workout) => runner.paused
+          ? resumeWorkoutRunner(runner, workout)
+          : pauseWorkoutRunner(runner, workout));
+      }
+
       const paused = !state.paused;
 
       return saveProgress(progressFields({ ...state, paused }))
@@ -120,6 +146,13 @@ export const useWorkout = create((set) => ({
   stopWorkout: () =>
     set((state) => {
       if (!state.active || !state.workout) return state;
+
+      if (state.runner?.version === WORKOUT_RUNNER_VERSION) {
+        const runner = pauseWorkoutRunner(state.runner, state.workout);
+        const next = { ...state, ...runnerStateFields(runner), active: false };
+        const progress = progressFields(next);
+        return progress && saveProgress(progress) ? { ...next, savedProgress: progress } : state;
+      }
 
       const progress = progressFields(state);
 
@@ -135,7 +168,15 @@ export const useWorkout = create((set) => ({
   continueWorkout: () => {
     const progress = normalizeWorkoutProgress(getProgress());
 
-    if (!progress?.workout) return;
+    if (!progress?.workout) return false;
+
+    if (progress.runner?.version === WORKOUT_RUNNER_VERSION) {
+      const runner = restorePausedWorkoutRunner(progress.runner, progress.workout);
+      const restored = { ...progress, ...runnerStateFields(runner), active: true, paused: true };
+      if (!saveProgress(progressFields(restored))) return false;
+      set({ ...restored, startedAt: new Date(progress.startedAt) });
+      return true;
+    }
 
     set({
       ...progress,
@@ -143,16 +184,30 @@ export const useWorkout = create((set) => ({
       active: true,
       paused: true,
     });
+    return true;
   },
 
-  completeExercise: () =>
+  completeExercise: (expectedKey) => {
     set((state) => {
+      if (state.runner?.version === WORKOUT_RUNNER_VERSION) {
+        return applyRunnerUpdate(state, (runner, workout) => completeRunnerExercise(runner, workout, new Date(), false, expectedKey));
+      }
       const next = advanceExercise(state);
 
       if (next === state) return state;
 
       return saveProgress(progressFields(next)) ? next : state;
-    }),
+    });
+  },
+
+  skipRunnerExercise: (expectedKey) => {
+    set((state) => applyRunnerUpdate(state, (runner, workout) => completeRunnerExercise(runner, workout, new Date(), true, expectedKey)));
+  },
+  skipRunnerRest: (expectedKey) => {
+    set((state) => applyRunnerUpdate(state, (runner, workout) => skipRunnerRest(runner, workout, new Date(), expectedKey)));
+  },
+  setRunnerDifficulty: (difficulty) => set((state) => applyRunnerUpdate(state, (runner) => updateRunnerReflection(runner, { difficulty }), true)),
+  setRunnerNote: (note) => set((state) => applyRunnerUpdate(state, (runner) => updateRunnerReflection(runner, { note }), true)),
 
   updateTrackedSet: (exerciseId, setId, field, value) =>
     set((state) =>
@@ -227,7 +282,8 @@ export const useWorkout = create((set) => ({
   completeWorkout: () => {
     const state = useWorkout.getState();
 
-    const completed = createCompletedSession(state, getToday());
+    const completionDate = state.runner?.finishedAt ? getToday(new Date(state.runner.finishedAt)) : getToday();
+    const completed = createCompletedSession(state, completionDate);
 
     if (!completed) return;
 
@@ -247,11 +303,25 @@ export const useWorkout = create((set) => ({
       sessions: updated,
       savedProgress: null,
       tracking: null,
+      runner: null,
     });
     return true;
   },
 
-  tick: () =>
+  tick: () => {
+    const current = get();
+    if (current.active && current.runner?.version === WORKOUT_RUNNER_VERSION) {
+      if (current.runner.paused) return false;
+      const runner = advanceWorkoutRunner(current.runner, current.workout);
+      const next = { ...current, ...runnerStateFields(runner) };
+      if (!saveProgress(progressFields(next))) {
+        const frozen = pauseWorkoutRunner(current.runner, current.workout);
+        set({ ...runnerStateFields(frozen) });
+        return false;
+      }
+      set(next);
+      return true;
+    }
     set((state) => {
       if (
         !state.active ||
@@ -305,7 +375,9 @@ export const useWorkout = create((set) => ({
       return saveProgress(progressFields({ ...state, ...next }))
         ? next
         : { paused: true };
-    }),
+    });
+    return true;
+  },
 
   reset: () => {
     if (!clearProgress()) return false;
@@ -323,6 +395,7 @@ export const useWorkout = create((set) => ({
       seconds: 0,
       savedProgress: null,
       tracking: null,
+      runner: null,
     });
     return true;
   },
@@ -343,5 +416,6 @@ subscribeStorageOwner(() => {
     seconds: 0,
     savedProgress: getProgress(),
     tracking: null,
+    runner: null,
   });
 });

@@ -56,6 +56,7 @@ export const workouts = [
 
       {
         name: "Plank Hold",
+        mode: "hold",
         description:
           "Hold a straight plank position with your core tight, hips level, and shoulders stacked above your elbows.",
         duration: 40,
@@ -73,6 +74,7 @@ export const workouts = [
     exercises: [
       {
         name: "Superman Holds",
+        mode: "hold",
         description:
           "Lie face down with arms extended. Lift your chest, arms, and legs slightly off the ground while squeezing your back and glutes.",
         duration: 40,
@@ -105,6 +107,7 @@ export const workouts = [
 
       {
         name: "Hollow Body Hold",
+        mode: "hold",
         description:
           "Lie on your back, press your lower back into the floor, lift your shoulders and legs, and maintain a tight core.",
         duration: 40,
@@ -138,6 +141,7 @@ export const workouts = [
     exercises: [
       {
         name: "Brisk Walk",
+        mode: "duration",
         description:
           "Walk at a comfortable but steady pace to increase blood flow and support recovery.",
         duration: 1200,
@@ -146,6 +150,7 @@ export const workouts = [
 
       {
         name: "Cat-Cow Flow",
+        mode: "duration",
         description:
           "Move between arching and rounding your spine slowly to improve spinal mobility.",
         duration: 60,
@@ -154,6 +159,7 @@ export const workouts = [
 
       {
         name: "World's Greatest Stretch",
+        mode: "duration",
         description:
           "Perform a deep lunge with rotation to open hips, hamstrings, and upper body mobility.",
         duration: 60,
@@ -162,6 +168,7 @@ export const workouts = [
 
       {
         name: "Child's Pose",
+        mode: "hold",
         description:
           "Sit back toward your heels with arms extended forward. Relax and breathe deeply.",
         duration: 60,
@@ -219,6 +226,7 @@ export const workouts = [
 
       {
         name: "Wall Sit",
+        mode: "hold",
         description:
           "Lean against a wall with knees bent around 90 degrees and hold the position.",
         duration: 40,
@@ -293,6 +301,7 @@ export const workouts = [
     exercises: [
       {
         name: "Outdoor Activity",
+        mode: "duration",
         description:
           "Choose any enjoyable activity like walking, cycling, sports, hiking, or dancing.",
         duration: 1800,
@@ -310,6 +319,7 @@ export const workouts = [
     exercises: [
       {
         name: "Full Body Stretch",
+        mode: "duration",
         description:
           "Stretch major muscle groups including hamstrings, hips, shoulders, and back while breathing slowly.",
         duration: 300,
@@ -318,6 +328,7 @@ export const workouts = [
 
       {
         name: "Deep Breathing",
+        mode: "duration",
         description:
           "Practice slow controlled breathing to relax your nervous system and support recovery.",
         duration: 120,

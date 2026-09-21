@@ -1,5 +1,6 @@
 import { workouts } from "./constants.js";
 import { getToday, parseDayKey } from "../../shared/date.js";
+import { normalizeRunnerWorkout } from "./runner.js";
 
 const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -19,7 +20,7 @@ export function getWorkoutForDate(dayKey) {
   const date = parseDayKey(dayKey);
   if (!date) return null;
 
-  return workouts.find((workout) => workout.day === DAYS[date.getDay()]) ?? null;
+  return normalizeRunnerWorkout(workouts.find((workout) => workout.day === DAYS[date.getDay()]));
 }
 
 export function getTodayWorkout(now = new Date()) {
@@ -28,6 +29,9 @@ export function getTodayWorkout(now = new Date()) {
 
 export function getWorkoutDuration(workout) {
   if (!workout) return 0;
+
+  if (Number.isFinite(workout.expectedDurationSeconds)) return Math.ceil(workout.expectedDurationSeconds / 60);
+  if (workout.expectedDurationSeconds === null) return null;
 
   const seconds =
     workout.exercises.reduce(

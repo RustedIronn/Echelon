@@ -1,7 +1,6 @@
 import {
   completeTrackingSet,
   deriveCurrentExerciseState,
-  initializeWorkoutTracking,
   isWorkoutTrackingComplete,
   normalizeWorkoutTracking,
   WORKOUT_TRACKING_VERSION,
@@ -9,6 +8,7 @@ import {
 } from "./tracking.js";
 import { getDefaultWorkoutPlanDate } from "./utils.js";
 import { isValidDayKey } from "../../shared/date.js";
+import { completedRunnerSummary, createWorkoutRunner, normalizeRunnerWorkout, runnerStateFields, WORKOUT_RUNNER_VERSION } from "./runner.js";
 
 export function createWorkoutStartState(
   state,
@@ -28,25 +28,23 @@ export function createWorkoutStartState(
     return state;
   }
 
-  const tracking = initializeWorkoutTracking(workout, startedAt);
+  const runnerWorkout = normalizeRunnerWorkout(workout);
+  const runner = createWorkoutRunner(runnerWorkout, startedAt);
   const resolvedPlanDate =
     planDate ?? getDefaultWorkoutPlanDate(startedAt);
 
-  if (!tracking || !isValidDayKey(resolvedPlanDate)) return state;
+  if (!runner || !isValidDayKey(resolvedPlanDate)) return state;
 
   return {
     ...state,
     active: true,
     paused: false,
-    workout,
+    workout: runnerWorkout,
     planDate: resolvedPlanDate,
     startedAt,
     elapsed: 0,
-    round: 1,
-    exerciseIndex: 0,
-    phase: "prepare",
-    seconds: 5,
-    tracking,
+    ...runnerStateFields(runner),
+    tracking: null,
   };
 }
 
@@ -236,6 +234,11 @@ export function createCompletedSession(state, date) {
 
   if (isValidDayKey(state.planDate)) {
     completed.planDate = state.planDate;
+  }
+
+  if (state.runner?.version === WORKOUT_RUNNER_VERSION) {
+    const runner = completedRunnerSummary(state.runner, state.workout);
+    return runner ? { ...completed, duration: Math.floor(state.runner.elapsedMs / 1000), runner } : null;
   }
 
   const tracking = normalizeWorkoutTracking(

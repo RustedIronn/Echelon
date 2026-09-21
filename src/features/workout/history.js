@@ -1,6 +1,7 @@
 import { getToday, parseDayKey } from "../../shared/date.js";
 import { mergeWorkoutHistories } from "./workoutStorage.js";
 import { normalizeCompletedTracking } from "./tracking.js";
+import { normalizeCompletedRunnerSummary } from "./runner.js";
 
 export function sortWorkoutHistory(sessions, direction = "desc") {
   const safeSessions = mergeWorkoutHistories(sessions, []);
@@ -80,6 +81,14 @@ export function formatWorkoutDate(date) {
 }
 
 export function getRecordedExercises(session) {
+  const runner = normalizeCompletedRunnerSummary(session?.runner);
+  if (runner) {
+    const unique = new Map();
+    for (const item of [...runner.completed, ...runner.skipped]) {
+      if (!unique.has(item.exerciseId)) unique.set(item.exerciseId, item.name);
+    }
+    return [...unique.values()];
+  }
   const tracking = normalizeCompletedTracking(session?.tracking);
   if (tracking) return tracking.exercises.map((exercise) => exercise.name);
 

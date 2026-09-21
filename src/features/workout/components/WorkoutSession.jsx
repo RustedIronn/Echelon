@@ -4,6 +4,8 @@ import { useWorkout } from "@features/workout/store";
 
 import { Card, Button } from "@ui";
 import TrackedWorkoutSession from "./TrackedWorkoutSession";
+import RunnerWorkoutSession from "./RunnerWorkoutSession";
+import { WORKOUT_RUNNER_VERSION } from "../runner";
 import {
   getTrackingMetrics,
   WORKOUT_TRACKING_VERSION,
@@ -24,17 +26,20 @@ export default function WorkoutSession() {
     tick,
     stopWorkout,
     tracking,
+    runner,
   } = useWorkout();
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || paused) return;
 
     const timer = setInterval(tick, 1000);
 
     return () => clearInterval(timer);
-  }, [active, tick]);
+  }, [active, paused, tick]);
 
   if (!workout) return null;
+
+  if (runner?.version === WORKOUT_RUNNER_VERSION) return <RunnerWorkoutSession />;
 
   if (phase === "finished") {
     const minutes = Math.floor(useWorkout.getState().elapsed / 60);

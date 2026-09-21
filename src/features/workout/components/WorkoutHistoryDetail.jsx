@@ -14,6 +14,7 @@ import {
   normalizeCompletedTracking,
 } from "../tracking";
 import { isValidDayKey } from "@/shared/date";
+import { normalizeCompletedRunnerSummary } from "../runner";
 
 export default function WorkoutHistoryDetail() {
   const { date } = useParams();
@@ -50,6 +51,7 @@ export default function WorkoutHistoryDetail() {
           const exercises = getRecordedExercises(session);
           const duration = formatWorkoutDuration(session.duration);
           const tracking = normalizeCompletedTracking(session.tracking);
+          const runner = normalizeCompletedRunnerSummary(session.runner);
           const metrics = getTrackingMetrics(tracking);
 
           return (
@@ -66,7 +68,13 @@ export default function WorkoutHistoryDetail() {
                 ) : null}
               </div>
 
-              {tracking ? (
+              {runner ? (
+                <div className="runner-history">
+                  <div className="runner-history__summary"><span>{runner.roundsCompleted} rounds</span><span>{runner.completed.length} completed</span><span>{runner.skipped.length} skipped</span>{runner.difficulty ? <span>Difficulty {runner.difficulty}/5</span> : null}</div>
+                  {runner.note ? <p className="runner-history__note">{runner.note}</p> : null}
+                  <ol>{[...runner.completed.map((item) => ({ ...item, status: "Completed" })), ...runner.skipped.map((item) => ({ ...item, status: "Skipped" }))].sort((left, right) => left.round - right.round || left.at.localeCompare(right.at)).map((item) => <li key={`${item.round}:${item.exerciseId}`}><strong>{item.name}</strong><span>Round {item.round} · {item.status}</span></li>)}</ol>
+                </div>
+              ) : tracking ? (
                 <div className="tracked-history">
                   <div className="tracked-history-summary">
                     <span>{metrics.totalSets} sets</span>
