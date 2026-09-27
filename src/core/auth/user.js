@@ -6,7 +6,7 @@ import {
 
 import {
 	db
-} from "../firebase";
+} from "../firebase.js";
 
 
 export async function createUserProfile(user){

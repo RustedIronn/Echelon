@@ -2,12 +2,17 @@ import AppRoot from "./AppRoot";
 import { useAuth } from "@core/auth/store";
 import Login from "@core/auth/components/Login";
 import { LoadingState } from "@ui";
+import DesktopTitleBar from "@/desktop/DesktopTitleBar";
+import { isDesktop } from "@/desktop/environment";
 
 export default function Root() {
   const { user, loading } = useAuth();
+  const desktop = isDesktop();
+
+  let content;
 
   if (loading) {
-    return (
+    content = (
       <div className="login-page">
         <div className="login-card auth-loading-card">
           <img src="/assets/echelon.svg" alt="" />
@@ -20,9 +25,18 @@ export default function Root() {
         </div>
       </div>
     );
+  } else if (!user) {
+    content = <Login />;
+  } else {
+    content = <AppRoot key={user.uid} />;
   }
 
-  if (!user) return <Login />;
+  if (!desktop) return content;
 
-  return <AppRoot key={user.uid} />;
+  return (
+    <div className="desktop-window-frame">
+      <DesktopTitleBar />
+      <div className="desktop-window-content">{content}</div>
+    </div>
+  );
 }

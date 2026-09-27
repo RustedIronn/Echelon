@@ -1,8 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
 
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -20,6 +24,15 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+const desktopRuntime = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
+
+// The installed WebView must keep the Firebase session between launches.
+// localStorage is the most reliable first choice for Tauri's stable app origin;
+// browsers continue preferring IndexedDB with localStorage as a fallback.
+export const auth = initializeAuth(app, {
+  persistence: desktopRuntime
+    ? [browserLocalPersistence, indexedDBLocalPersistence]
+    : [indexedDBLocalPersistence, browserLocalPersistence],
+});
 
 export const db = getFirestore(app);

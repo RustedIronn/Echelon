@@ -3,6 +3,7 @@ import { useToast } from "@/ui/useToast";
 import { useNotifications } from "../store";
 import { PERMISSION_STATES } from "../permissions";
 import { REMINDER_LEAD_OPTIONS } from "../constants";
+import { isDesktop } from "../../../desktop/environment";
 
 const permissionLabels = {
   [PERMISSION_STATES.default]: "Not requested",
@@ -12,6 +13,7 @@ const permissionLabels = {
 };
 
 export default function NotificationSettings() {
+  const desktop = isDesktop();
   const {
     settings,
     permission,
@@ -40,7 +42,7 @@ export default function NotificationSettings() {
       <div className="stack">
         <div className="notification-setting">
           <div>
-            <strong>Browser notifications</strong>
+            <strong>{desktop ? "Desktop notifications" : "Browser notifications"}</strong>
             <span>Permission: {permissionLabels[permission]}</span>
           </div>
 
@@ -57,7 +59,7 @@ export default function NotificationSettings() {
             </label>
           ) : permission === PERMISSION_STATES.default ? (
             <Button onClick={requestPermission}>
-              Enable browser notifications
+              Enable {desktop ? "desktop" : "browser"} notifications
             </Button>
           ) : null}
         </div>
@@ -65,13 +67,13 @@ export default function NotificationSettings() {
         {permission === PERMISSION_STATES.denied && (
           <p className="notification-note" role="status">
             Permission was denied. Enable notifications manually in your
-            browser settings to use native reminders.
+            {desktop ? " Windows settings" : " browser settings"} to use native reminders.
           </p>
         )}
 
         {permission === PERMISSION_STATES.unsupported && (
           <p className="notification-note" role="status">
-            This browser does not support native notifications. In-app
+            This {desktop ? "desktop environment" : "browser"} does not support native notifications. In-app
             reminders will continue to work.
           </p>
         )}

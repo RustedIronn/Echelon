@@ -1,26 +1,19 @@
-import { create } from "zustand";
-import { createUserProfile } from "./user";
+import { createUserProfile } from "./user.js";
 
 import { onAuthStateChanged } from "firebase/auth";
 
-import { auth } from "../firebase";
-import { setStorageOwner } from "@/shared/storage";
-import { useSync } from "@/ui/useSync";
-import { createAuthTransitionController } from "./transition";
+import { auth } from "../firebase.js";
+import { setStorageOwner } from "../../shared/storage.js";
+import { useSync } from "../../ui/useSync.js";
+import { createAuthTransitionController } from "./transition.js";
+import { useAuth } from "./state.js";
 
 let transitionController = null;
 
-export const useAuth = create((set, get) => ({
-  user: null,
+const init = () => {
+    if (useAuth.getState().initialized) return;
 
-  loading: true,
-
-  initialized: false,
-
-  init: () => {
-    if (get().initialized) return;
-
-    set({
+    useAuth.setState({
       initialized: true,
     });
 
@@ -39,5 +32,8 @@ export const useAuth = create((set, get) => ({
     onAuthStateChanged(auth, (user) => {
       void transitionController.handleAuthChange(user);
     });
-  },
-}));
+};
+
+useAuth.setState({ init });
+
+export { useAuth };

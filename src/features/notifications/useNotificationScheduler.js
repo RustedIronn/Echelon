@@ -13,6 +13,8 @@ import {
 } from "./utils";
 import { deliverReminder } from "./service";
 import { NOTIFICATION_STATUSES } from "./constants";
+import { DESKTOP_WAKE_EVENT, isDesktop } from "../../desktop/environment";
+import { desktopNotificationsPaused } from "../../desktop/notifications";
 
 export default function useNotificationScheduler() {
   const schedulerRef = useRef(null);
@@ -39,6 +41,11 @@ export default function useNotificationScheduler() {
       const { settings, permission, recordStatus } = notificationState;
 
       if (!settings.scheduleEnabled) return;
+
+      if (isDesktop() && desktopNotificationsPaused()) {
+        recordStatus(reminder, NOTIFICATION_STATUSES.missed);
+        return;
+      }
 
       if (
         isWithinQuietHours(
@@ -120,6 +127,7 @@ export default function useNotificationScheduler() {
 
     recompute();
     window.addEventListener("focus", recover);
+    window.addEventListener(DESKTOP_WAKE_EVENT, recompute);
     window.addEventListener(DAY_ROLLOVER_EVENT, recompute);
     document.addEventListener("visibilitychange", recoverWhenVisible);
 
@@ -128,6 +136,7 @@ export default function useNotificationScheduler() {
       unsubscribeNotifications();
       scheduler.clear();
       window.removeEventListener("focus", recover);
+      window.removeEventListener(DESKTOP_WAKE_EVENT, recompute);
       window.removeEventListener(DAY_ROLLOVER_EVENT, recompute);
       document.removeEventListener("visibilitychange", recoverWhenVisible);
     };

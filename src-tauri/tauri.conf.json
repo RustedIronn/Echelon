@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Echelon",
+  "version": "0.1.0",
+  "identifier": "app.echelon.desktop",
+  "build": {
+    "beforeDevCommand": "node scripts/run-desktop-frontend.mjs dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "node scripts/run-desktop-frontend.mjs build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "Echelon",
+      "width": 1200,
+      "height": 800,
+      "minWidth": 760,
+      "minHeight": 560,
+      "decorations": false,
+      "center": true
+    }]
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.png", "icons/icon.ico"]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["echelon"]
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
-import { useToast } from "@/ui/useToast";
-import { canUseBrowserNotifications } from "./permissions";
+import { useToast } from "../../ui/useToast.js";
+import { canUseBrowserNotifications } from "./permissions.js";
+import { isDesktop } from "../../desktop/environment.js";
+import { showDesktopNotification } from "../../desktop/notifications.js";
 
 export function showBrowserNotification(
   reminder,
@@ -28,6 +30,15 @@ export function showBrowserNotification(
 }
 
 export function deliverReminder({ reminder, settings, permission, isFocused }) {
+  if (isDesktop()) {
+    if (settings?.browserEnabled && permission === "granted" && !isFocused) {
+      void showDesktopNotification({ id: reminder.id, body: reminder.body })
+        .then((sent) => { if (!sent) useToast.getState().show(reminder.body, "default", 5000); });
+      return "desktop";
+    }
+    useToast.getState().show(reminder.body, "default", 5000);
+    return "toast";
+  }
   if (canUseBrowserNotifications(settings, permission, isFocused)) {
     if (showBrowserNotification(reminder)) return "browser";
   }

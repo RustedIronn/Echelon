@@ -1,4 +1,4 @@
-import { isValidToolsId, normalizeToolsTimestamp } from "./utils";
+import { isValidToolsId, normalizeToolsTimestamp } from "./utils.js";
 
 const text = (value) => typeof value === "string" ? value.trim() : "";
 

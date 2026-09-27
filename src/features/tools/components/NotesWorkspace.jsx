@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { Button, EmptyState } from "@ui";
@@ -81,6 +81,10 @@ export default function NotesWorkspace() {
   const [body, setBody] = useState("");
   const [draftId, setDraftId] = useState(() => createToolsId("note"));
   const [message, setMessage] = useState("");
+  const captureInput = useRef(null);
+  useEffect(() => {
+    if (params.get("capture") === "1") captureInput.current?.focus();
+  }, [params]);
   const query = search.trim().toLowerCase();
   const visible = data.notes
     .filter((note) => (filter === "all" || Boolean(note.archivedAt) === (filter === "archived")))
@@ -97,7 +101,7 @@ export default function NotesWorkspace() {
       const id = draftId;
       setTitle(""); setBody(""); setDraftId(createToolsId("note")); setMessage(""); select(id);
     }}>
-      <label><span>Quick capture</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title or first thought" /></label>
+      <label><span>Quick capture</span><input ref={captureInput} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title or first thought" /></label>
       <label><span>Note body</span><textarea rows="3" value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write as much as you need…" /></label>
       <Button type="submit">Save note</Button>
     </form>

@@ -10,10 +10,13 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+src-tauri/target
 *.local
 
 .env
 .env.*
+.env.desktop
+!.env.desktop.example
 
 # Editor directories and files
 .vscode/*

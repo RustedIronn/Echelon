@@ -1,0 +1,94 @@
+.desktop-window-frame {
+  min-height: 100vh;
+}
+
+.desktop-titlebar {
+  position: fixed;
+  z-index: calc(var(--z-nav) + 20);
+  inset: 0 0 auto;
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: #272a34;
+  color: #f2f3f6;
+  user-select: none;
+}
+
+.desktop-titlebar-brand {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  height: 100%;
+  padding-left: 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.desktop-titlebar-brand img {
+  width: 22px;
+  height: 22px;
+}
+
+.desktop-window-controls {
+  display: flex;
+  align-self: stretch;
+}
+
+.desktop-window-controls button {
+  display: grid;
+  width: 46px;
+  min-width: 46px;
+  min-height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d9dce4;
+  box-shadow: none;
+}
+
+.desktop-window-controls button:hover {
+  background: rgba(255, 255, 255, .09);
+  color: #fff;
+}
+
+.desktop-window-controls .desktop-window-close:hover {
+  background: #b7404b;
+}
+
+.desktop-window-controls button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline-color: rgba(218, 191, 232, .72);
+  outline-offset: -3px;
+}
+
+.desktop-window-content {
+  min-height: 100vh;
+  padding-top: 40px;
+}
+
+.desktop-window-content .app,
+.desktop-window-content .login-page {
+  min-height: calc(100vh - 40px);
+}
+
+.desktop-window-content .sidebar {
+  top: 40px;
+  height: calc(100vh - 40px);
+}
+
+@media (max-width: 760px) {
+  .desktop-window-content .mobile-topbar {
+    top: 40px;
+  }
+
+  .desktop-window-content .app-main {
+    padding-top: 80px;
+  }
+}

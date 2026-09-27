@@ -3,6 +3,8 @@ import PageTitle from "@ui/PageTitle";
 import NotificationSettings from "@features/notifications/components/NotificationSettings";
 import ResetMode from "@features/tools/components/ResetMode";
 import MoneyCategorySettings from "@features/money/components/MoneyCategorySettings";
+import DesktopSettings from "@/desktop/DesktopSettings";
+import { isDesktop } from "@/desktop/environment";
 
 export default function Settings() {
   return (
@@ -14,6 +16,7 @@ export default function Settings() {
       />
 
       <NotificationSettings />
+      {isDesktop() ? <DesktopSettings /> : null}
 
       <details className="settings-tool">
         <summary><strong>Money categories</strong><span>Manage custom ledger categories</span></summary>

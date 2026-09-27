@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide-react";
 
@@ -95,8 +95,7 @@ function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus, onPriori
   );
 }
 
-export default function PlannerWorkspace({ embedded = false, basePath = "/planner" }) {
-  const location = useLocation();
+function PlannerWorkspaceContent({ embedded = false, basePath = "/planner", location }) {
   const navigate = useNavigate();
   const openFocusSurface = useFocusSurface((state) => state.openFor);
   const view = getView(location.pathname);
@@ -114,11 +113,6 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
     : visibleTasks;
   const [draftId, setDraftId] = useState(() => createPlannerId());
   const [draft, setDraft] = useState({ title: "", notes: "", date: captureRequested ? requestedDate : "", time: "", priority: "normal" });
-
-  useEffect(() => {
-    if (!captureRequested) return;
-    setDraft((current) => ({ ...current, date: requestedDate, time: "" }));
-  }, [captureRequested, requestedDate]);
 
   const updateDraft = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
   const submit = (event) => {
@@ -191,4 +185,14 @@ export default function PlannerWorkspace({ embedded = false, basePath = "/planne
       </Workspace>
     </div>
   );
+}
+
+export default function PlannerWorkspace(props) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const requestedDate = params.get("date");
+  const captureKey = params.get("capture") === "1" && isValidDayKey(requestedDate)
+    ? `capture:${requestedDate}`
+    : "default";
+  return <PlannerWorkspaceContent key={captureKey} {...props} location={location} />;
 }

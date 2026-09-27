@@ -23,11 +23,9 @@ import {
 } from "../tracking";
 import { WORKOUT_RUNNER_VERSION } from "../runner";
 
-export default function WorkoutToday() {
-  const [searchParams] = useSearchParams();
+function WorkoutTodayContent({ initialDate }) {
   const [today, setToday] = useState(() => getDefaultWorkoutPlanDate());
-  const requestedDate = searchParams.get("date");
-  const [selectedDate, setSelectedDate] = useState(() => isValidDayKey(requestedDate) ? requestedDate : today);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const workout = getWorkoutForDate(selectedDate);
   const duration = getWorkoutDuration(workout);
   const { active, phase, startWorkout, savedProgress, continueWorkout, reset } =
@@ -52,10 +50,6 @@ export default function WorkoutToday() {
     window.addEventListener(DAY_ROLLOVER_EVENT, handleRollover);
     return () => window.removeEventListener(DAY_ROLLOVER_EVENT, handleRollover);
   }, [today]);
-
-  useEffect(() => {
-    if (isValidDayKey(requestedDate)) setSelectedDate(requestedDate);
-  }, [requestedDate]);
 
   const moveSelectedDate = (offset) => {
     setSelectedDate(
@@ -118,4 +112,11 @@ export default function WorkoutToday() {
       <WorkoutStats />
     </div>
   );
+}
+
+export default function WorkoutToday() {
+  const [searchParams] = useSearchParams();
+  const requestedDate = searchParams.get("date");
+  const initialDate = isValidDayKey(requestedDate) ? requestedDate : getDefaultWorkoutPlanDate();
+  return <WorkoutTodayContent key={initialDate} initialDate={initialDate} />;
 }

@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { hasMatchingOwnership } from "@core/auth/ownership";
-import { useAuth } from "@core/auth/store";
+import { hasMatchingOwnership } from "../../core/auth/ownership.js";
+import { useAuth } from "../../core/auth/state.js";
 
 import {
   getStorageOwner,

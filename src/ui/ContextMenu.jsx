@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const MENU_WIDTH = 208;
@@ -9,18 +9,18 @@ export default function ContextMenu({ label, items, children }) {
   const menuRef = useRef(null);
   const [position, setPosition] = useState(null);
 
-  const close = () => setPosition(null);
-  const openAt = (left, top) => {
+  const close = useCallback(() => setPosition(null), []);
+  const openAt = useCallback((left, top) => {
     const menuHeight = Math.min(window.innerHeight - 16, items.length * 40 + 10);
     setPosition({
       left: Math.max(8, Math.min(left, window.innerWidth - MENU_WIDTH - 8)),
       top: Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8)),
     });
-  };
-  const closeAndRestore = () => {
+  }, [items.length]);
+  const closeAndRestore = useCallback(() => {
     close();
     requestAnimationFrame(() => triggerRef.current?.focus());
-  };
+  }, [close]);
 
   useEffect(() => {
     if (!position) return undefined;
@@ -56,7 +56,7 @@ export default function ContextMenu({ label, items, children }) {
       document.removeEventListener("pointerdown", dismissOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [position]);
+  }, [position, closeAndRestore]);
 
   const triggerProps = {
     ref: triggerRef,

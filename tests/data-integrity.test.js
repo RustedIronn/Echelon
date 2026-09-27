@@ -49,6 +49,10 @@ import {
   skipTrackedRestState,
 } from "../src/features/workout/state.js";
 import {
+  advanceWorkoutRunner,
+  runnerStateFields,
+} from "../src/features/workout/runner.js";
+import {
   addTrackingSet,
   completeTrackingSet,
   deriveCurrentExerciseState,
@@ -680,7 +684,6 @@ test("navigation registry preserves desktop and five-slot mobile destinations", 
       "today",
       "plan",
       "calendar",
-      "focus",
       "habits",
       "workouts",
       "money",
@@ -690,11 +693,11 @@ test("navigation registry preserves desktop and five-slot mobile destinations", 
   );
   assert.deepEqual(
     mobilePrimaryNavigation.map(({ id }) => id),
-    ["today", "plan", "focus", "habits"],
+    ["today", "plan", "calendar", "habits"],
   );
   assert.deepEqual(
     mobileMoreNavigation.map(({ id }) => id),
-    ["calendar", "workouts", "money", "insights", "settings"],
+    ["workouts", "money", "insights", "settings"],
   );
 });
 
@@ -2442,21 +2445,12 @@ test("selected plan origin survives progress and keeps actual completion date", 
     planDate,
     startedAt,
   );
-  const exercise = started.tracking.exercises[0];
-  let tracking = updateTrackingSetValue(
-    started.tracking,
-    exercise.exerciseId,
-    exercise.sets[0].id,
-    "reps",
-    8,
+  const finishedRunner = advanceWorkoutRunner(
+    started.runner,
+    started.workout,
+    new Date(startedAt.getTime() + 40_000),
   );
-  tracking = completeTrackingSet(
-    tracking,
-    exercise.exerciseId,
-    exercise.sets[0].id,
-    startedAt,
-  );
-  started = { ...started, active: false, phase: "finished", tracking };
+  started = { ...started, ...runnerStateFields(finishedRunner) };
 
   const persisted = progressFields(started);
   const restored = normalizeWorkoutProgress(persisted);
@@ -4596,7 +4590,15 @@ test("tools persistence rejects unsupported versions and isolates malformed slic
     resetPreferences: { steps: [null] },
     counts: { now: 50 },
   });
-  assert.deepEqual(Object.keys(normalized), ["version", "tasks", "brainDump", "breakdowns", "resetPreferences"]);
+  assert.deepEqual(Object.keys(normalized), [
+    "version",
+    "tasks",
+    "brainDump",
+    "notes",
+    "breakdowns",
+    "migratedLaneIds",
+    "resetPreferences",
+  ]);
   assert.deepEqual(normalized.tasks, [task]);
   assert.deepEqual(normalized.brainDump, []);
   assert.equal(normalized.breakdowns.length, 1);
@@ -4630,7 +4632,9 @@ test("Reset Mode checkmarks remain runtime-only and are never persisted", () => 
     "version",
     "tasks",
     "brainDump",
+    "notes",
     "breakdowns",
+    "migratedLaneIds",
     "resetPreferences",
   ]);
   assert.deepEqual(saved.resetPreferences.steps, [
@@ -4662,10 +4666,12 @@ test("tools persistence rejects pre-auth writes and malformed scoped JSON", () =
 test("mounted tools store switches every persisted slice across accounts", async () => {
   memory.clear();
   setStorageOwner(null);
+  const { useAuth } = await import("../src/core/auth/state.js");
   const { useTools } = await import("../src/features/tools/store.js");
 
   assert.equal(useTools.getState().addTask({ text: "No owner", lane: "now" }), false);
 
+  useAuth.setState({ user: { uid: "tools-owner-a" } });
   setStorageOwner("tools-owner-a");
   assert.equal(useTools.getState().addTask({ text: "A task", lane: "now" }, { id: "task:owner-a" }), true);
   assert.equal(useTools.getState().captureBrainDump("A thought", { batchId: "brain:owner-a" }), true);
@@ -4673,10 +4679,12 @@ test("mounted tools store switches every persisted slice across accounts", async
   assert.equal(useTools.getState().editResetStep("reset:water", "A water reminder"), true);
   const ownerA = structuredClone(useTools.getState().data);
 
+  useAuth.setState({ user: null });
   setStorageOwner(null);
   assert.equal(useTools.getState().owner, null);
   assert.deepEqual(useTools.getState().data, createEmptyToolsDocument());
 
+  useAuth.setState({ user: { uid: "tools-owner-b" } });
   setStorageOwner("tools-owner-b");
   assert.deepEqual(useTools.getState().data, createEmptyToolsDocument());
   assert.equal(useTools.getState().addTask({ text: "B task", lane: "later" }, { id: "task:owner-b" }), true);
@@ -4686,10 +4694,14 @@ test("mounted tools store switches every persisted slice across accounts", async
   assert.equal(useTools.getState().deleteTask("task:owner-a"), false);
   assert.deepEqual(loadToolsDocument(), ownerB);
 
+  useAuth.setState({ user: null });
   setStorageOwner(null);
+  useAuth.setState({ user: { uid: "tools-owner-a" } });
   setStorageOwner("tools-owner-a");
   assert.deepEqual(useTools.getState().data, ownerA);
   assert.equal(useTools.getState().timer, IDLE_TIMER);
+  useAuth.setState({ user: null });
+  setStorageOwner(null);
 });
 
 const composureInput = (date, overrides = {}) => ({

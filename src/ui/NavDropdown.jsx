@@ -3,22 +3,21 @@ import { ChevronDown } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 export default function NavDropdown({ label, items }) {
-  const [open, setOpen] = useState(false);
+  const [openForPath, setOpenForPath] = useState(null);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
   const location = useLocation();
+  const open = openForPath === location.pathname;
   const active = items.some(({ path }) => location.pathname === path);
-
-  useEffect(() => setOpen(false), [location.pathname]);
 
   useEffect(() => {
     if (!open) return undefined;
     const onPointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
+      if (!rootRef.current?.contains(event.target)) setOpenForPath(null);
     };
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
-      setOpen(false);
+      setOpenForPath(null);
       triggerRef.current?.focus();
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -37,7 +36,7 @@ export default function NavDropdown({ label, items }) {
         className={active ? "is-active" : ""}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpenForPath((current) => current === location.pathname ? null : location.pathname)}
       >
         {label}
         <ChevronDown size={15} aria-hidden="true" />
