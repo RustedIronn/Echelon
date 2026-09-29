@@ -19,7 +19,7 @@ export default function CompactTodayTimeline({ tasks, onFocus, onToggle }) {
             key={task.id}
             task={task}
             onFocus={onFocus}
-            onToggle={onToggle}
+            onToggle={() => onToggle(task)}
             status={task.done ? "complete" : task.id === primary?.id ? "current" : task.id === nextId ? "next" : "later"}
           />
         ))}

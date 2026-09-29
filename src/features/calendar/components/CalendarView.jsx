@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, ListTodo, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -23,6 +23,7 @@ export default function CalendarView() {
   const now = new Date();
   const today = getToday(now);
   const [selectedDate, setSelectedDate] = useState(today);
+  const agendaHeadingRef = useRef(null);
   const [visibleMonth, setVisibleMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const plannerTasks = usePlanner((state) => state.document.tasks);
   const scheduleTasks = useToday((state) => state.tasks);
@@ -43,6 +44,13 @@ export default function CalendarView() {
     const date = new Date();
     setVisibleMonth({ year: date.getFullYear(), month: date.getMonth() });
     setSelectedDate(getToday(date));
+  };
+
+  const selectDate = (date, event) => {
+    setSelectedDate(date);
+    if (event.detail === 0) {
+      window.requestAnimationFrame(() => agendaHeadingRef.current?.focus());
+    }
   };
 
   return (
@@ -77,7 +85,7 @@ export default function CalendarView() {
                   className={`calendar-day ${day.date === today ? "is-today" : ""} ${day.date === selectedDate ? "is-selected" : ""}`.trim()}
                   aria-selected={day.date === selectedDate}
                   aria-label={`${formatDayKey(day.date, { weekday: "long" })}, ${dayEvents.length} calendar items`}
-                  onClick={() => setSelectedDate(day.date)}
+                  onClick={(event) => selectDate(day.date, event)}
                 >
                   <span>{day.day}</span>
                   <span className="calendar-day__signals" aria-hidden="true">
@@ -93,7 +101,7 @@ export default function CalendarView() {
           <header>
             <div>
               <span>{selectedDate === today ? "Today" : "Selected day"}</span>
-              <h2>{formatDayKey(selectedDate, { weekday: "long" })}</h2>
+              <h2 ref={agendaHeadingRef} tabIndex="-1">{formatDayKey(selectedDate, { weekday: "long" })}</h2>
             </div>
             <Link className="calendar-add" to={`/plan/planner?date=${selectedDate}&capture=1`} aria-label={`Add Planner item for ${formatDayKey(selectedDate)}`}><Plus size={18} /></Link>
           </header>

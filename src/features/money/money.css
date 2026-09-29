@@ -382,3 +382,5 @@
 .money-balance-card { border: 0; border-left: 4px solid var(--accent-money); box-shadow: none; }
 @media (max-width: 760px) { .money-filter-grid.is-compact { grid-template-columns: minmax(0,1fr); } }
 .money-budget-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.money-transaction-row.is-changed { animation: money-row-response 900ms var(--ease-out); }
+@keyframes money-row-response { 35% { background: rgba(57,127,111,.1); } }

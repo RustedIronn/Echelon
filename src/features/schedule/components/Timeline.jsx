@@ -1,10 +1,18 @@
+import { useEffect, useState } from "react";
 import TimelineItem from "./TimelineItem";
 import { categories } from "../categories";
 import { getCurrentScheduleItem, getScheduleMinutes } from "../time";
 
 export default function Timeline({ tasks, toggleTask, onFocus }) {
-  const current = getCurrentScheduleItem(tasks);
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const clockCurrent = getCurrentScheduleItem(tasks, now);
+  const current = clockCurrent?.done ? null : clockCurrent;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const next = tasks.find(
     (task) => !task.done && getScheduleMinutes(task.start) > currentMinutes,
@@ -14,7 +22,8 @@ export default function Timeline({ tasks, toggleTask, onFocus }) {
   const daySpan = Math.max(1, lastMinute - firstMinute);
   const dayPosition = Math.min(100, Math.max(0, ((currentMinutes - firstMinute) / daySpan) * 100));
   const completed = tasks.filter((task) => task.done).length;
-  const activeLabel = current?.title ?? next?.title ?? "Routine window closed";
+  const dayComplete = tasks.length > 0 && completed === tasks.length;
+  const activeLabel = current?.title ?? next?.title ?? "Schedule complete";
 
   return (
     <>
@@ -55,6 +64,7 @@ export default function Timeline({ tasks, toggleTask, onFocus }) {
               current={current?.id === task.id}
               next={next?.id === task.id}
               past={!task.done && getScheduleMinutes(task.end) <= currentMinutes}
+              dayComplete={dayComplete && task.done}
             />
           </div>
         ))}

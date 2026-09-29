@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Check, MoreVertical, Play } from "lucide-react";
 
 import { Button, ContextMenu } from "@ui";
@@ -5,10 +6,22 @@ import { categories } from "@features/schedule/categories";
 import { getScheduleItemDuration } from "@features/schedule/time";
 
 export default function TodayTaskRow({ task, onFocus, onToggle, compact = false, status }) {
+  const [response, setResponse] = useState(null);
+  const responseTimer = useRef(null);
   const category = categories[task.category] ?? categories.foundation;
   const Icon = category.icon;
   const planner = task.source === "planner";
   const duration = planner ? null : getScheduleItemDuration(task);
+
+  useEffect(() => () => window.clearTimeout(responseTimer.current), []);
+
+  const toggle = () => {
+    if (onToggle(task.id) === false) return;
+    window.clearTimeout(responseTimer.current);
+    setResponse(task.done ? "reopened" : "completed");
+    responseTimer.current = window.setTimeout(() => setResponse(null), 560);
+  };
+
   const actions = [
     {
       id: "focus",
@@ -19,7 +32,7 @@ export default function TodayTaskRow({ task, onFocus, onToggle, compact = false,
     {
       id: "toggle",
       label: task.done ? "Reopen task" : "Mark complete",
-      onSelect: () => onToggle(task.id),
+      onSelect: toggle,
     },
   ];
 
@@ -27,7 +40,7 @@ export default function TodayTaskRow({ task, onFocus, onToggle, compact = false,
     <ContextMenu label={`Actions for ${task.title}`} items={actions}>
       {({ contextProps, triggerProps }) => (
         <div
-          className={`today-task-row ${task.done ? "is-done" : ""} ${compact ? "is-compact" : ""} ${status ? `is-${status}` : ""}`.trim()}
+          className={`today-task-row ${task.done ? "is-done" : ""} ${compact ? "is-compact" : ""} ${status ? `is-${status}` : ""} ${response ? `is-${response}` : ""}`.trim()}
           {...contextProps}
         >
           <span

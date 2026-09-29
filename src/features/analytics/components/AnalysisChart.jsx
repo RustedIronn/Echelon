@@ -3,10 +3,24 @@ import {
   Tooltip, XAxis, YAxis,
 } from "recharts";
 
-import { EmptyState } from "@ui";
+import { EmptyState, useReducedMotion } from "@ui";
 import { Link } from "react-router-dom";
 
+function AnalysisTooltip({ active, payload, title, unit }) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0]?.payload;
+  const value = payload[0]?.value;
+  return (
+    <div className="analysis-chart__tooltip">
+      <span>{point?.dateLabel ?? point?.label}</span>
+      <strong>{value} {unit}</strong>
+      <small>{title}</small>
+    </div>
+  );
+}
+
 export default function AnalysisChart({ title, description, data, dataKey, unit, color, type = "line", maximum, hrefForPoint }) {
+  const reducedMotion = useReducedMotion();
   const present = data.filter((point) => point[dataKey] !== null);
   const Series = type === "bar" ? BarChart : LineChart;
   return <section className="analysis-chart">
@@ -18,10 +32,10 @@ export default function AnalysisChart({ title, description, data, dataKey, unit,
             <CartesianGrid vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={18} fontSize={11} />
             <YAxis tickLine={false} axisLine={false} width={40} domain={[0, maximum ?? "auto"]} allowDecimals={dataKey !== "workouts"} fontSize={11} />
-            <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.dateLabel ?? ""} formatter={(value) => [`${value} ${unit}`, title]} />
+            <Tooltip content={<AnalysisTooltip title={title} unit={unit} />} />
             {type === "bar"
-              ? <Bar dataKey={dataKey} fill={color} maxBarSize={34} radius={[3, 3, 0, 0]} />
-              : <Line type="linear" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />}
+              ? <Bar dataKey={dataKey} fill={color} maxBarSize={34} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} />
+              : <Line type="linear" dataKey={dataKey} stroke={color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={!reducedMotion} />}
           </Series>
         </ResponsiveContainer>
       </div>

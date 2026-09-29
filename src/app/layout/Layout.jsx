@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
 import PageTransition from "./PageTransition";
@@ -9,9 +9,13 @@ import FocusSurface from "@features/focus/components/FocusSurface";
 import LegacyToolsMigration from "@features/tools/LegacyToolsMigration";
 
 export default function Layout() {
-    useKeyboard();
+  useKeyboard();
+  const location = useLocation();
+  const route = location.pathname === "/"
+    ? "today"
+    : location.pathname.split("/").filter(Boolean)[0] ?? "today";
   return (
-    <div className="app">
+    <div className="app" data-route={route}>
       <Toast />
       <FocusSurface />
       <LegacyToolsMigration />

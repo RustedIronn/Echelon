@@ -10,3 +10,8 @@ export {default as NavDropdown} from "./NavDropdown";
 export {Stage, Mosaic, SectionLead} from "./Composition";
 export {default as PanelHeader} from "./PanelHeader";
 export {default as Drawer} from "./Drawer";
+export {default as ActionLink} from "./ActionLink";
+export {default as Workspace} from "./Workspace";
+export {default as WorkspaceHeader} from "./WorkspaceHeader";
+export {default as SplitPane} from "./SplitPane";
+export {default as useReducedMotion} from "./useReducedMotion";

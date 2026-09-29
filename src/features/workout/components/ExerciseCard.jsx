@@ -1,11 +1,9 @@
-import { Card } from "@ui";
-
 export default function ExerciseCard({ exercise, index }) {
   return (
-    <Card>
-      <div className="exercise-card">
-        <span>{String(index + 1).padStart(2, "0")}</span>
+    <article className="exercise-card">
+      <span>{String(index + 1).padStart(2, "0")}</span>
 
+      <div>
         <h3>{exercise.name}</h3>
 
         <p>
@@ -16,6 +14,6 @@ export default function ExerciseCard({ exercise, index }) {
 
         <p className="exercise-description">{exercise.description}</p>
       </div>
-    </Card>
+    </article>
   );
 }

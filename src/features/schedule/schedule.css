@@ -93,6 +93,11 @@
 .timeline-item.completed { opacity: .58; }
 .timeline-item.completed .content > strong { text-decoration: line-through; }
 .timeline-item.completed .dot { background: var(--category-color); color: #fff; }
+.timeline-item.is-completed,
+.timeline-item.is-reopened { animation: schedule-item-response 560ms var(--ease-out); }
+.timeline-item.is-day-complete .dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--category-color) 18%, transparent); }
+
+@keyframes schedule-item-response { 40% { background: color-mix(in srgb, var(--category-bg) 72%, transparent); } }
 
 .schedule-editor-drawer { width: min(720px,100%); }
 .editor-status {

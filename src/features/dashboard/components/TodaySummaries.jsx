@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom";
-import { ArrowUpRight, Dumbbell, Leaf, ListTodo } from "lucide-react";
+import { Dumbbell, Leaf, ListTodo } from "lucide-react";
 
-import { Card } from "@ui";
+import { ActionLink, Card } from "@ui";
 import { useHabits } from "@features/habits/store";
 import { useWorkout } from "@features/workout/store";
 import { getTodayWorkout, getWorkoutDuration } from "@features/workout/utils";
@@ -28,9 +27,9 @@ export default function TodaySummaries() {
           <span><strong>{completedHabits}</strong><small>of {habitTotal}</small></span>
         </div>
         <div className="today-support-copy">
-          <span><Leaf size={14} aria-hidden="true" /> Daily rituals</span>
-          <strong>{habitPercent === 100 ? "Orbit complete" : `${habitTotal - completedHabits} still in orbit`}</strong>
-          <Link to="/habits">Tend habits <ArrowUpRight size={14} /></Link>
+          <span><Leaf size={14} aria-hidden="true" /> Habits</span>
+          <strong>{completedHabits} of {habitTotal} complete</strong>
+          <ActionLink to="/habits">Open habits</ActionLink>
         </div>
       </Card>
 
@@ -40,7 +39,7 @@ export default function TodaySummaries() {
           <span>{trainedToday ? "Training logged" : workout ? "Today’s training" : "Recovery day"}</span>
           <strong>{trainedToday ? "Body work complete" : workout?.title ?? "Restore and reset"}</strong>
           <small>{trainedToday ? "Stored in workout history" : workout ? `${workout.exercises.length} exercises · ${workoutMinutes === null ? "flexible duration" : `about ${workoutMinutes} min`}` : "No prescribed workout today"}</small>
-          <Link to="/workouts/today">{trainedToday ? "View session" : workout ? "Open workout" : "Open training"} <ArrowUpRight size={14} /></Link>
+          <ActionLink to="/workouts/today">{trainedToday ? "View session" : workout ? "Open workout" : "Open training"}</ActionLink>
         </div>
       </Card>
 
@@ -48,9 +47,9 @@ export default function TodaySummaries() {
         <span className="today-workout-icon"><ListTodo size={20} aria-hidden="true" /></span>
         <div className="today-support-copy">
           <span>Planner due today</span>
-          <strong>{dueToday.length ? `${dueToday.length} one-off ${dueToday.length === 1 ? "action" : "actions"}` : "Desk clear"}</strong>
+          <strong>{dueToday.length ? `${dueToday.length} ${dueToday.length === 1 ? "task" : "tasks"}` : "No tasks due"}</strong>
           <small>{dueToday[0]?.title ?? "Nothing extra is due today."}</small>
-          <Link to="/plan/planner/today">Open today’s plan <ArrowUpRight size={14} /></Link>
+          <ActionLink to="/plan/planner/today">Open Planner</ActionLink>
         </div>
       </Card>
     </div>

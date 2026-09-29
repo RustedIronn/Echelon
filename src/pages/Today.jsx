@@ -3,6 +3,7 @@ import { PageTitle, Stage } from "@ui";
 import CurrentMission from "@/features/focus/components/CurrentMission";
 import NextUp from "@/features/dashboard/components/NextUp";
 import TodaySummaries from "@/features/dashboard/components/TodaySummaries";
+import CompactTodayTimeline from "@/features/dashboard/components/CompactTodayTimeline";
 import { useFocusSurface } from "@features/focus/surface";
 import { usePlanner } from "@features/planner/store";
 import { getTodayExecution } from "@features/dashboard/execution";
@@ -28,6 +29,7 @@ export default function Today() {
         <CurrentMission mission={mission} onFocus={openFocus} />
 
         <NextUp items={next} onFocus={openFocus} onToggle={toggleAction} limit={2} />
+        <CompactTodayTimeline tasks={tasks} onFocus={openFocus} onToggle={toggleAction} />
         <TodaySummaries />
       </Stage>
     </div>

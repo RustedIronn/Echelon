@@ -828,6 +828,19 @@
 .runner-session__finish label { display: grid; gap: 6px; }
 .runner-session__finish label small { color: var(--color-text-muted); font-weight: 400; }
 .runner-session__finish select, .runner-session__finish textarea { width: 100%; }
+.workout-phase-enter { animation: workout-phase-enter var(--duration-state) var(--ease-out); }
+.runner-session__finish.is-complete { animation: workout-finish-response var(--duration-feedback) var(--ease-out); }
+.workout-exercise-list > header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+.workout-exercise-list > header h2 { margin: 0; }
+.workout-exercise-list > header span { color: var(--color-text-muted); font-size: var(--text-sm); }
+.workout-exercise-list > .stack { gap: 0; }
+.workout-exercise-list .exercise-card { display: grid; grid-template-columns: 40px minmax(0,1fr); gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--color-border); }
+.workout-exercise-list .exercise-card:last-child { border-bottom: 0; }
+.workout-exercise-list .exercise-card > span { color: var(--accent-workout); font: 600 var(--text-sm) var(--font-mono); }
+.workout-exercise-list .exercise-card h3 { margin: 0; }
+.workout-exercise-list .exercise-card p { max-width: 62ch; margin: 4px 0 0; }
+@keyframes workout-phase-enter { from { opacity: 0; transform: translateX(8px); } }
+@keyframes workout-finish-response { 40% { background: rgba(78,128,111,.08); } }
 .runner-history__summary { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-block: 12px; font-weight: 600; }
 .runner-history__note { white-space: pre-wrap; overflow-wrap: anywhere; }
 .runner-history ol { display: grid; gap: 6px; padding-left: 22px; }

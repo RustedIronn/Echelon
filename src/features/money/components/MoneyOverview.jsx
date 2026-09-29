@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { Card, EmptyState, Mosaic, PanelHeader, SectionLead } from "@ui";
+import { ActionLink, Card, EmptyState, Mosaic, PanelHeader, SectionLead } from "@ui";
 import { formatDayKey, formatMonthKey, getToday } from "../../../shared/date.js";
 import { aggregateLedger, monthlyLedger, spendingByCategory } from "../analytics.js";
 import { calculateBudgetUsage } from "../budgets.js";
@@ -47,7 +47,7 @@ export default function MoneyOverview() {
       </Mosaic>
 
       <SectionLead eyebrow="Ledger" title="Recent transactions" description="Newest entries, without losing the bigger picture.">
-        <Link className="money-primary-link" to="/money/transactions">
+        <Link className="money-primary-link" to="/money/transactions?add=1">
           Add Transaction
         </Link>
       </SectionLead>
@@ -88,7 +88,7 @@ export default function MoneyOverview() {
               ))}
             </div>
           ) : <p className="money-muted">No monthly budgets configured.</p>}
-          <Link className="money-text-link" to="/money/budgets">Manage budgets</Link>
+          <ActionLink direction="forward" to="/money/budgets">Budgets</ActionLink>
           </section>
 
           <section>
@@ -102,7 +102,7 @@ export default function MoneyOverview() {
               ))}
             </div>
           ) : <p className="money-muted">No savings goals yet.</p>}
-          <Link className="money-text-link" to="/money/goals">Manage goals</Link>
+          <ActionLink direction="forward" to="/money/goals">Goals</ActionLink>
           </section>
         </div>
       </Card>

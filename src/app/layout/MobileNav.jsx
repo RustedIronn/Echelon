@@ -51,7 +51,7 @@ export default function MobileNav() {
           <span className="mobile-topbar-mark"><img src="/assets/echelon.svg" alt="" /></span>
           <span><strong>Echelon</strong><small>Personal orbit</small></span>
         </span>
-        <span className={`mobile-sync mobile-sync--${status}`} aria-label={`Sync status: ${status}`}>
+        <span className={`mobile-sync mobile-sync--${status}`} role="status" aria-live="polite" aria-label={`Sync status: ${status}`}>
           <span aria-hidden="true" />
         </span>
         {sessionTask ? <button type="button" className="mobile-session-link" onClick={() => openFocus()} aria-label={`Resume focus on ${sessionTask.title}`}>Session</button> : null}

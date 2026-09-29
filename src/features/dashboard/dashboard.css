@@ -655,7 +655,13 @@
 .mission-card::before,
 .mission-card::after { display: none; }
 .mission-card h1 { font-size: clamp(2.25rem,5vw,3.75rem); }
+.mission-card__progress { width: min(30rem,100%); height: 5px; margin-top: 18px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.16); }
+.mission-card__progress > span { display: block; height: 100%; border-radius: inherit; background: rgba(255,255,255,.82); transition: width var(--duration-progress) var(--ease-out); }
 .today-task-row:hover,
 .today-task-row:focus-within { background: rgba(35,30,45,.035); transform: none; }
+.today-task-row.is-completed,
+.today-task-row.is-reopened { animation: today-task-response 560ms var(--ease-out); }
 .today-task-focus { min-height: 40px; }
 .today-summary-card { border: 0; border-top: 3px solid rgba(85,59,104,.28); box-shadow: none; }
+
+@keyframes today-task-response { 40% { background: color-mix(in srgb, var(--page-accent-soft) 70%, transparent); } }

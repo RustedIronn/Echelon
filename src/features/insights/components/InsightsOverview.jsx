@@ -3,8 +3,8 @@ import { ArrowUpRight } from "lucide-react";
 
 import WeeklyInsight from "@features/analytics/components/WeeklyInsight";
 import useDailyReviews from "@features/review/store";
-import { formatDayKey } from "@/shared/date";
 import { getCurrentWeekReviews } from "@features/analytics/insights";
+import { formatDayKey } from "@/shared/date";
 
 export default function InsightsOverview() {
   const { history } = useDailyReviews();

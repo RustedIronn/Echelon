@@ -35,14 +35,16 @@ export default function RunnerWorkoutSession() {
     .sort((left, right) => right.date.localeCompare(left.date) || String(right.id).localeCompare(String(left.id)))[0];
   const phaseLabel = runner.phase === "prepare" ? "GET READY" : runner.phase === "rest" ? "REST" : exercise.mode === "hold" ? "HOLD" : exercise.mode === "duration" ? "DURATION" : exercise.mode === "manual" ? "MANUAL" : "WORK";
 
-  return <Card className="runner-session">
+  const phaseKey = `${runner.round}:${runner.exerciseIndex}:${runner.phase}`;
+
+  return <Card className={`runner-session runner-session--${runner.phase}`}>
     <header className="runner-session__header">
       <div><span>{runner.phase === "finished" ? "SESSION FINISHED" : `ROUND ${runner.round} / ${workout.rounds}`}</span><h1>{workout.title}</h1></div>
       <strong>{progressed} / {total} exercises</strong>
     </header>
     <div className="runner-session__progress" role="progressbar" aria-label="Workout progress" aria-valuemin="0" aria-valuemax={total} aria-valuenow={progressed}><span style={{ width: `${Math.round((progressed / total) * 100)}%` }} /></div>
 
-    {runner.phase === "finished" ? <section className="runner-session__finish">
+    {runner.phase === "finished" ? <section className="runner-session__finish is-complete">
       <h2>Workout complete</h2>
       <p>{runner.completed.length} completed · {runner.skipped.length} skipped · {clock(elapsed)} total</p>
       <label><span>How difficult did it feel? <small>Optional</small></span><select value={runner.difficulty ?? ""} onChange={(event) => setRunnerDifficulty(event.target.value === "" ? null : Number(event.target.value))}><option value="">Not set</option>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} / 5</option>)}</select></label>
@@ -50,11 +52,11 @@ export default function RunnerWorkoutSession() {
       {saveError ? <p role="alert">The session could not be saved. It remains here so you can try again.</p> : null}
       <Button onClick={() => { if (!completeWorkout()) setSaveError(true); }}>Save session</Button>
     </section> : <>
-      <section className="runner-session__current" aria-label="Current exercise">
+      <section key={phaseKey} className="runner-session__current workout-phase-enter" aria-label="Current exercise">
         <span>EXERCISE {runner.exerciseIndex + 1} OF {workout.exercises.length}</span>
         <h2>{exercise.name}</h2>
         {exercise.instructions ? <p>{exercise.instructions}</p> : null}
-        <div className="runner-session__clock"><small>{paused ? "PAUSED" : phaseLabel}</small><strong aria-live="off">{exercise.mode === "manual" && runner.phase === "work" ? clock(elapsed) : clock(seconds)}</strong></div>
+        <div className="runner-session__clock"><small aria-live="polite">{paused ? "PAUSED" : phaseLabel}</small><strong aria-live="off">{exercise.mode === "manual" && runner.phase === "work" ? clock(elapsed) : clock(seconds)}</strong></div>
         <div className="runner-session__controls">
           <Button onClick={togglePause}>{paused ? "Resume" : "Pause"}</Button>
           {runner.phase === "rest" ? <Button variant="secondary" disabled={paused} onClick={() => skipRunnerRest(key)}>Skip rest</Button> : runner.phase === "prepare" ? null : <>
