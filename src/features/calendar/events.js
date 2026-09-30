@@ -1,6 +1,6 @@
 import { getToday, isValidDayKey } from "@/shared/date";
-import { getWorkoutForDate } from "@features/workout/utils";
-import { sortWorkoutHistory } from "@features/workout/history";
+import { getWorkoutForDate } from "@features/workouts/utils";
+import { sortWorkoutHistory } from "@features/workouts/history";
 
 const compareEvents = (left, right) =>
   (left.time ?? "99:99").localeCompare(right.time ?? "99:99") ||

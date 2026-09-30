@@ -6,8 +6,8 @@ import {
   getMillisecondsUntilNextLocalDay,
   hasLocalDayChanged,
 } from "@/shared/dayRollover";
-import { useToday } from "@/features/schedule/todayStore";
-import { useHabits } from "@/features/habits/store";
+import { useToday } from "@features/plan/schedule/todayStore.js";
+import { useHabits } from "@features/habits/store.js";
 import { useAuth } from "@core/auth/store";
 import { useSync } from "@/ui/useSync";
 

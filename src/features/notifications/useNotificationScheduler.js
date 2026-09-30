@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
 import { getStorageOwner } from "@/shared/storage";
 import { useAuth } from "@core/auth/store";
-import { useSchedule } from "@/features/schedule/scheduleStore";
+import { useSchedule } from "@/features/plan/schedule/scheduleStore";
 import { useNotifications } from "./store";
 import { createReminderScheduler } from "./scheduler";
 import {

@@ -5,17 +5,17 @@
 
 @import "./app/layout/layout.css";
 
-@import "./features/dashboard/dashboard.css";
-@import "./features/analytics/analytics.css";
+@import "./features/today/dashboard.css";
+@import "./features/insights/analysis/analytics.css";
 @import "./features/focus/focus.css";
 @import "./features/habits/habits.css";
-@import "./features/review/review.css";
-@import "./features/schedule/schedule.css";
-@import "./features/workout/workout.css";
+@import "./features/insights/review/review.css";
+@import "./features/plan/schedule/schedule.css";
+@import "./features/workouts/workout.css";
 @import "./features/notifications/notifications.css";
 @import "./features/money/money.css";
-@import "./features/tools/tools.css";
-@import "./features/planner/planner.css";
+@import "./features/plan/legacyTools/tools.css";
+@import "./features/plan/planner/planner.css";
 @import "./features/calendar/calendar.css";
 
 /* Shared component contracts load after feature layouts so controls remain coherent. */

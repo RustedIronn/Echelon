@@ -3,16 +3,16 @@ import { useEffect } from "react";
 import { useSync } from "@/ui/useSync";
 
 import { useAuth } from "@core/auth/store";
-import { useSchedule } from "@/features/schedule/scheduleStore";
-import { useToday } from "@/features/schedule/todayStore";
-import { useHabits } from "@features/habits/store";
-import { useFocus } from "@features/focus/store";
-import { useWorkout } from "@features/workout/store";
+import { useSchedule } from "@/features/plan/schedule/scheduleStore";
+import { useToday } from "@/features/plan/schedule/todayStore";
+import { useHabits } from "@features/habits/store.js";
+import { useFocus } from "@features/focus/store.js";
+import { useWorkout } from "@features/workouts/store.js";
 import {
   bindMoneyBackgroundRecovery,
   startMoneyBackgroundSync,
   stopMoneyBackgroundSync,
-} from "@features/money/backgroundSync";
+} from "@features/money/backgroundSync.js";
 
 export default function useEchelonSync() {
   const { user } = useAuth();

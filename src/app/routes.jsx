@@ -1,30 +1,30 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./layout/Layout";
-import Today from "../pages/Today";
-import FocusCompatibility from "@features/focus/components/FocusCompatibility";
-import Habits from "../pages/Habits";
-import Calendar from "../pages/Calendar";
-import DailyReview from "@features/review/components/DailyReview";
-import ComposureReview from "@features/review/components/ComposureReview";
-import InsightsLayout from "@features/insights/components/InsightsLayout";
-import InsightsOverview from "@features/insights/components/InsightsOverview";
-import Settings from "../pages/Settings";
-import Schedule from "../pages/Schedule";
-import Analytics from "../pages/Analytics";
-import Workouts from "@pages/Workouts";
-import Money from "@pages/Money";
-import MoneyOverview from "@features/money/components/MoneyOverview";
-import MoneyTransactions from "@features/money/components/MoneyTransactions";
-import MoneyBudgets from "@features/money/components/MoneyBudgets";
-import MoneyGoals from "@features/money/components/MoneyGoals";
-import Planner from "@pages/Planner";
-import NotesWorkspace from "@features/tools/components/NotesWorkspace";
-import PlanLayout from "@features/plan/components/PlanLayout";
-import WorkoutToday from "@features/workout/components/WorkoutToday";
-import WorkoutHistory from "@features/workout/components/WorkoutHistory";
-import WorkoutHistoryDetail from "@features/workout/components/WorkoutHistoryDetail";
-import WorkoutExerciseProgress from "@features/workout/components/WorkoutExerciseProgress";
-import WorkoutPlans from "@features/workout/components/WorkoutPlans";
+import Today from "@features/today/Today.jsx";
+import FocusCompatibility from "@features/focus/components/FocusCompatibility.jsx";
+import Habits from "@features/habits/Habits.jsx";
+import Calendar from "@features/calendar/components/CalendarView.jsx";
+import ComposureReview from "@features/insights/review/components/ComposureReview.jsx";
+import DailyReview from "@features/insights/review/components/DailyReview.jsx";
+import InsightsLayout from "@features/insights/components/InsightsLayout.jsx";
+import InsightsOverview from "@features/insights/components/InsightsOverview.jsx";
+import Settings from "@features/settings/Settings.jsx";
+import Schedule from "@features/plan/schedule/Schedule.jsx";
+import Analytics from "@features/insights/Analysis.jsx";
+import Workouts from "@features/workouts/components/WorkoutLayout.jsx";
+import Money from "@features/money/components/MoneyLayout.jsx";
+import MoneyBudgets from "@features/money/components/MoneyBudgets.jsx";
+import MoneyGoals from "@features/money/components/MoneyGoals.jsx";
+import MoneyOverview from "@features/money/components/MoneyOverview.jsx";
+import MoneyTransactions from "@features/money/components/MoneyTransactions.jsx";
+import PlannerWorkspace from "@features/plan/planner/components/PlannerWorkspace.jsx";
+import NotesWorkspace from "@features/plan/legacyTools/components/NotesWorkspace.jsx";
+import PlanLayout from "@features/plan/PlanLayout.jsx";
+import WorkoutExerciseProgress from "@features/workouts/components/WorkoutExerciseProgress.jsx";
+import WorkoutHistory from "@features/workouts/components/WorkoutHistory.jsx";
+import WorkoutHistoryDetail from "@features/workouts/components/WorkoutHistoryDetail.jsx";
+import WorkoutPlan from "@features/workouts/components/WorkoutPlan.jsx";
+import WorkoutToday from "@features/workouts/components/WorkoutToday.jsx";
 
 export const router = createBrowserRouter([
   {
@@ -70,10 +70,10 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="schedule" replace /> },
           { path: "schedule", element: <Schedule embedded /> },
-          { path: "planner", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/today", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/upcoming", element: <Planner embedded basePath="/plan/planner" /> },
-          { path: "planner/completed", element: <Planner embedded basePath="/plan/planner" /> },
+          { path: "planner", element: <PlannerWorkspace embedded basePath="/plan/planner" /> },
+          { path: "planner/today", element: <PlannerWorkspace embedded basePath="/plan/planner" /> },
+          { path: "planner/upcoming", element: <PlannerWorkspace embedded basePath="/plan/planner" /> },
+          { path: "planner/completed", element: <PlannerWorkspace embedded basePath="/plan/planner" /> },
           { path: "notes", element: <NotesWorkspace /> },
           { path: "planner/lanes", element: <Navigate to="/plan/planner" replace /> },
           { path: "planner/brain-dump", element: <Navigate to="/plan/notes" replace /> },
@@ -129,7 +129,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "plans",
-            element: <WorkoutPlans />,
+            element: <WorkoutPlan />,
           },
         ],
       },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Button, EmptyState } from "@ui";
-import { getScheduleMinutes } from "@features/schedule/time";
+import { getScheduleMinutes } from "@features/plan/schedule/time.js";
 
 export default function CurrentMission({ mission, onFocus }) {
   const [now, setNow] = useState(() => new Date());

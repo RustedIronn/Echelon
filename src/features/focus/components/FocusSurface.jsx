@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 
 import { Drawer } from "@ui";
 import { formatDayKey } from "@/shared/date";
-import { usePlanner } from "@features/planner/store";
-import { toFocusMission } from "@features/planner/tasks";
-import { useToday } from "@features/schedule/todayStore";
+import { toFocusMission } from "@features/plan/planner/tasks.js";
+import { usePlanner } from "@features/plan/planner/store.js";
+import { useToday } from "@features/plan/schedule/todayStore.js";
 import { useFocus } from "../store";
 import { useFocusSurface } from "../surface";
 import FocusSession from "./FocusSession";
-import TimeBlindnessTimer from "@features/tools/components/TimeBlindnessTimer";
+import TimeBlindnessTimer from "@features/plan/legacyTools/components/TimeBlindnessTimer";
 
 export default function FocusSurface() {
   const { open, mission, close } = useFocusSurface();

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Button, Card } from "@ui";
-import { useNotifications } from "@features/notifications/store";
+import { useNotifications } from "@features/notifications/store.js";
 import { desktopAutostartEnabled, setDesktopAutostart } from "./autostart";
 import { desktopNotificationsPaused, refreshDesktopPermission, subscribeDesktopPause } from "./notifications";
 import { quickNoteShortcutStatus, subscribeQuickNoteShortcut } from "./shortcuts";

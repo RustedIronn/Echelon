@@ -1,4 +1,4 @@
-import { getCurrentScheduleItem } from "@features/schedule/time";
+import { getCurrentScheduleItem } from "@features/plan/schedule/time";
 
 export function getPrimaryMission(tasks, now = new Date()) {
   if (!Array.isArray(tasks)) return null;

@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 
 import { Button, EmptyState, PageTitle } from "@ui";
 import { formatDayKey, getToday } from "@/shared/date";
-import { usePlanner } from "@features/planner/store";
-import { toFocusMission } from "@features/planner/tasks";
-import { useFocusSurface } from "@features/focus/surface";
-import { useToday } from "@features/schedule/todayStore";
-import { useWorkout } from "@features/workout/store";
+import { toFocusMission } from "@features/plan/planner/tasks.js";
+import { usePlanner } from "@features/plan/planner/store.js";
+import { useFocusSurface } from "@features/focus/surface.js";
+import { useToday } from "@features/plan/schedule/todayStore.js";
+import { useWorkout } from "@features/workouts/store.js";
 import { deriveCalendarEvents, groupCalendarEvents } from "../events";
 import { CALENDAR_WEEKDAYS, getCalendarMonth, getMonthLabel, shiftCalendarMonth } from "../month";
 
@@ -30,8 +30,8 @@ export default function CalendarView() {
   const workoutSessions = useWorkout((state) => state.sessions);
   const days = useMemo(() => getCalendarMonth(visibleMonth.year, visibleMonth.month), [visibleMonth]);
   const dates = useMemo(() => days.filter(Boolean).map((day) => day.date), [days]);
-  const events = useMemo(() => deriveCalendarEvents({ plannerTasks, workoutSessions, scheduleTasks, dates, today }), [plannerTasks, workoutSessions, scheduleTasks, dates, today]);
-  const eventsByDate = useMemo(() => groupCalendarEvents(events), [events]);
+  const events = deriveCalendarEvents({ plannerTasks, workoutSessions, scheduleTasks, dates, today });
+  const eventsByDate = groupCalendarEvents(events);
   const agenda = eventsByDate.get(selectedDate) ?? [];
 
   const moveMonth = (offset) => {

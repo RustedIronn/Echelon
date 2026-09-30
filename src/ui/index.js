@@ -1,7 +1,6 @@
 export {default as Card} from "./Card";
 export {default as Button} from "./Button";
 export {default as PageTitle} from "./PageTitle";
-export {default as Section} from "./Section";
 export {default as EmptyState} from "./EmptyState";
 export {default as Subnav} from "./Subnav";
 export {LoadingState, ErrorState} from "./StatusState";
@@ -11,7 +10,5 @@ export {Stage, Mosaic, SectionLead} from "./Composition";
 export {default as PanelHeader} from "./PanelHeader";
 export {default as Drawer} from "./Drawer";
 export {default as ActionLink} from "./ActionLink";
-export {default as Workspace} from "./Workspace";
-export {default as WorkspaceHeader} from "./WorkspaceHeader";
 export {default as SplitPane} from "./SplitPane";
 export {default as useReducedMotion} from "./useReducedMotion";

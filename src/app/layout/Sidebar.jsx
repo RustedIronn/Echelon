@@ -7,8 +7,8 @@ import { useSync } from "@/ui/useSync";
 import { useAuth } from "@core/auth/store";
 import { logout } from "@core/auth/service";
 import { desktopNavigation } from "./navigation";
-import { useFocus } from "@features/focus/store";
-import { useFocusSurface } from "@features/focus/surface";
+import { useFocus } from "@features/focus/store.js";
+import { useFocusSurface } from "@features/focus/surface.js";
 
 const navigationGroups = [
   { label: "Run the day", ids: ["today", "plan", "calendar", "habits"] },

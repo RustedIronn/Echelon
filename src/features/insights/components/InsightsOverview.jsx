@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 
-import WeeklyInsight from "@features/analytics/components/WeeklyInsight";
-import useDailyReviews from "@features/review/store";
-import { getCurrentWeekReviews } from "@features/analytics/insights";
+import WeeklyInsight from "@features/insights/analysis/components/WeeklyInsight.jsx";
+import { getCurrentWeekReviews } from "@features/insights/analysis/insights.js";
+import useDailyReviews from "@features/insights/review/store.js";
 import { formatDayKey } from "@/shared/date";
 
 export default function InsightsOverview() {

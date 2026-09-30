@@ -5,8 +5,8 @@ import PageTransition from "./PageTransition";
 import useKeyboard from "@hooks/useKeyboard";
 import Toast from "@ui/Toast";
 import ScrollToTop from "./ScrollToTop";
-import FocusSurface from "@features/focus/components/FocusSurface";
-import LegacyToolsMigration from "@features/tools/LegacyToolsMigration";
+import FocusSurface from "@features/focus/components/FocusSurface.jsx";
+import LegacyToolsMigration from "@features/plan/legacyTools/LegacyToolsMigration.jsx";
 
 export default function Layout() {
   useKeyboard();

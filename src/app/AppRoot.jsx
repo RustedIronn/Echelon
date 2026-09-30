@@ -4,7 +4,7 @@ import { router } from "./routes";
 
 import useEchelonSync from "@hooks/useEchelonSync";
 import useDayRollover from "@hooks/useDayRollover";
-import useNotificationScheduler from "@features/notifications/useNotificationScheduler";
+import useNotificationScheduler from "@features/notifications/useNotificationScheduler.js";
 
 export default function AppRoot() {
   useEchelonSync();

@@ -1,12 +1,12 @@
 import { router } from "@/app/routes";
 import { useAuth } from "@core/auth/store";
 import { getStorageOwner, subscribeStorageOwner } from "@/shared/storage";
-import { useFocusSurface } from "@features/focus/surface";
-import { useFocus } from "@features/focus/store";
-import { useWorkout } from "@features/workout/store";
-import { WORKOUT_RUNNER_VERSION } from "@features/workout/runner";
-import { useNotifications } from "@features/notifications/store";
-import { isWithinQuietHours } from "@features/notifications/utils";
+import { useFocus } from "@features/focus/store.js";
+import { useFocusSurface } from "@features/focus/surface.js";
+import { useWorkout } from "@features/workouts/store.js";
+import { WORKOUT_RUNNER_VERSION } from "@features/workouts/runner.js";
+import { isWithinQuietHours } from "@features/notifications/utils.js";
+import { useNotifications } from "@features/notifications/store.js";
 import { DESKTOP_WAKE_EVENT, isDesktop } from "./environment";
 import { refreshDesktopPermission, showDesktopNotification, updateDesktopPause } from "./notifications";
 import { registerQuickNoteShortcut } from "./shortcuts";

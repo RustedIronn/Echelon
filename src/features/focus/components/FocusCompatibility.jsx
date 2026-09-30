@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { useToday } from "@features/schedule/todayStore";
+import { useToday } from "@features/plan/schedule/todayStore.js";
 import { useFocusSurface } from "../surface";
 
 export default function FocusCompatibility() {
