@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 
 import { PageTitle, Stage, Subnav } from "@ui";
-import { useComposure } from "@features/insights/review/composureStore.js";
+import { useComposure } from "@features/insights/review/js/composureStore.js";
 
 const sections = [
   { label: "Overview", path: "/insights", end: true },

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Check, MoreVertical, Play } from "lucide-react";
 
 import { Button, ContextMenu } from "@ui";
-import { categories } from "@features/plan/schedule/categories.js";
-import { getScheduleItemDuration } from "@features/plan/schedule/time.js";
+import { categories } from "@features/plan/schedule/js/scheduleCategories.js";
+import { getScheduleItemDuration } from "@features/plan/schedule/js/scheduleTime.js";
 
 export default function TodayTaskRow({ task, onFocus, onToggle, compact = false, status }) {
   const [response, setResponse] = useState(null);

@@ -2,11 +2,11 @@ import { Link } from "react-router-dom";
 
 import { ActionLink, Card, EmptyState, Mosaic, PanelHeader, SectionLead } from "@ui";
 import { formatDayKey, formatMonthKey, getToday } from "../../../shared/date.js";
-import { aggregateLedger, monthlyLedger, spendingByCategory } from "../analytics.js";
-import { calculateBudgetUsage } from "../budgets.js";
-import { getGoalProgress } from "../goals.js";
-import { useMoney } from "../store.js";
-import { formatInr, sortTransactions } from "../transactions.js";
+import { aggregateLedger, monthlyLedger, spendingByCategory } from "../js/analytics.js";
+import { calculateBudgetUsage } from "../js/budgets.js";
+import { getGoalProgress } from "../js/goals.js";
+import { useMoney } from "../js/store.js";
+import { formatInr, sortTransactions } from "../js/transactions.js";
 
 export default function MoneyOverview() {
   const data = useMoney((state) => state.data);

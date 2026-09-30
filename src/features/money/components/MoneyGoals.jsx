@@ -2,9 +2,9 @@ import { useState } from "react";
 
 import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { formatDayKey } from "@/shared/date.js";
-import { getGoalProgress } from "../goals.js";
-import { useMoney } from "../store.js";
-import { createMoneyId, formatInr, minorToInput } from "../transactions.js";
+import { getGoalProgress } from "../js/goals.js";
+import { useMoney } from "../js/store.js";
+import { createMoneyId, formatInr, minorToInput } from "../js/transactions.js";
 
 const emptyDraft = () => ({
   name: "",

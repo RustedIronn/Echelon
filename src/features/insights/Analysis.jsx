@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import useDailyReviews from "@features/insights/review/store.js";
-import { useFocus } from "@features/focus/store.js";
-import { useWorkout } from "@features/workouts/store.js";
+import useDailyReviews from "@features/insights/review/js/store.js";
+import { useFocus } from "@features/focus/js/store.js";
+import { useWorkout } from "@features/workouts/js/store.js";
 import AnalysisChart from "@features/insights/analysis/components/AnalysisChart.jsx";
 import { deriveAnalysisSeries } from "@features/insights/analysis/series.js";
 

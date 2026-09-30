@@ -1,12 +1,12 @@
 import { Dumbbell, Leaf, ListTodo } from "lucide-react";
 
 import { ActionLink, Card } from "@ui";
-import { useHabits } from "@features/habits/store.js";
-import { getTodayWorkout, getWorkoutDuration } from "@features/workouts/utils.js";
-import { useWorkout } from "@features/workouts/store.js";
+import { useHabits } from "@features/habits/js/store.js";
+import { getTodayWorkout, getWorkoutDuration } from "@features/workouts/js/utils.js";
+import { useWorkout } from "@features/workouts/js/store.js";
 import { getToday } from "@/shared/date";
-import { getTodayPlannerTasks } from "@features/plan/planner/tasks.js";
-import { usePlanner } from "@features/plan/planner/store.js";
+import { getTodayPlannerTasks } from "@features/plan/planner/js/plannerTasks.js";
+import { usePlanner } from "@features/plan/planner/js/plannerStore.js";
 
 export default function TodaySummaries() {
   const habits = useHabits((state) => state.habits);

@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import ScheduleEditor from "@features/plan/schedule/components/ScheduleEditor.jsx";
 import Timeline from "@features/plan/schedule/components/Timeline.jsx";
-import { useSchedule } from "@features/plan/schedule/scheduleStore.js";
-import { useToday } from "@features/plan/schedule/todayStore.js";
+import { useSchedule } from "@features/plan/schedule/js/scheduleStore.js";
+import { useToday } from "@features/plan/schedule/js/todayStore.js";
 import { Button, Drawer, PageTitle, PanelHeader } from "@ui";
-import { useFocusSurface } from "@features/focus/surface.js";
+import { useFocusSurface } from "@features/focus/js/surface.js";
 
 export default function Schedule({ embedded = false }) {
   const schedule = useSchedule((state) => state.schedule);

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useSync } from "@/ui/useSync";
-import { useFocus } from "@features/focus/store.js";
-import { useFocusSurface } from "@features/focus/surface.js";
+import { useFocus } from "@features/focus/js/store.js";
+import { useFocusSurface } from "@features/focus/js/surface.js";
 
 import {
   mobileMoreNavigation,

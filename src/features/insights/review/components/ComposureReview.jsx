@@ -8,12 +8,12 @@ import {
   countComposureChecks,
   createEmptyComposureChecks,
   getComposureWeeklyMetrics,
-} from "../composure.js";
+} from "../js/composure.js";
 import {
   COMPOSURE_CHECKLIST,
   COMPOSURE_NOTE_MAX_LENGTH,
-} from "../composureConstants.js";
-import { useComposure } from "../composureStore.js";
+} from "../js/composureConstants.js";
+import { useComposure } from "../js/composureStore.js";
 
 const formatRating = (rating) => rating === null ? "Not rated" : `${rating} / 5`;
 

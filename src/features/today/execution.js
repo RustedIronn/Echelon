@@ -1,5 +1,5 @@
-import { getTodayPlannerTasks, toFocusMission } from "@features/plan/planner/tasks";
-import { getCurrentScheduleItem } from "@features/plan/schedule/time";
+import { getTodayPlannerTasks, toFocusMission } from "@features/plan/planner/js/plannerTasks";
+import { getCurrentScheduleItem } from "@features/plan/schedule/js/scheduleTime";
 
 // Schedule owns the current time block; otherwise Planner priority can lead the day.
 export function getTodayExecution(scheduleTasks, plannerTasks, now = new Date()) {

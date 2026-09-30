@@ -1,5 +1,5 @@
 import HabitList from "@features/habits/components/HabitList.jsx";
-import { useHabits } from "@features/habits/store.js";
+import { useHabits } from "@features/habits/js/store.js";
 import { PageTitle, PanelHeader, Stage } from "@ui";
 
 export default function Habits() {

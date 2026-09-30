@@ -1,5 +1,5 @@
 import { getLocalWeekRange } from "../../../shared/date.js";
-import { normalizeReviews } from "../review/reviews.js";
+import { normalizeReviews } from "../review/js/reviews.js";
 
 export function getCurrentWeekReviews(reviews, now = new Date()) {
 	const range = getLocalWeekRange(now);

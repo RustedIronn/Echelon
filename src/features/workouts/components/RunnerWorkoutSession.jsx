@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { Button, Card } from "@ui";
 import { formatDayKey } from "@/shared/date";
-import { useWorkout } from "../store";
-import { WORKOUT_RUNNER_VERSION } from "../runner";
+import { useWorkout } from "../js/store";
+import { WORKOUT_RUNNER_VERSION } from "../js/runner";
 
 const clock = (value) => {
   const seconds = Math.max(0, Math.ceil(value));

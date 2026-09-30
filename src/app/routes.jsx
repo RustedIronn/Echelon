@@ -18,7 +18,7 @@ import MoneyGoals from "@features/money/components/MoneyGoals.jsx";
 import MoneyOverview from "@features/money/components/MoneyOverview.jsx";
 import MoneyTransactions from "@features/money/components/MoneyTransactions.jsx";
 import PlannerWorkspace from "@features/plan/planner/components/PlannerWorkspace.jsx";
-import NotesWorkspace from "@features/plan/legacyTools/components/NotesWorkspace.jsx";
+import NotesWorkspace from "@features/plan/notes/NotesWorkspace.jsx";
 import PlanLayout from "@features/plan/PlanLayout.jsx";
 import WorkoutExerciseProgress from "@features/workouts/components/WorkoutExerciseProgress.jsx";
 import WorkoutHistory from "@features/workouts/components/WorkoutHistory.jsx";

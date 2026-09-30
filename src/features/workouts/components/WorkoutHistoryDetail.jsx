@@ -1,20 +1,20 @@
 import { Link, useParams } from "react-router-dom";
 
 import { Card, EmptyState } from "@ui";
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 import {
   formatWorkoutDate,
   formatWorkoutDuration,
   getAdjacentWorkoutDates,
   getRecordedExercises,
   groupWorkoutHistoryByDate,
-} from "../history";
+} from "../js/history";
 import {
   getTrackingMetrics,
   normalizeCompletedTracking,
-} from "../tracking";
+} from "../js/tracking";
 import { isValidDayKey } from "@/shared/date";
-import { normalizeCompletedRunnerSummary } from "../runner";
+import { normalizeCompletedRunnerSummary } from "../js/runner";
 
 export default function WorkoutHistoryDetail() {
   const { date } = useParams();

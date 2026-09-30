@@ -1,5 +1,5 @@
-import { categories } from "../categories";
-import { getScheduleItemDuration, getScheduleItemHeight } from "../time";
+import { categories } from "../js/scheduleCategories";
+import { getScheduleItemDuration, getScheduleItemHeight } from "../js/scheduleTime";
 import { Check, MoreVertical } from "lucide-react";
 import { ContextMenu } from "@ui";
 import { useEffect, useRef, useState } from "react";

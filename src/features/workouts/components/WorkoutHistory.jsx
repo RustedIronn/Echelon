@@ -1,13 +1,13 @@
 import { Link, useSearchParams } from "react-router-dom";
 
 import { Card, EmptyState } from "@ui";
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 import {
   formatWorkoutDate,
   formatWorkoutDuration,
   getRecordedExercises,
   sortWorkoutHistory,
-} from "../history";
+} from "../js/history";
 import WorkoutProgress from "./WorkoutProgress";
 
 export default function WorkoutHistory() {

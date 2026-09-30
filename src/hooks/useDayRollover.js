@@ -6,9 +6,9 @@ import {
   getMillisecondsUntilNextLocalDay,
   hasLocalDayChanged,
 } from "@/shared/dayRollover";
-import { useToday } from "@features/plan/schedule/todayStore.js";
-import { useHabits } from "@features/habits/store.js";
-import { useAuth } from "@core/auth/store";
+import { useToday } from "@features/plan/schedule/js/todayStore.js";
+import { useHabits } from "@features/habits/js/store.js";
+import { useAuth } from "@core/auth/authStore";
 import { useSync } from "@/ui/useSync";
 
 const TIMER_BUFFER_MS = 50;

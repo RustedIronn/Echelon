@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 
 import { Button, EmptyState, PageTitle } from "@ui";
 import { formatDayKey, getToday } from "@/shared/date";
-import { toFocusMission } from "@features/plan/planner/tasks.js";
-import { usePlanner } from "@features/plan/planner/store.js";
-import { useFocusSurface } from "@features/focus/surface.js";
-import { useToday } from "@features/plan/schedule/todayStore.js";
-import { useWorkout } from "@features/workouts/store.js";
+import { toFocusMission } from "@features/plan/planner/js/plannerTasks.js";
+import { usePlanner } from "@features/plan/planner/js/plannerStore.js";
+import { useFocusSurface } from "@features/focus/js/surface.js";
+import { useToday } from "@features/plan/schedule/js/todayStore.js";
+import { useWorkout } from "@features/workouts/js/store.js";
 import { deriveCalendarEvents, groupCalendarEvents } from "../events";
 import { CALENDAR_WEEKDAYS, getCalendarMonth, getMonthLabel, shiftCalendarMonth } from "../month";
 

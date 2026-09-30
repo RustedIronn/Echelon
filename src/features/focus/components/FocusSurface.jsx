@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 
 import { Drawer } from "@ui";
 import { formatDayKey } from "@/shared/date";
-import { toFocusMission } from "@features/plan/planner/tasks.js";
-import { usePlanner } from "@features/plan/planner/store.js";
-import { useToday } from "@features/plan/schedule/todayStore.js";
-import { useFocus } from "../store";
-import { useFocusSurface } from "../surface";
+import { toFocusMission } from "@features/plan/planner/js/plannerTasks.js";
+import { usePlanner } from "@features/plan/planner/js/plannerStore.js";
+import { useToday } from "@features/plan/schedule/js/todayStore.js";
+import { useFocus } from "../js/store";
+import { useFocusSurface } from "../js/surface";
 import FocusSession from "./FocusSession";
-import TimeBlindnessTimer from "@features/plan/legacyTools/components/TimeBlindnessTimer";
+import AwarenessTimer from "@features/focus/awareness/AwarenessTimer.jsx";
 
 export default function FocusSurface() {
   const { open, mission, close } = useFocusSurface();
@@ -44,7 +44,7 @@ export default function FocusSurface() {
         </details>
         <details className="focus-awareness-tool">
           <summary>Awareness timer</summary>
-          <TimeBlindnessTimer compact />
+          <AwarenessTimer compact />
         </details>
       </div>
     </Drawer>

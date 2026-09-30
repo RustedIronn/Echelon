@@ -1,19 +1,19 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { BarChart3, ChevronRight } from "lucide-react";
 import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
-import { useToday } from "@/features/plan/schedule/todayStore";
-import { useHabits } from "@features/habits/store.js";
-import { useFocus } from "@features/focus/store.js";
-import { getTodayWorkout } from "@features/workouts/utils.js";
-import { getWorkoutStats } from "@features/workouts/analyzer.js";
-import { useWorkout } from "@features/workouts/store.js";
-import { generateReview } from "@features/insights/review/analyzer";
-import useDailyReviews from "@features/insights/review/store";
+import { useToday } from "@/features/plan/schedule/js/todayStore";
+import { useHabits } from "@features/habits/js/store.js";
+import { useFocus } from "@features/focus/js/store.js";
+import { getTodayWorkout } from "@features/workouts/js/utils.js";
+import { getWorkoutStats } from "@features/workouts/js/analyzer.js";
+import { useWorkout } from "@features/workouts/js/store.js";
+import { generateReview } from "@features/insights/review/js/analyzer";
+import useDailyReviews from "@features/insights/review/js/store";
 
-import { computeReviewBreakdown } from "../breakdown";
-import { useComposure } from "../composureStore";
-import { countComposureChecks } from "../composure";
-import { COMPOSURE_CHECKLIST } from "../composureConstants";
+import { computeReviewBreakdown } from "../js/breakdown";
+import { useComposure } from "../js/composureStore";
+import { countComposureChecks } from "../js/composure";
+import { COMPOSURE_CHECKLIST } from "../js/composureConstants";
 import { ActionLink } from "@ui";
 
 export default function DailyReview() {

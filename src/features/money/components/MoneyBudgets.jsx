@@ -2,9 +2,9 @@ import { useState } from "react";
 
 import { Button, Card, EmptyState, ErrorState } from "@ui";
 import { getToday } from "../../../shared/date.js";
-import { calculateBudgetUsage } from "../budgets.js";
-import { useMoney } from "../store.js";
-import { formatInr } from "../transactions.js";
+import { calculateBudgetUsage } from "../js/budgets.js";
+import { useMoney } from "../js/store.js";
+import { formatInr } from "../js/transactions.js";
 
 const minorToInput = (minor) => `${Math.trunc(minor / 100)}.${String(minor % 100).padStart(2, "0")}`;
 

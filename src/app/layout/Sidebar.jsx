@@ -4,11 +4,11 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { useSync } from "@/ui/useSync";
 
-import { useAuth } from "@core/auth/store";
-import { logout } from "@core/auth/service";
+import { useAuth } from "@core/auth/authStore";
+import { logout } from "@core/auth/authRemote";
 import { desktopNavigation } from "./navigation";
-import { useFocus } from "@features/focus/store.js";
-import { useFocusSurface } from "@features/focus/surface.js";
+import { useFocus } from "@features/focus/js/store.js";
+import { useFocusSurface } from "@features/focus/js/surface.js";
 
 const navigationGroups = [
   { label: "Run the day", ids: ["today", "plan", "calendar", "habits"] },

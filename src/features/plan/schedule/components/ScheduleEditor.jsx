@@ -1,16 +1,16 @@
 import { useState } from "react";
 
-import { useSchedule } from "@/features/plan/schedule/scheduleStore";
-import { useToday } from "@/features/plan/schedule/todayStore";
+import { useSchedule } from "@/features/plan/schedule/js/scheduleStore";
+import { useToday } from "@/features/plan/schedule/js/todayStore";
 import { Card, Button } from "@ui";
-import { categories } from "../categories";
-import { getScheduleItemDuration } from "../time";
+import { categories } from "../js/scheduleCategories";
+import { getScheduleItemDuration } from "../js/scheduleTime";
 import {
   createScheduleDraft,
   getScheduleEditorKey,
   prepareScheduleCommit,
   updateScheduleDraft,
-} from "../editor";
+} from "../js/scheduleEditor";
 
 function ScheduleEditorForm({ schedule, onApply, onClose, onStatus }) {
   const [draft, setDraft] = useState(() => createScheduleDraft(schedule));

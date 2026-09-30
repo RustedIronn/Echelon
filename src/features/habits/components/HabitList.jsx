@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useHabits } from "@features/habits/store";
-import { createHabits } from "@features/habits/habits";
+import { useHabits } from "@features/habits/js/store";
+import { createHabits } from "@features/habits/js/habits";
 import { Apple, Check, Crosshair, Dumbbell, EyeOff, Moon } from "lucide-react";
 
 const presentation = {

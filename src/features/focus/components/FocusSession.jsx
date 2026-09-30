@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFocus } from "@features/focus/store";
+import { useFocus } from "@features/focus/js/store";
 import { Button } from "@ui";
 
 export default function FocusSession({ mission }) {

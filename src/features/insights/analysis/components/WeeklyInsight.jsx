@@ -1,5 +1,5 @@
 import { generateWeeklyInsights, getCurrentWeekReviews } from "../insights";
-import useDailyReviews from "@features/insights/review/store.js";
+import useDailyReviews from "@features/insights/review/js/store.js";
 import { getLocalWeekRange, getToday, parseDayKey } from "@/shared/date";
 
 export default function WeeklyInsight() {

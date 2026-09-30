@@ -1,7 +1,7 @@
 import ResetDay from "@features/plan/schedule/components/ResetDay.jsx";
 import PageTitle from "@ui/PageTitle";
 import NotificationSettings from "@features/notifications/components/NotificationSettings.jsx";
-import ResetMode from "@features/plan/legacyTools/components/ResetMode";
+import ResetMode from "@features/settings/reset/ResetMode";
 import MoneyCategorySettings from "@features/money/components/MoneyCategorySettings.jsx";
 import DesktopSettings from "@/desktop/DesktopSettings";
 import { isDesktop } from "@/desktop/environment";

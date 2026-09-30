@@ -45,7 +45,7 @@ ownership is directional only.
 | Application shell | `src/app/layout/Layout.jsx` | `app/shell/AppShell.jsx` |
 | Desktop/mobile navigation and navigation metadata | `src/app/layout/*` | `app/shell/*` |
 | Global sync and day rollover | `src/hooks/useEchelonSync.js`, `src/hooks/useDayRollover.js` | `app/runtime/*` |
-| Reminder scheduling | `src/features/notifications/useNotificationScheduler.js` | App runtime using Notifications API |
+| Reminder scheduling | `src/features/notifications/js/useNotificationScheduler.js` | App runtime using Notifications API |
 | Tauri application bridge | `src/desktop/bridge.js` | App runtime; low-level Tauri remains platform-owned |
 
 ## Route map
@@ -55,7 +55,7 @@ ownership is directional only.
 | `/` | `src/features/today/Today.jsx` | Schedule daily state, Planner, Focus surface | `dashboard/execution.js` | source domains | `dashboard/dashboard.css` | Today |
 | `/plan/schedule` | `src/features/plan/schedule/Schedule.jsx` | Schedule + daily Schedule stores | Schedule defaults/editor/time | `echelon_schedule`, `echelon_today`; Schedule Firestore docs | `schedule/schedule.css` | Plan / Schedule |
 | `/plan/planner/*` | `pages/Planner.jsx` → `planner/components/PlannerWorkspace.jsx` | Planner store | `planner/tasks.js` | `echelon_planner_v1` | `planner/planner.css` | Plan / Planner |
-| `/plan/notes` | `tools/components/NotesWorkspace.jsx` | Tools + Planner stores | Notes and Breakdowns domains | `echelon_tools_v1` | `tools/tools.css` | Plan / Notes |
+| `/plan/notes` | `plan/notes/NotesWorkspace.jsx` | Tools + Planner stores | Notes and Breakdowns domains | `echelon_tools_v1` | `tools/tools.css` | Plan / Notes |
 | `/calendar` | `pages/Calendar.jsx` → `calendar/components/CalendarView.jsx` | Source domain stores | Calendar events/month | Derived only | `calendar/calendar.css` | Calendar |
 | `/habits` | `pages/Habits.jsx` | Habits store | `habits/habits.js` | `echelon_habits`; `habits/{date}` | `habits/habits.css` | Habits |
 | `/focus` | `focus/components/FocusCompatibility.jsx` | Focus + Focus surface stores | Focus runtime/missions/sessions | `echelon_focus`; `focusSessions/{id}` | `focus/focus.css` | Focus compatibility |

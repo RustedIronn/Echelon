@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 
 import { getToday } from "@/shared/date";
-import { workouts } from "../constants";
-import { shiftWorkoutPlanDate } from "../utils";
+import { workouts } from "../js/constants";
+import { shiftWorkoutPlanDate } from "../js/utils";
 
 const weekdays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 

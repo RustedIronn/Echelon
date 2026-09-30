@@ -1,9 +1,9 @@
 import { Button, Card } from "@ui";
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 import {
   deriveCurrentExerciseState,
   derivePreviousPerformance,
-} from "../tracking";
+} from "../js/tracking";
 
 const formatPreviousSet = (set) =>
   set.weight === null

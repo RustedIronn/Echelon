@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import WeeklyInsight from "@features/insights/analysis/components/WeeklyInsight.jsx";
 import { getCurrentWeekReviews } from "@features/insights/analysis/insights.js";
-import useDailyReviews from "@features/insights/review/store.js";
+import useDailyReviews from "@features/insights/review/js/store.js";
 import { formatDayKey } from "@/shared/date";
 
 export default function InsightsOverview() {

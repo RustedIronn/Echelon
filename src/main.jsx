@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Root from "./app/Root";
-import { useAuth } from "@core/auth/store";
+import { useAuth } from "@core/auth/authStore";
 import { migrateStorage } from "@/shared/storage";
 import { startDesktopBridge } from "@/desktop/bridge";
 

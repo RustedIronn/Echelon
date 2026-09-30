@@ -2,17 +2,17 @@ import { useEffect } from "react";
 
 import { useSync } from "@/ui/useSync";
 
-import { useAuth } from "@core/auth/store";
-import { useSchedule } from "@/features/plan/schedule/scheduleStore";
-import { useToday } from "@/features/plan/schedule/todayStore";
-import { useHabits } from "@features/habits/store.js";
-import { useFocus } from "@features/focus/store.js";
-import { useWorkout } from "@features/workouts/store.js";
+import { useAuth } from "@core/auth/authStore";
+import { useSchedule } from "@/features/plan/schedule/js/scheduleStore";
+import { useToday } from "@/features/plan/schedule/js/todayStore";
+import { useHabits } from "@features/habits/js/store.js";
+import { useFocus } from "@features/focus/js/store.js";
+import { useWorkout } from "@features/workouts/js/store.js";
 import {
   bindMoneyBackgroundRecovery,
   startMoneyBackgroundSync,
   stopMoneyBackgroundSync,
-} from "@features/money/backgroundSync.js";
+} from "@features/money/js/backgroundSync.js";
 
 export default function useEchelonSync() {
   const { user } = useAuth();

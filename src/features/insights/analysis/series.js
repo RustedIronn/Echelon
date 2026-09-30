@@ -1,7 +1,7 @@
 import { getLocalWeekRange, getToday, parseDayKey } from "@/shared/date";
-import { normalizeReviews } from "@features/insights/review/reviews";
-import { normalizeFocusSessions } from "@features/focus/utils";
-import { mergeWorkoutHistories } from "@features/workouts/workoutStorage";
+import { normalizeReviews } from "@features/insights/review/js/reviews";
+import { normalizeFocusSessions } from "@features/focus/js/utils";
+import { mergeWorkoutHistories } from "@features/workouts/js/workoutStorage";
 
 const average = (values) => values.length
   ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)

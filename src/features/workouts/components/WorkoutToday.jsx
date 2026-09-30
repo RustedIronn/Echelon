@@ -3,24 +3,24 @@ import { useSearchParams } from "react-router-dom";
 
 import { Card, Button, EmptyState } from "@ui";
 
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 import {
   getDefaultWorkoutPlanDate,
   getWorkoutDuration,
   getWorkoutForDate,
   shiftWorkoutPlanDate,
-} from "@features/workouts/utils";
+} from "@features/workouts/js/utils";
 import { DAY_ROLLOVER_EVENT } from "@/shared/dayRollover";
 import { isValidDayKey } from "@/shared/date";
 
 import WorkoutSession from "./WorkoutSession";
 import WorkoutStats from "./WorkoutStats";
-import { formatWorkoutDate } from "../history";
+import { formatWorkoutDate } from "../js/history";
 import {
   deriveCurrentExerciseState,
   WORKOUT_TRACKING_VERSION,
-} from "../tracking";
-import { WORKOUT_RUNNER_VERSION } from "../runner";
+} from "../js/tracking";
+import { WORKOUT_RUNNER_VERSION } from "../js/runner";
 
 function WorkoutTodayContent({ initialDate }) {
   const [today, setToday] = useState(() => getDefaultWorkoutPlanDate());

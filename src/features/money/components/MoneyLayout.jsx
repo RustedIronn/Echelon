@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 
 import { PageTitle, Stage, Subnav } from "@ui";
-import { useMoney } from "../store.js";
+import { useMoney } from "../js/store.js";
 
 const sections = [
   { label: "Overview", path: "/money", end: true },

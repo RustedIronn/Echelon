@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 
 import { PageTitle, Subnav } from "@ui";
-import { useComposure } from "../composureStore.js";
+import { useComposure } from "../js/composureStore.js";
 
 const sections = [
   { label: "Daily", path: "/review", end: true },

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 import { Card, Button } from "@ui";
 
-import { getTodayWorkout } from "@features/workouts/utils";
+import { getTodayWorkout } from "@features/workouts/js/utils";
 
 export default function TodayWorkout() {
   const navigate = useNavigate();

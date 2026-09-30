@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useToday } from "@/features/plan/schedule/todayStore";
+import { useToday } from "@/features/plan/schedule/js/todayStore";
 import { Button } from "@ui";
 
 export default function ResetDay() {

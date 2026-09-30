@@ -1,5 +1,5 @@
 import AppRoot from "./AppRoot";
-import { useAuth } from "@core/auth/store";
+import { useAuth } from "@core/auth/authStore";
 import Login from "@core/auth/components/Login";
 import { LoadingState } from "@ui";
 import DesktopTitleBar from "@/desktop/DesktopTitleBar";

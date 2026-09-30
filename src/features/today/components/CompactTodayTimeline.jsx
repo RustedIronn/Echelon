@@ -1,5 +1,5 @@
 import { Card, EmptyState, PanelHeader } from "@ui";
-import { getMissionQueue, getPrimaryMission } from "@features/focus/missions.js";
+import { getMissionQueue, getPrimaryMission } from "@features/focus/js/missions.js";
 import TodayTaskRow from "./TodayTaskRow";
 
 export default function CompactTodayTimeline({ tasks, onFocus, onToggle }) {

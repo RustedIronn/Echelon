@@ -32,13 +32,13 @@ import {
 import {
   getWorkoutStats,
   getWorkoutStreak,
-} from "../src/features/workouts/analyzer.js";
+} from "../src/features/workouts/js/analyzer.js";
 import {
   mergeWorkoutHistories,
   normalizeWorkoutHistory,
   normalizeWorkoutProgress,
   progressFields,
-} from "../src/features/workouts/workoutStorage.js";
+} from "../src/features/workouts/js/workoutStorage.js";
 import {
   advanceExercise,
   completeTrackedSetState,
@@ -47,11 +47,11 @@ import {
   createWorkoutStartState,
   restartTrackedRestState,
   skipTrackedRestState,
-} from "../src/features/workouts/state.js";
+} from "../src/features/workouts/js/state.js";
 import {
   advanceWorkoutRunner,
   runnerStateFields,
-} from "../src/features/workouts/runner.js";
+} from "../src/features/workouts/js/runner.js";
 import {
   addTrackingSet,
   completeTrackingSet,
@@ -64,19 +64,19 @@ import {
   reopenTrackingSet,
   updateTrackingNotes,
   updateTrackingSetValue,
-} from "../src/features/workouts/tracking.js";
+} from "../src/features/workouts/js/tracking.js";
 import {
   getAdjacentWorkoutDates,
   getCalendarMonth,
   groupWorkoutHistoryByDate,
   shiftCalendarMonth,
   sortWorkoutHistory,
-} from "../src/features/workouts/history.js";
+} from "../src/features/workouts/js/history.js";
 import {
   getDefaultWorkoutPlanDate,
   getWorkoutForDate,
   shiftWorkoutPlanDate,
-} from "../src/features/workouts/utils.js";
+} from "../src/features/workouts/js/utils.js";
 import {
   compareLatestExerciseSessions,
   computeExercisePRs,
@@ -85,7 +85,7 @@ import {
   getTrackedProgressSummary,
   getWeeklyTrackedAggregates,
   groupTrackedPerformanceByExercise,
-} from "../src/features/workouts/insights.js";
+} from "../src/features/workouts/js/insights.js";
 import {
   getFocusDayKey,
   getFocusMinutesForDay,
@@ -94,7 +94,7 @@ import {
   getTodayFocusTime,
   normalizeFocusSessions,
   mergeFocusSessions,
-} from "../src/features/focus/utils.js";
+} from "../src/features/focus/js/utils.js";
 import {
   createFocusOwnerState,
   deriveFocusElapsedSeconds,
@@ -103,9 +103,9 @@ import {
   refreshFocusRuntime,
   resumeFocusRuntime,
   startFocusRuntime,
-} from "../src/features/focus/runtime.js";
-import { hasMatchingOwnership } from "../src/core/auth/ownership.js";
-import { createAuthTransitionController } from "../src/core/auth/transition.js";
+} from "../src/features/focus/js/runtime.js";
+import { hasMatchingOwnership } from "../src/core/auth/authOwnership.js";
+import { createAuthTransitionController } from "../src/core/auth/authTransition.js";
 import {
   createSyncSourceState,
   deriveSyncStatus,
@@ -116,19 +116,19 @@ import {
   mobileMoreNavigation,
   mobilePrimaryNavigation,
 } from "../src/app/layout/navigation.js";
-import { HABIT_DEFINITIONS } from "../src/features/habits/constants.js";
+import { HABIT_DEFINITIONS } from "../src/features/habits/js/constants.js";
 import {
   createHabits,
   normalizeHabitDocument,
   normalizeHabitRecords,
   toggleHabitById,
-} from "../src/features/habits/habits.js";
+} from "../src/features/habits/js/habits.js";
 import {
   loadHabitDocument,
   saveHabitDocument,
-} from "../src/features/habits/storage.js";
-import { generateReview } from "../src/features/insights/review/analyzer.js";
-import { computeReviewBreakdown } from "../src/features/insights/review/breakdown.js";
+} from "../src/features/habits/js/storage.js";
+import { generateReview } from "../src/features/insights/review/js/analyzer.js";
+import { computeReviewBreakdown } from "../src/features/insights/review/js/breakdown.js";
 import {
   normalizeReview,
   normalizeReviews,
@@ -136,8 +136,8 @@ import {
   resolveReviewConflict,
   reviewsHaveEqualContent,
   upsertReview,
-} from "../src/features/insights/review/reviews.js";
-import { createReviewSyncController } from "../src/features/insights/review/sync.js";
+} from "../src/features/insights/review/js/reviews.js";
+import { createReviewSyncController } from "../src/features/insights/review/js/sync.js";
 import {
   averageChecklistCompletion,
   averageComposureRating,
@@ -151,30 +151,30 @@ import {
   normalizeComposureReviews,
   sortComposureHistory,
   upsertComposureReview,
-} from "../src/features/insights/review/composure.js";
+} from "../src/features/insights/review/js/composure.js";
 import {
   createEmptyComposureDocument,
   loadComposureDocument,
   normalizeComposureDocument,
   saveComposureDocument,
-} from "../src/features/insights/review/composureStorage.js";
+} from "../src/features/insights/review/js/composureStorage.js";
 import {
   COMPOSURE_CHECKLIST,
   COMPOSURE_STORAGE_KEY,
-} from "../src/features/insights/review/composureConstants.js";
+} from "../src/features/insights/review/js/composureConstants.js";
 import {
   isValidSchedule,
   normalizeDailyTasks,
   normalizeSchedule,
   normalizeScheduleItems,
   schedule as defaultSchedule,
-} from "../src/features/plan/schedule/constants.js";
+} from "../src/features/plan/schedule/js/scheduleDefaults.js";
 import {
   createScheduleDraft,
   getScheduleEditorKey,
   prepareScheduleCommit,
   updateScheduleDraft,
-} from "../src/features/plan/schedule/editor.js";
+} from "../src/features/plan/schedule/js/scheduleEditor.js";
 import {
   generateWeeklyInsights,
   getCurrentWeekReviews,
@@ -186,21 +186,21 @@ import {
   deriveScheduleReminders,
   isWithinQuietHours,
   planReminders,
-} from "../src/features/notifications/utils.js";
-import { createReminderScheduler } from "../src/features/notifications/scheduler.js";
+} from "../src/features/notifications/js/utils.js";
+import { createReminderScheduler } from "../src/features/notifications/js/scheduler.js";
 import {
   canUseBrowserNotifications,
   getNotificationPermission,
   requestNotificationPermission,
-} from "../src/features/notifications/permissions.js";
+} from "../src/features/notifications/js/permissions.js";
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   REMINDER_GRACE_MS,
-} from "../src/features/notifications/constants.js";
+} from "../src/features/notifications/js/constants.js";
 import {
   DEFAULT_CATEGORIES,
   MONEY_STORAGE_KEY,
-} from "../src/features/money/constants.js";
+} from "../src/features/money/js/constants.js";
 import {
   addTransaction as addMoneyTransaction,
   createTransaction,
@@ -210,29 +210,29 @@ import {
   formatInr,
   parseMoneyToMinor,
   sortTransactions,
-} from "../src/features/money/transactions.js";
+} from "../src/features/money/js/transactions.js";
 import {
   addCustomCategory,
   deleteCustomCategory,
   getCategoryDeletionState,
   normalizeCategories,
-} from "../src/features/money/categories.js";
+} from "../src/features/money/js/categories.js";
 import {
   calculateBudgetUsage,
   setMonthlyBudget,
-} from "../src/features/money/budgets.js";
+} from "../src/features/money/js/budgets.js";
 import {
   addGoal as addMoneyGoal,
   createGoal as createMoneyGoal,
   deleteGoal as deleteMoneyGoal,
   editGoal as editMoneyGoal,
   getGoalProgress,
-} from "../src/features/money/goals.js";
+} from "../src/features/money/js/goals.js";
 import {
   aggregateLedger,
   monthlyLedger,
   spendingByCategory,
-} from "../src/features/money/analytics.js";
+} from "../src/features/money/js/analytics.js";
 import {
   createNextMoneyDocument,
   createEmptyMoneyDocument,
@@ -243,11 +243,11 @@ import {
   normalizeMoneyDocument,
   saveMoneyDocument,
   selectMoneySource,
-} from "../src/features/money/storage.js";
+} from "../src/features/money/js/storage.js";
 import {
   bindMoneyRecoveryEvents,
   createMoneySyncController,
-} from "../src/features/money/syncController.js";
+} from "../src/features/money/js/syncController.js";
 import {
   addToolTask,
   completeToolTask,
@@ -257,12 +257,12 @@ import {
   moveToolTask,
   normalizeToolTasks,
   reorderLaneTask,
-} from "../src/features/plan/legacyTools/tasks.js";
+} from "../src/features/plan/legacyTools/js/tasks.js";
 import {
   addBrainDumpItems,
   createBrainDumpItems,
   promoteBrainDumpItem,
-} from "../src/features/plan/legacyTools/brainDump.js";
+} from "../src/features/plan/legacyTools/js/brainDump.js";
 import {
   addBreakdown,
   addBreakdownStep,
@@ -272,7 +272,7 @@ import {
   reorderBreakdownStep,
   sendBreakdownStepToLane,
   toggleBreakdownStep,
-} from "../src/features/plan/legacyTools/breakdowns.js";
+} from "../src/features/plan/breakdowns/breakdowns.js";
 import {
   deriveAwarenessTimer,
   finishAwarenessTimer,
@@ -280,14 +280,14 @@ import {
   pauseAwarenessTimer,
   resumeAwarenessTimer,
   startAwarenessTimer,
-} from "../src/features/plan/legacyTools/timer.js";
+} from "../src/features/focus/awareness/awarenessTimer.js";
 import {
   createEmptyToolsDocument,
   loadToolsDocument,
   normalizeToolsDocument,
   saveToolsDocument,
-} from "../src/features/plan/legacyTools/storage.js";
-import { TOOLS_STORAGE_KEY } from "../src/features/plan/legacyTools/constants.js";
+} from "../src/features/plan/legacyTools/js/storage.js";
+import { TOOLS_STORAGE_KEY } from "../src/features/plan/legacyTools/js/constants.js";
 
 const memory = new Map();
 
@@ -2508,11 +2508,11 @@ test("legacy workout completions remain valid without plan origin metadata", () 
 
 test("workout store imports only authoritative workoutStorage exports", () => {
   const storeSource = readFileSync(
-    new URL("../src/features/workouts/store.js", import.meta.url),
+    new URL("../src/features/workouts/js/store.js", import.meta.url),
     "utf8",
   );
   const storageSource = readFileSync(
-    new URL("../src/features/workouts/workoutStorage.js", import.meta.url),
+    new URL("../src/features/workouts/js/workoutStorage.js", import.meta.url),
     "utf8",
   );
   const storageImport = storeSource.match(
@@ -3830,7 +3830,7 @@ test("untouched Money defaults are not treated as syncable local source data", (
 test("mounted money store switches all slices atomically across owners", async () => {
   memory.clear();
   setStorageOwner(null);
-  const { useMoney } = await import("../src/features/money/store.js");
+  const { useMoney } = await import("../src/features/money/js/store.js");
 
   setStorageOwner("mounted-money-a");
   assert.equal(
@@ -4666,8 +4666,8 @@ test("tools persistence rejects pre-auth writes and malformed scoped JSON", () =
 test("mounted tools store switches every persisted slice across accounts", async () => {
   memory.clear();
   setStorageOwner(null);
-  const { useAuth } = await import("../src/core/auth/state.js");
-  const { useTools } = await import("../src/features/plan/legacyTools/store.js");
+  const { useAuth } = await import("../src/core/auth/authState.js");
+  const { useTools } = await import("../src/features/plan/legacyTools/js/store.js");
 
   assert.equal(useTools.getState().addTask({ text: "No owner", lane: "now" }), false);
 
@@ -4921,7 +4921,7 @@ test("mounted Composure store isolates A to B to A account transitions", async (
   memory.clear();
   setStorageOwner(null);
   const { useComposure } = await import(
-    "../src/features/insights/review/composureStore.js"
+    "../src/features/insights/review/js/composureStore.js"
   );
   assert.equal(useComposure.getState().saveToday(composureInput("2026-09-16")), false);
 

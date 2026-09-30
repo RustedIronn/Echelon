@@ -4,8 +4,8 @@ import { MoreVertical, Plus } from "lucide-react";
 
 import { Button, Card, ContextMenu, Drawer, EmptyState, ErrorState, PanelHeader } from "@ui";
 import { formatDayKey, getToday } from "../../../shared/date.js";
-import { useMoney } from "../store.js";
-import { createMoneyId, filterTransactions, formatInr, minorToInput } from "../transactions.js";
+import { useMoney } from "../js/store.js";
+import { createMoneyId, filterTransactions, formatInr, minorToInput } from "../js/transactions.js";
 
 const newDraft = (categories, type = "expense") => ({
   type, amount: "", categoryId: categories.find((category) => category.type === type)?.id ?? "",

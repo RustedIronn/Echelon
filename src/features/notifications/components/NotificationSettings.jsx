@@ -1,8 +1,8 @@
 import { Card, Button } from "@ui";
 import { useToast } from "@/ui/useToast";
-import { useNotifications } from "../store";
-import { PERMISSION_STATES } from "../permissions";
-import { REMINDER_LEAD_OPTIONS } from "../constants";
+import { useNotifications } from "../js/store";
+import { PERMISSION_STATES } from "../js/permissions";
+import { REMINDER_LEAD_OPTIONS } from "../js/constants";
 import { isDesktop } from "../../../desktop/environment";
 
 const permissionLabels = {

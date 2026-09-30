@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
-import { useAuth } from "@core/auth/store";
+import { useAuth } from "@core/auth/authStore";
 import { getStorageOwner } from "@/shared/storage";
-import { usePlanner } from "@features/plan/planner/store";
-import { useTools } from "./store";
+import { usePlanner } from "@features/plan/planner/js/plannerStore";
+import { useTools } from "./js/store";
 
 // A source item is marked only after its deterministic Planner copy persisted.
 // Retain the legacy record as read-only compatibility data, not an active queue.

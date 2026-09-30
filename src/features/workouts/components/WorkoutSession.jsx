@@ -1,15 +1,15 @@
 import { useEffect } from "react";
 
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 
 import { Card, Button } from "@ui";
 import TrackedWorkoutSession from "./TrackedWorkoutSession";
 import RunnerWorkoutSession from "./RunnerWorkoutSession";
-import { WORKOUT_RUNNER_VERSION } from "../runner";
+import { WORKOUT_RUNNER_VERSION } from "../js/runner";
 import {
   getTrackingMetrics,
   WORKOUT_TRACKING_VERSION,
-} from "../tracking";
+} from "../js/tracking";
 
 export default function WorkoutSession() {
   const {

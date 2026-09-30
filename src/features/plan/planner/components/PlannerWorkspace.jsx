@@ -4,16 +4,16 @@ import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide
 
 import { Button, Card, ContextMenu, EmptyState, PageTitle, PanelHeader, Stage } from "@ui";
 import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
-import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../constants";
-import { usePlanner } from "../store";
+import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../js/plannerDefaults";
+import { usePlanner } from "../js/plannerStore";
 import {
   createPlannerId,
   getPlannerTasksForView,
   shiftPlannerDate,
   toFocusMission,
-} from "../tasks";
-import { useFocusSurface } from "@features/focus/surface";
-import BreakdownPanel from "@features/plan/legacyTools/components/BreakdownPanel";
+} from "../js/plannerTasks";
+import { useFocusSurface } from "@features/focus/js/surface";
+import BreakdownPanel from "@features/plan/breakdowns/BreakdownPanel";
 
 const getView = (pathname) => {
   if (pathname.endsWith("/today")) return "today";

@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 import { Button, Card, EmptyState, ErrorState } from "@ui";
-import { DEFAULT_CATEGORY_IDS } from "../constants.js";
-import { getCategoryDeletionState } from "../categories.js";
-import { useMoney } from "../store.js";
+import { DEFAULT_CATEGORY_IDS } from "../js/constants.js";
+import { getCategoryDeletionState } from "../js/categories.js";
+import { useMoney } from "../js/store.js";
 
 export default function MoneyCategorySettings() {
   const { data, addCategory, deleteCategory } = useMoney();

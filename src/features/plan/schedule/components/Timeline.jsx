@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import TimelineItem from "./TimelineItem";
-import { categories } from "../categories";
-import { getCurrentScheduleItem, getScheduleMinutes } from "../time";
+import { categories } from "../js/scheduleCategories";
+import { getCurrentScheduleItem, getScheduleMinutes } from "../js/scheduleTime";
 
 export default function Timeline({ tasks, toggleTask, onFocus }) {
   const [now, setNow] = useState(() => new Date());

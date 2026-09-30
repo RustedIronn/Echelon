@@ -1,13 +1,13 @@
 import { Link, useParams } from "react-router-dom";
 
 import { Card, EmptyState } from "@ui";
-import { useWorkout } from "@features/workouts/store";
-import { formatWorkoutDate } from "../history";
+import { useWorkout } from "@features/workouts/js/store";
+import { formatWorkoutDate } from "../js/history";
 import {
   compareLatestExerciseSessions,
   computeExercisePRs,
   getExercisePerformance,
-} from "../insights";
+} from "../js/insights";
 
 const formatSet = (set) =>
   set.weight === null

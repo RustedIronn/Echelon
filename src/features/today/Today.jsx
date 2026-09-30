@@ -1,12 +1,12 @@
-import { useToday } from "@/features/plan/schedule/todayStore";
+import { useToday } from "@/features/plan/schedule/js/todayStore";
 import { PageTitle, Stage } from "@ui";
 import CurrentMission from "@features/focus/components/CurrentMission.jsx";
-import { useFocusSurface } from "@features/focus/surface.js";
+import { useFocusSurface } from "@features/focus/js/surface.js";
 import CompactTodayTimeline from "@features/today/components/CompactTodayTimeline.jsx";
 import NextUp from "@features/today/components/NextUp.jsx";
 import TodaySummaries from "@features/today/components/TodaySummaries.jsx";
 import { getTodayExecution } from "@features/today/execution.js";
-import { usePlanner } from "@features/plan/planner/store.js";
+import { usePlanner } from "@features/plan/planner/js/plannerStore.js";
 
 export default function Today() {
   const { tasks, toggleTask } = useToday();

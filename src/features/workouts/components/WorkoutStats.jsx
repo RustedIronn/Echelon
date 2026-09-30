@@ -1,9 +1,9 @@
 import { Card } from "@ui";
 import { Activity } from "lucide-react";
 
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 
-import { getWorkoutStats, getWorkoutStreak } from "@features/workouts/analyzer";
+import { getWorkoutStats, getWorkoutStreak } from "@features/workouts/js/analyzer";
 
 export default function WorkoutStats() {
   const workouts = useWorkout((state) => state.sessions);

@@ -1,4 +1,4 @@
-import { useAuth } from "./auth/store";
+import { useAuth } from "./auth/authStore";
 import { useSync } from "../ui/useSync";
 import { getStorageOwner } from "../shared/storage";
 

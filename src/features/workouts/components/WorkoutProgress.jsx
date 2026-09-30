@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 import { Activity } from "lucide-react";
 
 import { Card } from "@ui";
-import { useWorkout } from "@features/workouts/store";
+import { useWorkout } from "@features/workouts/js/store";
 import {
   getTrackedProgressSummary,
   getWeeklyTrackedAggregates,
-} from "../insights";
-import { normalizeCompletedRunnerSummary } from "../runner";
-import { formatWorkoutDate, formatWorkoutDuration } from "../history";
-import { getWorkoutStats, getWorkoutStreak } from "../analyzer";
+} from "../js/insights";
+import { normalizeCompletedRunnerSummary } from "../js/runner";
+import { formatWorkoutDate, formatWorkoutDuration } from "../js/history";
+import { getWorkoutStats, getWorkoutStreak } from "../js/analyzer";
 
 const exercisePath = (exerciseId) =>
   `/workouts/progress/exercise/${encodeURIComponent(exerciseId)}`;

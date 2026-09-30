@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { loginWithGoogle } from "../service";
+import { loginWithGoogle } from "../authRemote";
 import { Button } from "@ui";
 import { DESKTOP_AUTH_STATUS_EVENT, isDesktop } from "@/desktop/environment";
 import { cancelDesktopGoogleLogin } from "@/desktop/auth";
