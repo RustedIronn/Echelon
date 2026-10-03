@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { Card, Button, EmptyState } from "@ui";
+import { Button, EmptyState } from "@ui";
 
 import { useWorkout } from "@features/workouts/js/store";
 import {
@@ -71,7 +71,7 @@ function WorkoutTodayContent({ initialDate }) {
 
   return (
     <div className="stack workout-today">
-      <Card material="feature" shape="slab" className="workout-plan-console">
+      <section className="workout-plan-console" aria-label="Selected workout">
         <nav className="workout-plan-date-nav" aria-label="Workout plan date">
           <Button variant="secondary" onClick={() => moveSelectedDate(-1)}>← Previous</Button>
           <div><strong>{formatWorkoutDate(selectedDate)}</strong>{selectedDate !== today ? <Button variant="ghost" onClick={() => setSelectedDate(today)}>Today</Button> : null}</div>
@@ -105,7 +105,7 @@ function WorkoutTodayContent({ initialDate }) {
             )}
           </div>
         </div>
-      </Card>
+      </section>
 
       {workout ? <ExerciseSequence workout={workout} /> : null}
       <WorkoutStats />
@@ -117,10 +117,10 @@ function ExerciseSequence({ workout }) {
   return (
     <section className="workout-exercise-list">
       <header><h2>Exercises</h2><span>{workout.exercises.length} in sequence</span></header>
-      <div className="stack">
+      <div className="workout-exercise-path">
         {workout.exercises.map((exercise, index) => (
           <article className="exercise-card" key={exercise.name}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
+            <span className="exercise-step">{String(index + 1).padStart(2, "0")}</span>
             <div>
               <h3>{exercise.name}</h3>
               <p>{exercise.mode === "manual" ? "Complete manually" : `${exercise.workSeconds ?? exercise.duration}s ${exercise.mode === "hold" ? "hold" : exercise.mode === "duration" ? "activity" : "work"}`} {" • "} {exercise.restSeconds ?? exercise.rest}s rest</p>

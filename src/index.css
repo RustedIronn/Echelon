@@ -15,7 +15,9 @@
 @import "./features/notifications/notifications.css";
 @import "./features/money/money.css";
 @import "./features/plan/legacyTools/tools.css";
+@import "./features/plan/plan.css";
 @import "./features/plan/planner/planner.css";
+@import "./features/plan/notes/notes.css";
 @import "./features/calendar/calendar.css";
 
 /* Shared component contracts load after feature layouts so controls remain coherent. */

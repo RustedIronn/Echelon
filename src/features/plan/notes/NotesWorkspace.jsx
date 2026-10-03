@@ -94,28 +94,31 @@ export default function NotesWorkspace() {
   const select = (id) => setParams(id ? { note: id } : {});
 
   return <div className="notes-workspace">
+    <header className="notes-capture-deck">
+      <div><span>Capture</span><h2>Keep the thought before it turns into a task.</h2></div>
+      <form className="notes-capture" onSubmit={(event) => {
+        event.preventDefault();
+        if (!addNote({ title, body }, { id: draftId })) { setMessage("Add a title or body before saving."); return; }
+        const id = draftId;
+        setTitle(""); setBody(""); setDraftId(createToolsId("note")); setMessage(""); select(id);
+      }}>
+        <label><span>Quick capture</span><input ref={captureInput} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title or first thought" /></label>
+        <label className="notes-capture__body"><span>Note body</span><textarea rows="2" value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write as much as you need…" /></label>
+        <Button type="submit">Save</Button>
+      </form>
+      {message ? <p role="status">{message}</p> : null}
+    </header>
     <SplitPane className={`notes-workspace__columns ${selected ? "has-selection" : ""}`}>
       <aside className="notes-list" aria-label="Browse notes">
-        <div className="notes-list__heading"><div><h2>Notes</h2><p>Active and archived notes</p></div><strong>{visible.length}</strong></div>
-        <form className="notes-capture" onSubmit={(event) => {
-          event.preventDefault();
-          if (!addNote({ title, body }, { id: draftId })) { setMessage("Add a title or body before saving."); return; }
-          const id = draftId;
-          setTitle(""); setBody(""); setDraftId(createToolsId("note")); setMessage(""); select(id);
-        }}>
-          <label><span>Quick capture</span><input ref={captureInput} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title or first thought" /></label>
-          <label className="notes-capture__body"><span>Note body</span><textarea rows="2" value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write as much as you need…" /></label>
-          <Button type="submit">Save</Button>
-        </form>
-        {message ? <p role="status">{message}</p> : null}
+        <div className="notes-list__heading"><div><h2>Notes</h2><p>Capture, keep, or turn into a plan.</p></div><strong>{visible.length}</strong></div>
         <div className="notes-list__filters">
           <label><span className="sr-only">Search notes</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search notes" /></label>
           <label><span className="sr-only">Show</span><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="active">Active</option><option value="archived">Archived</option><option value="all">All</option></select></label>
         </div>
-        {visible.length ? <div className="notes-list__items">{visible.map((note) => <button type="button" key={note.id} className={selectedId === note.id ? "is-selected" : ""} onClick={() => select(note.id)}><strong>{note.title}</strong><small>{note.body.slice(0, 120) || "No body"}</small></button>)}</div> : <EmptyState compact title="No notes here" description="Capture a thought or change the filter." />}
+        {visible.length ? <div className="notes-list__items">{visible.map((note, index) => <button type="button" key={note.id} className={selectedId === note.id ? "is-selected" : ""} style={{ "--note-tilt": `${(index % 3 - 1) * .35}deg` }} onClick={() => select(note.id)}><span className="notes-list__note-mark" aria-hidden="true" /><strong>{note.title}</strong><small>{note.body.slice(0, 120) || "No body"}</small></button>)}</div> : <EmptyState compact title="No notes here" description="Capture a thought when you need to keep it." />}
       </aside>
       <section className="notes-detail" aria-label="Selected note">
-        {selected ? <div key={selected.id} className="notes-detail__content"><NoteEditor note={selected} onClose={() => select(null)} /></div> : <div className="notes-detail__welcome"><h2>Select a note</h2><p>Edit it, create a Planner task, or add a breakdown.</p></div>}
+        {selected ? <div key={selected.id} className="notes-detail__content"><NoteEditor note={selected} onClose={() => select(null)} /></div> : <div className="notes-detail__welcome"><h2>Open a note</h2><p>Your writing stays here until you decide it belongs in a plan.</p></div>}
       </section>
     </SplitPane>
     {orphanedBreakdowns.length ? <details className="notes-legacy-breakdowns" open={params.get("legacyBreakdowns") === "1"}>

@@ -166,6 +166,22 @@ export function getPlannerTasksForView(tasks, view, now = new Date()) {
   });
 }
 
+// The planner is a scheduling workspace first. Legacy view routes still use
+// the narrower selector above, while the primary surface keeps one ordered
+// stream so dates and times, rather than a lane, determine what appears next.
+export function getPlannerTasksBySchedule(tasks) {
+  return [...tasks].sort((left, right) => {
+    if (Boolean(left.completedAt) !== Boolean(right.completedAt)) return left.completedAt ? 1 : -1;
+    const leftDate = left.date ?? "9999-12-31";
+    const rightDate = right.date ?? "9999-12-31";
+    if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+    if ((left.time ?? "99:99") !== (right.time ?? "99:99")) return (left.time ?? "99:99").localeCompare(right.time ?? "99:99");
+    const rank = { high: 0, normal: 1, low: 2 };
+    if (rank[left.priority] !== rank[right.priority]) return rank[left.priority] - rank[right.priority];
+    return left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id);
+  });
+}
+
 export function getTodayPlannerTasks(tasks, now = new Date()) {
   return getPlannerTasksForView(tasks, "today", now);
 }

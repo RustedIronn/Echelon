@@ -54,7 +54,7 @@ export default function DailyReview() {
       <div className="daily-review-workspace__columns">
         <section className="daily-review-main" aria-label="Daily execution review">
           <div className="daily-review-summary"><strong>{displayed.score}%</strong><span>Execution score<br /><small>Tasks · Habits · Focus · Workout</small></span></div>
-          {displayed.breakdown?.length ? <section className="review-contribution"><div className="section-header"><h2>What contributed</h2><p>Existing execution-score components, shown separately.</p></div><div className="review-breakdown">{displayed.breakdown.map((item) => <div key={item.label}><strong>{item.value}%</strong><span>{item.label}</span></div>)}</div></section> : <p>Contribution details were not stored for this older review.</p>}
+          {displayed.breakdown?.length ? <section className="review-contribution"><div className="section-header"><h2>What contributed</h2></div><div className="review-breakdown">{displayed.breakdown.map((item) => <div key={item.label}><strong>{item.value}%</strong><span>{item.label}</span></div>)}</div></section> : <p>Contribution details were not stored for this older review.</p>}
           {!selectedReview && review.todayWorkout ? <p className="review-workout">Training: {review.todayWorkout.workout}</p> : null}
           <div className="daily-review-reflections">
             <section><h3>What went well</h3>{displayed.wins?.length ? <ul>{displayed.wins.map((item) => <li key={item}>{item}</li>)}</ul> : <p>No wins recorded for this day.</p>}</section>

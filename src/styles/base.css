@@ -1,55 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-body {
-  margin: 0;
-  background:
-    radial-gradient(circle at 86% -8%, rgba(133, 91, 126, .18), transparent 29rem),
-    radial-gradient(circle at -5% 57%, rgba(35, 111, 116, .13), transparent 28rem),
-    var(--color-bg);
-  background-attachment: fixed;
-  color: var(--color-text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  display: none;
-}
-
-body::before {
-  display: none;
-}
-
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 h1, h2, h3 { font-family: var(--font-display); }
-h1 { letter-spacing: var(--tracking-tight); }
-h2 { letter-spacing: var(--tracking-snug); }
+h1, h2, h3, p { margin-top: 0; }
 p { line-height: var(--leading-relaxed); }
-
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
-  outline: 3px solid rgba(61, 116, 111, .28);
-  outline-offset: 2px;
-}
-
-:where(.sidebar, .mobile-topbar, .mobile-nav, .page-header, .workspace-header, button, label, .timeline-item, .planner-task, .money-transaction-row, .habit-item, .runner-session__header, .runner-session__controls) { user-select: none; }
-:where(input, textarea, [contenteditable="true"], .allow-text-selection) { user-select: text; }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-command); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

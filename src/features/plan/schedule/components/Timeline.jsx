@@ -1,10 +1,28 @@
-import { useEffect, useState } from "react";
-import TimelineItem from "./TimelineItem";
-import { categories } from "../js/scheduleCategories";
-import { getCurrentScheduleItem, getScheduleMinutes } from "../js/scheduleTime";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import ScheduleBranch from "./ScheduleBranch.jsx";
+import { categories } from "../js/scheduleCategories.js";
+import { createScheduleField } from "../js/scheduleField.js";
+import { getCurrentScheduleItem, getScheduleMinutes } from "../js/scheduleTime.js";
+
+function useFieldWidth() {
+  const elementRef = useRef(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return undefined;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [elementRef, width];
+}
 
 export default function Timeline({ tasks, toggleTask, onFocus }) {
   const [now, setNow] = useState(() => new Date());
+  const [fieldRef, fieldWidth] = useFieldWidth();
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -24,6 +42,7 @@ export default function Timeline({ tasks, toggleTask, onFocus }) {
   const completed = tasks.filter((task) => task.done).length;
   const dayComplete = tasks.length > 0 && completed === tasks.length;
   const activeLabel = current?.title ?? next?.title ?? "Schedule complete";
+  const field = useMemo(() => createScheduleField(tasks, now, fieldWidth), [tasks, now, fieldWidth]);
 
   return (
     <>
@@ -54,19 +73,31 @@ export default function Timeline({ tasks, toggleTask, onFocus }) {
         </div>
       </div>
 
-      <div className="timeline">
-        {tasks.map((task) => (
-          <div key={task.id}>
-            <TimelineItem
-              task={task}
+      <div
+        ref={fieldRef}
+        className={`schedule-field ${field.compact ? "schedule-field--compact" : ""}`}
+        style={{ "--field-height": `${field.height}px` }}
+      >
+        <svg className="schedule-field__geometry" viewBox={`0 0 ${field.width} ${field.height}`} preserveAspectRatio="none" aria-hidden="true">
+          <path className="schedule-field__stem" d={field.stemPath} />
+          {field.events.map((event) => (
+            <g key={event.task.id} className={`schedule-field__branch schedule-field__branch--${event.side}`} style={{ "--branch-color": (categories[event.task.category] ?? categories.foundation).color }}>
+              <path d={event.branchPath} />
+              <circle cx={event.stemX} cy={event.y} r="5" />
+            </g>
+          ))}
+        </svg>
+        {field.events.map((event) => (
+          <ScheduleBranch
+            key={event.task.id}
+            event={event}
               toggleTask={toggleTask}
               onFocus={onFocus}
-              current={current?.id === task.id}
-              next={next?.id === task.id}
-              past={!task.done && getScheduleMinutes(task.end) <= currentMinutes}
-              dayComplete={dayComplete && task.done}
-            />
-          </div>
+            current={current?.id === event.task.id}
+            next={next?.id === event.task.id}
+            past={!event.task.done && getScheduleMinutes(event.task.end) <= currentMinutes}
+            dayComplete={dayComplete && event.task.done}
+          />
         ))}
       </div>
     </>

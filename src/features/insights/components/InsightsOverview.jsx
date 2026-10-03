@@ -15,19 +15,19 @@ export default function InsightsOverview() {
       <section className="insights-overview-intro">
         <div>
           <span>This week · {week.length} of 7 days reviewed</span>
-          <h2>Look at the days, not just the number.</h2>
-          <p>Review what happened, then use Analysis to see what changed over time.</p>
+          <h2>This week</h2>
+          <p>Daily reviews recorded so far.</p>
         </div>
         <div className="insights-overview-intro__actions">
           <Link to="/insights/daily">Review today <ArrowUpRight size={15} /></Link>
-          <Link to="/insights/analysis">Explore analysis <ArrowUpRight size={15} /></Link>
+          <Link to="/insights/analysis">Open analysis <ArrowUpRight size={15} /></Link>
         </div>
       </section>
 
       <WeeklyInsight />
 
       <section className="insights-review-feed" aria-label="Recent daily reviews">
-        <div className="section-header"><h2>Recent reviews</h2><p>Open Daily Review for the full reflection.</p></div>
+        <div className="section-header"><h2>Recent reviews</h2><p>Open a saved review.</p></div>
         {history.length ? history.slice(-5).reverse().map((review) => (
           <Link key={review.date} to={`/insights/daily?date=${review.date}`}><span>{formatDayKey(review.date)}</span><strong>{review.score}%</strong><ArrowUpRight size={15} aria-hidden="true" /></Link>
         )) : <p>No reviews recorded yet.</p>}

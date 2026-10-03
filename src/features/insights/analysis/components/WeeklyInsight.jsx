@@ -16,7 +16,7 @@ export default function WeeklyInsight() {
   });
 
   return (
-    <section className="card">
+    <section className="weekly-insight" aria-label="This week's reviewed days">
       <div className="section-header">
         <h2>Reviewed days</h2>
         <p>Only days reviewed in the current local week are counted.</p>

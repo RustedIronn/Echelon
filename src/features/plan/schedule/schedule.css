@@ -1,121 +1,60 @@
-.planner-day {
-  overflow: hidden;
-  margin-bottom: 24px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-}
-
-.planner-day > .panel-header {
-  margin: 0;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--color-border);
-  background: #e7eaee;
-}
-
-.planner-day-heading,
-.schedule-heading-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
+.planner-day { margin-bottom: 24px; }
+.planner-day > .panel-header { margin: 0 0 8px; padding: 12px 0 16px; border-bottom: 1px solid var(--color-border); background: transparent; }
+.planner-day-heading, .schedule-heading-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .schedule-overview { display: flex; gap: 24px; margin: 0; }
 .schedule-overview div { display: grid; gap: 2px; }
-.schedule-overview dt { color: var(--color-text-muted); font: 500 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.schedule-overview dd { margin: 0; font: 600 var(--text-lg) var(--font-display); }
+.schedule-overview dt, .schedule-instrument__readout span, .schedule-instrument__readout small, .schedule-instrument__scale { color: var(--color-text-muted); font: 600 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+.schedule-overview dd { margin: 0; color: var(--color-text); font: 600 var(--text-lg) var(--font-display); }
 
-.schedule-instrument {
-  margin: 20px 24px 8px;
-  padding: 16px 18px 13px;
-  border-radius: 12px;
-  background: #2c303a;
-  color: #f4f5f7;
-}
-
-.schedule-instrument__readout { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 12px; align-items: baseline; margin-bottom: 12px; }
-.schedule-instrument__readout span,
-.schedule-instrument__readout small,
-.schedule-instrument__scale { color: #b9c0cc; font: 500 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.schedule-instrument__readout strong { overflow: hidden; color: #fff; font: 600 var(--text-lg) var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
-.schedule-instrument__track { position: relative; display: flex; height: 12px; gap: 2px; padding: 2px; border-radius: 4px; background: rgba(255,255,255,.08); }
-.schedule-instrument__track > span { min-width: 3px; border-radius: 2px; background: var(--segment-color); opacity: .82; }
+.schedule-instrument { margin: 14px 0 18px; padding: 14px 0 13px; border-block: 1px solid var(--color-border); color: var(--color-text); }
+.schedule-instrument__readout { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: baseline; margin-bottom: 12px; }
+.schedule-instrument__readout strong { overflow: hidden; color: var(--color-text); font: 600 var(--text-lg) var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.schedule-instrument__track { position: relative; display: flex; height: 8px; gap: 2px; padding: 1px; border-radius: 999px; background: color-mix(in srgb, var(--color-border) 72%, transparent); }
+.schedule-instrument__track > span { min-width: 3px; border-radius: inherit; background: var(--segment-color); opacity: .82; }
 .schedule-instrument__track > span.is-complete { opacity: .28; }
-.schedule-instrument__track > i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #f2c777; box-shadow: 0 0 8px rgba(242,199,119,.65); transform: translateX(-1px); }
-.schedule-instrument__track > i::before { content: ""; position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #f2c777; }
+.schedule-instrument__track > i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--color-text); transform: translateX(-1px); }
+.schedule-instrument__track > i::before { position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border: 2px solid var(--color-canvas); border-radius: 50%; background: var(--color-text); content: ""; }
 .schedule-instrument__scale { display: flex; justify-content: space-between; margin-top: 8px; }
 
-.timeline { position: relative; padding: 8px 24px 16px; }
-.timeline::before { content: ""; position: absolute; top: 20px; bottom: 28px; left: 44px; width: 2px; background: var(--color-border); }
-.timeline-item { position: relative; min-width: 0; border-bottom: 1px solid var(--color-border); }
-.timeline > div:last-child .timeline-item { border-bottom: 0; }
+/* Time is the geometry: one seeded, responsive stem with an event on every branch. */
+.schedule-field { position: relative; min-width: 0; min-height: var(--field-height, 480px); margin: 0; isolation: isolate; }
+.schedule-field__geometry { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.schedule-field__stem { fill: none; stroke: color-mix(in srgb, var(--color-text) 46%, var(--color-border)); stroke-linecap: round; stroke-width: 2; }
+.schedule-field__branch path { fill: none; stroke: var(--branch-color); stroke-linecap: round; stroke-width: 1.5; opacity: .72; }
+.schedule-field__branch circle { fill: var(--color-canvas); stroke: var(--branch-color); stroke-width: 2; }
 
-.timeline-activity {
-  display: grid;
-  grid-template-columns: 42px 112px minmax(0,1fr);
-  width: 100%;
-  min-width: 0;
-  min-height: 76px;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 48px 12px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-text);
-  text-align: left;
-  box-shadow: none;
-  transition: background var(--duration-fast), color var(--duration-fast);
-}
+.schedule-branch { position: absolute; z-index: 1; top: var(--branch-y); left: var(--branch-x); width: var(--branch-width); min-width: 0; transform: translateY(-50%); }
+.schedule-branch__activity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; width: calc(100% - 30px); min-width: 0; padding: 4px 0; border: 0; border-radius: 0; background: transparent; color: var(--color-text); text-align: left; box-shadow: none; transition: color var(--duration-fast), transform var(--duration-fast), opacity var(--duration-fast); }
+.schedule-branch__activity:hover { color: var(--category-color); transform: translateX(3px); }
+.schedule-branch__activity:active { transform: translateX(1px) scale(.99); }
+.schedule-branch__activity:focus-visible { outline: 2px solid var(--category-color); outline-offset: 6px; }
+.schedule-branch__meta { display: grid; align-content: start; gap: 5px; min-width: 76px; padding-top: 2px; color: var(--color-text-muted); font: 600 10px/1.2 var(--font-mono); letter-spacing: .02em; }
+.schedule-branch__meta time { color: var(--color-text); font-weight: 700; }
+.schedule-branch__copy { display: grid; min-width: 0; gap: 3px; padding-left: 12px; border-left: 2px solid var(--category-color); }
+.schedule-branch__category { display: inline-flex; align-items: center; gap: 5px; color: var(--category-color); font: 700 10px/1 var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+.schedule-branch__copy strong { overflow: hidden; font: 600 var(--text-lg)/1.2 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.schedule-branch__copy > span:last-child { overflow: hidden; color: var(--color-text-muted); font-size: var(--text-sm); text-overflow: ellipsis; white-space: nowrap; }
+.schedule-branch > .context-menu-trigger { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
+.schedule-branch.is-current .schedule-branch__copy { border-left-width: 4px; }
+.schedule-branch.is-current .schedule-branch__meta time, .schedule-branch.is-current .schedule-branch__copy strong, .schedule-branch.is-next .schedule-branch__copy strong { color: var(--category-color); }
+.schedule-branch.is-next .schedule-branch__category::after { width: 5px; height: 5px; border-radius: 50%; background: var(--category-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--category-color) 15%, transparent); content: ""; }
+.schedule-branch.is-past:not(.is-complete) { opacity: .66; }
+.schedule-branch.is-complete { opacity: .58; }
+.schedule-branch.is-complete .schedule-branch__copy strong { text-decoration: line-through; }
+.schedule-branch.is-completed, .schedule-branch.is-reopened { animation: schedule-branch-response 560ms var(--ease-out); }
+@keyframes schedule-branch-response { 45% { transform: translateY(-50%) translateX(5px); } }
 
-.timeline-activity:hover { background: color-mix(in srgb, var(--category-bg) 48%, transparent); color: var(--color-text); }
-.timeline-activity:active { background: color-mix(in srgb, var(--category-bg) 70%, transparent); }
-.timeline-activity:focus-visible { position: relative; z-index: 2; outline: 2px solid var(--category-color); outline-offset: -2px; }
-.timeline-marker { position: relative; z-index: 1; display: flex; justify-content: center; }
-.dot { display: grid; width: 28px; height: 28px; place-items: center; border: 3px solid var(--color-surface); border-radius: 50%; background: var(--category-bg); color: var(--category-color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--category-color) 32%, var(--color-border)); transition: transform var(--duration-fast), box-shadow var(--duration-fast); }
-.timeline-activity:hover .dot { transform: scale(1.08); box-shadow: 0 0 0 4px color-mix(in srgb, var(--category-color) 13%, transparent); }
-.time { color: #4f5667; font: 500 var(--text-sm) var(--font-mono); }
-.content { min-width: 0; padding-left: 14px; border-left: 3px solid var(--category-color); background: transparent; }
-.timeline-content-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
-.category-label { color: var(--category-color); font: 600 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.timeline-status { color: #5f6675; font: 500 10px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
-.content > strong,
-.timeline-description { display: block; }
-.content > strong { font-size: var(--text-lg); }
-.timeline-description { overflow: hidden; margin-top: 3px; color: #555d6d; font-size: var(--text-sm); text-overflow: ellipsis; white-space: nowrap; }
-.timeline-item > .context-menu-trigger { position: absolute; z-index: 3; top: 18px; right: 4px; }
-.timeline-item.current { background: color-mix(in srgb, var(--category-bg) 54%, transparent); box-shadow: inset 3px 0 0 var(--category-color); }
-.timeline-item.current .timeline-status { color: var(--category-color); font-weight: 700; }
-.timeline-item.current .dot { background: var(--category-color); color: #fff; box-shadow: 0 0 0 5px color-mix(in srgb, var(--category-color) 14%, transparent); }
-.timeline-item.next .timeline-status { color: #70563c; font-weight: 700; }
-.timeline-item.past:not(.completed) { opacity: .72; }
-.timeline-item.completed { opacity: .58; }
-.timeline-item.completed .content > strong { text-decoration: line-through; }
-.timeline-item.completed .dot { background: var(--category-color); color: #fff; }
-.timeline-item.is-completed,
-.timeline-item.is-reopened { animation: schedule-item-response 560ms var(--ease-out); }
-.timeline-item.is-day-complete .dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--category-color) 18%, transparent); }
-
-@keyframes schedule-item-response { 40% { background: color-mix(in srgb, var(--category-bg) 72%, transparent); } }
-
-.schedule-editor-drawer { width: min(720px,100%); }
-.editor-status {
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border-left: 3px solid var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
-  color: var(--color-text);
-}
+.schedule-editor-drawer { width: min(720px, 100%); }
+.editor-status { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-left: 3px solid var(--color-danger); background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface)); color: var(--color-text); }
 .schedule-editor-drawer .drawer-header { background: #eef0f4; }
 .schedule-editor-drawer .card { margin: 0; padding: 0; border: 0; background: transparent; }
 .planner-timeline { display: grid; gap: 0; }
-.planner-block { display: grid; grid-template-columns: 26px minmax(0,1fr); min-height: 66px; }
+.planner-block { display: grid; grid-template-columns: 26px minmax(0, 1fr); min-height: 66px; }
 .planner-rail { position: relative; display: flex; justify-content: center; padding-top: 16px; }
-.planner-rail::after { content: ""; position: absolute; top: 32px; bottom: -1px; width: 1px; background: var(--color-border); }
+.planner-rail::after { position: absolute; top: 32px; bottom: -1px; width: 1px; background: var(--color-border); content: ""; }
 .planner-block:last-child .planner-rail::after { display: none; }
 .planner-rail > span { position: relative; z-index: 1; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--planner-tint); color: var(--planner-accent); }
-.planner-block-surface { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; min-width: 0; padding: 12px 0 12px 14px; border-bottom: 1px solid var(--color-border); }
+.planner-block-surface { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; min-width: 0; padding: 12px 0 12px 14px; border-bottom: 1px solid var(--color-border); }
 .planner-block-copy { min-width: 0; }
 .planner-block-copy h3 { margin: 2px 0; font-size: var(--text-base); }
 .planner-block-copy p { display: none; }
@@ -125,32 +64,31 @@
 .planner-time-controls label > span { color: var(--color-text-muted); font: 500 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 .planner-duration { align-self: center; margin-top: 18px; color: var(--planner-accent); font: 600 11px var(--font-mono); }
 .editor-actions { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; gap: 8px; margin: 20px -24px -24px; padding: 14px 24px; border-top: 1px solid var(--color-border); background: #eef0f4; }
-
-.weekend-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.weekend-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .weekend-item { padding: 18px; border: 1px solid var(--color-border); border-radius: 12px; }
 .weekend-item h3 { margin-top: 0; }
 .weekend-item li { margin-bottom: 8px; color: var(--color-text-muted); }
 .danger-card { margin-top: 20px; }
 
 @media (max-width: 760px) {
-  .planner-day > .panel-header,
-  .planner-day-heading,
-  .schedule-heading-actions { align-items: flex-start; flex-direction: column; }
+  .planner-day > .panel-header, .planner-day-heading, .schedule-heading-actions { align-items: flex-start; flex-direction: column; }
   .schedule-overview { width: 100%; }
-  .schedule-instrument { margin: 14px 14px 6px; padding: 14px; }
+  .schedule-instrument { margin-inline: 0; padding-inline: 0; }
   .schedule-instrument__readout { grid-template-columns: 1fr auto; }
   .schedule-instrument__readout strong { grid-column: 1 / -1; grid-row: 1; }
-  .timeline { padding: 6px 14px 12px; }
-  .timeline::before { left: 29px; }
-  .timeline-activity { grid-template-columns: 30px minmax(0,1fr); gap: 10px; padding-right: 40px; }
-  .timeline-marker { grid-row: 1 / span 2; }
-  .time { grid-column: 2; padding-top: 2px; }
-  .content { grid-column: 2; padding-left: 10px; }
-  .timeline-content-topline { align-items: flex-start; flex-direction: column; gap: 2px; }
-  .timeline-description { white-space: normal; }
+  .schedule-field { min-height: calc(var(--field-height) + 10px); }
+  .schedule-branch__activity { grid-template-columns: 1fr; gap: 7px; width: calc(100% - 28px); }
+  .schedule-branch__meta { display: flex; flex-wrap: wrap; gap: 5px 10px; min-width: 0; }
+  .schedule-branch__copy { padding-left: 10px; }
+  .schedule-branch__copy > span:last-child { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
   .planner-block-surface { grid-template-columns: 1fr; gap: 8px; }
-  .planner-time-controls { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .planner-time-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .planner-duration { grid-column: 1 / -1; margin-top: 0; }
   .editor-actions { align-items: stretch; flex-direction: column; }
   .weekend-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .schedule-branch, .schedule-branch__activity { transition: none; }
+  .schedule-branch.is-completed, .schedule-branch.is-reopened { animation: none; }
 }

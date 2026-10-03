@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CalendarClock, Check, Circle, Clock3, MoreVertical, Send } from "lucide-react";
 
-import { Button, Card, ContextMenu, EmptyState, PageTitle, PanelHeader, Stage } from "@ui";
+import { Button, ContextMenu, EmptyState, PageTitle, PanelHeader } from "@ui";
 import { formatDayKey, getToday, isValidDayKey } from "@/shared/date";
-import { PLANNER_PRIORITIES, PLANNER_VIEWS } from "../js/plannerDefaults";
+import { PLANNER_PRIORITIES } from "../js/plannerDefaults";
 import { usePlanner } from "../js/plannerStore";
 import {
   createPlannerId,
-  getPlannerTasksForView,
+  getPlannerTasksBySchedule,
   shiftPlannerDate,
   toFocusMission,
 } from "../js/plannerTasks";
 import { useFocusSurface } from "@features/focus/js/surface";
 import BreakdownPanel from "@features/plan/breakdowns/BreakdownPanel";
-
-const getView = (pathname) => {
-  if (pathname.endsWith("/today")) return "today";
-  if (pathname.endsWith("/upcoming")) return "upcoming";
-  if (pathname.endsWith("/completed")) return "completed";
-  return "inbox";
-};
 
 function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus, onPriority, scheduleOnOpen = false, highlighted = false }) {
   const today = getToday();
@@ -49,7 +42,7 @@ function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus, onPriori
         setRescheduling(true);
       },
     },
-    { id: "inbox", label: "Move to Inbox", onSelect: () => onReschedule(task.id, null) },
+    { id: "clear-date", label: "Clear scheduled date", onSelect: () => onReschedule(task.id, null) },
     { id: "toggle", label: task.completedAt ? "Reopen" : "Complete", onSelect: () => onToggle(task.id) },
     { id: "delete", label: "Delete", tone: "danger", onSelect: () => onDelete(task.id) },
   ];
@@ -98,19 +91,21 @@ function PlannerTask({ task, onToggle, onReschedule, onDelete, onFocus, onPriori
 function PlannerWorkspaceContent({ embedded = false, basePath = "/planner", location }) {
   const navigate = useNavigate();
   const openFocusSurface = useFocusSurface((state) => state.openFor);
-  const view = getView(location.pathname);
   const captureParams = new URLSearchParams(location.search);
   const requestedDate = captureParams.get("date");
   const captureRequested = captureParams.get("capture") === "1" && isValidDayKey(requestedDate);
   const linkedTaskId = captureParams.get("task");
   const { document, addTask, toggleTask, rescheduleTask, deleteTask, setPriority } = usePlanner();
-  const visibleTasks = getPlannerTasksForView(document.tasks, view);
+  const visibleTasks = getPlannerTasksBySchedule(document.tasks);
   const linkedTask = linkedTaskId
     ? document.tasks.find((task) => task.id === linkedTaskId) ?? null
     : null;
   const tasks = linkedTask && !visibleTasks.some((task) => task.id === linkedTask.id)
     ? [linkedTask, ...visibleTasks]
     : visibleTasks;
+  const planningQueue = linkedTask
+    ? tasks.filter((task) => task.id === linkedTask.id || !task.completedAt).slice(0, 6)
+    : tasks.filter((task) => !task.completedAt).slice(0, 6);
   const [draftId, setDraftId] = useState(() => createPlannerId());
   const [draft, setDraft] = useState({ title: "", notes: "", date: captureRequested ? requestedDate : "", time: "", priority: "normal" });
   const [recentlyCreatedId, setRecentlyCreatedId] = useState(null);
@@ -122,7 +117,6 @@ function PlannerWorkspaceContent({ embedded = false, basePath = "/planner", loca
   const submit = (event) => {
     event.preventDefault();
     const submittedId = draftId;
-    const submittedDate = draft.date;
     if (!addTask(draft, { id: submittedId })) return;
     setDraft({ title: "", notes: "", date: "", time: "", priority: "normal" });
     setDraftId(createPlannerId());
@@ -130,37 +124,18 @@ function PlannerWorkspaceContent({ embedded = false, basePath = "/planner", loca
     setRecentlyCreatedId(submittedId);
     createdTimer.current = window.setTimeout(() => setRecentlyCreatedId(null), 900);
 
-    if (isValidDayKey(submittedDate)) {
-      const today = getToday();
-      const destination = submittedDate === today
-        ? `${basePath}/today`
-        : submittedDate > today
-          ? `${basePath}/upcoming`
-          : basePath;
-      navigate(`${destination}?task=${encodeURIComponent(submittedId)}`, { replace: true });
-    }
+    navigate(`${basePath}?task=${encodeURIComponent(submittedId)}`, { replace: true });
   };
   const openFocus = (task) => openFocusSurface(toFocusMission(task));
-  const Workspace = embedded ? "div" : Stage;
-
   return (
     <div className="page planner-page">
-      {!embedded ? <PageTitle tone="planner" label="ONE-OFFS" title="Planner" description="Capture what does not belong in your recurring routine." /> : null}
+      {!embedded ? <PageTitle tone="planner" label="ONE-OFFS" title="Planner" description="Capture a task, then decide when it belongs." /> : null}
 
-      <div className="planner-view-navigation">
-        <nav className="subnav" aria-label="Planner views">
-        {PLANNER_VIEWS.map((item) => {
-          const suffix = item.id === "inbox" ? "" : `/${item.id}`;
-          return <NavLink key={item.id} to={`${basePath}${suffix}`} end={item.id === "inbox"}>{item.label}</NavLink>;
-        })}
-        </nav>
-      </div>
-
-      <Workspace {...(!embedded ? { tone: "soft" } : {})} className="planner-workspace">
+      <div className="planner-workspace">
         {captureParams.get("noteKept") === "1" ? <p role="status">Task created. The original long note remains in Notes / Capture so no text is lost.</p> : null}
-        <Card material="feature" className="planner-capture">
+        <section className="planner-capture" aria-labelledby="planner-capture-title">
           <div className="planner-capture-heading">
-            <div><span>Quick capture</span><h2>Add a task</h2></div>
+            <div><span>Quick capture</span><h2 id="planner-capture-title">Add a task</h2></div>
             <Send size={24} aria-hidden="true" />
           </div>
           <form onSubmit={submit}>
@@ -173,23 +148,23 @@ function PlannerWorkspaceContent({ embedded = false, basePath = "/planner", loca
               <Button type="submit">Add item</Button>
             </div>
           </form>
-        </Card>
+        </section>
 
         <section className="planner-list-section">
           <PanelHeader
-            eyebrow={view === "inbox" ? "Unscheduled" : view === "today" ? "On the desk" : view === "completed" ? "Finished" : "On the horizon"}
+            eyebrow="Scheduling bench"
             title={linkedTask && !visibleTasks.some((task) => task.id === linkedTask.id)
               ? "Selected item"
-              : PLANNER_VIEWS.find((item) => item.id === view)?.label}
-            actions={<div className="planner-view-count"><Clock3 size={16} aria-hidden="true" /><strong>{tasks.length}</strong> items</div>}
+              : "Recently placed"}
+            actions={<div className="planner-view-count"><Clock3 size={16} aria-hidden="true" /><strong>{planningQueue.length}</strong> recent</div>}
           />
           <div className="planner-task-list">
-            {tasks.length ? tasks.map((task) => (
+            {planningQueue.length ? planningQueue.map((task) => (
               <PlannerTask key={task.id} task={task} onToggle={toggleTask} onReschedule={rescheduleTask} onDelete={deleteTask} onFocus={openFocus} onPriority={setPriority} scheduleOnOpen={linkedTask?.id === task.id && captureParams.get("schedule") === "1"} highlighted={linkedTaskId === task.id || recentlyCreatedId === task.id} />
-            )) : <EmptyState title={`Nothing in ${view}`} description={view === "inbox" ? "Unscheduled ideas will wait here." : "This view is clear."} />}
+            )) : <EmptyState title="Nothing placed yet" description="Tasks stay small here; dated work appears in Calendar and Schedule." />}
           </div>
         </section>
-      </Workspace>
+      </div>
     </div>
   );
 }

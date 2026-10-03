@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { ActionLink, Card, EmptyState, Mosaic, PanelHeader, SectionLead } from "@ui";
+import { ActionLink, EmptyState, PanelHeader, SectionLead } from "@ui";
 import { formatDayKey, formatMonthKey, getToday } from "../../../shared/date.js";
 import { aggregateLedger, monthlyLedger, spendingByCategory } from "../js/analytics.js";
 import { calculateBudgetUsage } from "../js/budgets.js";
@@ -26,14 +26,14 @@ export default function MoneyOverview() {
 
   return (
     <div className="stack">
-      <Mosaic layout="split" className="money-overview-grid">
-        <Card material="feature" className="money-balance-card">
+      <section className="money-overview-grid" aria-label="Ledger summary">
+        <div className="money-balance-card">
           <span>Available</span>
           <strong>{formatInr(allTime.netMinor)}</strong>
           <small>Income minus expenses across the full ledger.</small>
-        </Card>
+        </div>
 
-        <Card material="soft" shape="slab">
+        <div className="money-month-summary">
           <div className="section-header">
             <h2>This month</h2>
             <p>{formatMonthKey(month)}</p>
@@ -43,8 +43,8 @@ export default function MoneyOverview() {
             <div><span>Spent</span><strong>{formatInr(current.expenseMinor)}</strong></div>
             <div><span>Net</span><strong>{formatInr(current.netMinor)}</strong></div>
           </div>
-        </Card>
-      </Mosaic>
+        </div>
+      </section>
 
       <SectionLead eyebrow="Ledger" title="Recent transactions" description="Newest entries, without losing the bigger picture.">
         <Link className="money-primary-link" to="/money/transactions?add=1">
@@ -52,7 +52,7 @@ export default function MoneyOverview() {
         </Link>
       </SectionLead>
 
-      <Card shape="slab">
+      <section className="money-ledger-preview" aria-label="Recent transactions">
         {recent.length ? (
           <div className="money-transaction-list">
             {recent.map((transaction) => (
@@ -71,9 +71,9 @@ export default function MoneyOverview() {
         ) : (
           <EmptyState title="No transactions yet" description="Add income or an expense to begin your ledger." />
         )}
-      </Card>
+      </section>
 
-      <Card material="soft" className="money-health-panel">
+      <section className="money-health-panel">
         <PanelHeader eyebrow="Guardrails" title="Budgets and goals" description="Current-month limits beside manually allocated savings." />
         <div className="money-health-grid">
           <section>
@@ -105,10 +105,10 @@ export default function MoneyOverview() {
           <ActionLink direction="forward" to="/money/goals">Goals</ActionLink>
           </section>
         </div>
-      </Card>
+      </section>
 
-      <Mosaic layout="split" className="money-dashboard-grid">
-        <Card>
+      <section className="money-dashboard-grid" aria-label="Ledger analysis">
+        <div>
           <div className="section-header"><h2>Monthly ledger</h2><p>Income, spending, and net.</p></div>
           {months.length ? (
             <div className="money-month-list">
@@ -122,9 +122,9 @@ export default function MoneyOverview() {
               ))}
             </div>
           ) : <p className="money-muted">Monthly analytics appear after your first transaction.</p>}
-        </Card>
+        </div>
 
-        <Card>
+        <div>
           <div className="section-header"><h2>Spending by category</h2><p>Current month.</p></div>
           {categories.length ? (
             <div className="money-compact-list">
@@ -136,8 +136,8 @@ export default function MoneyOverview() {
               ))}
             </div>
           ) : <p className="money-muted">No spending recorded this month.</p>}
-        </Card>
-      </Mosaic>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import HabitList from "@features/habits/components/HabitList.jsx";
 import { useHabits } from "@features/habits/js/store.js";
-import { PageTitle, PanelHeader, Stage } from "@ui";
+import { PageTitle, PanelHeader } from "@ui";
 
 export default function Habits() {
   const habits = useHabits((state) => state.habits);
@@ -15,11 +15,11 @@ export default function Habits() {
         description="Small actions repeated."
       />
 
-      <Stage tone="garden" className="habit-stage">
+      <section className="habit-stage" aria-label="Habit progress">
         <PanelHeader
           eyebrow="Today’s rhythm"
           title={`${completed} of ${habits.length} complete`}
-          description="Each action is small. Together they shape the texture of the day."
+          description="Daily completion"
           actions={(
           <div className="habit-progress-meter" aria-label={`${completed} of ${habits.length} habits complete`}>
             <strong>{completed}/{habits.length}</strong>
@@ -28,7 +28,7 @@ export default function Habits() {
           )}
         />
         <HabitList />
-      </Stage>
+      </section>
     </div>
   );
 }

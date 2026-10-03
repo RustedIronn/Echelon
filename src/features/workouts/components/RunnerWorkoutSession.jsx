@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Card } from "@ui";
+import { Button } from "@ui";
 import { formatDayKey } from "@/shared/date";
 import { useWorkout } from "../js/store";
 import { WORKOUT_RUNNER_VERSION } from "../js/runner";
@@ -37,7 +37,7 @@ export default function RunnerWorkoutSession() {
 
   const phaseKey = `${runner.round}:${runner.exerciseIndex}:${runner.phase}`;
 
-  return <Card className={`runner-session runner-session--${runner.phase}`}>
+  return <section className={`runner-session runner-session--${runner.phase}`} aria-label="Active workout">
     <header className="runner-session__header">
       <div><span>{runner.phase === "finished" ? "SESSION FINISHED" : `ROUND ${runner.round} / ${workout.rounds}`}</span><h1>{workout.title}</h1></div>
       <strong>{progressed} / {total} exercises</strong>
@@ -71,5 +71,5 @@ export default function RunnerWorkoutSession() {
         {confirmStop ? <><p>Pause and leave? Your place will be saved to continue later.</p><Button variant="secondary" onClick={() => { stopWorkout(); setConfirmStop(false); }}>Stop and save for later</Button><Button variant="tertiary" onClick={() => setConfirmStop(false)}>Keep going</Button></> : <Button variant="tertiary" onClick={() => setConfirmStop(true)}>Stop workout</Button>}
       </div>
     </>}
-  </Card>;
+  </section>;
 }
