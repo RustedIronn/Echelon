@@ -1,1 +1,5 @@
-.desktop-window-frame { min-height: 100vh; background: var(--color-bg); }.desktop-titlebar { display: flex; height: 36px; align-items: center; justify-content: space-between; padding-left: 10px; border-bottom: 1px solid #4a4b4f; background: #2f3033; color: #f5f5f5; }.desktop-titlebar-brand { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); }.desktop-titlebar-brand img { width: 18px; height: 18px; }.desktop-window-controls { display: flex; align-self: stretch; }.desktop-window-controls button { width: 44px; min-height: 0; border: 0; border-radius: 0; background: transparent; color: #f5f5f5; }.desktop-window-controls button:hover { background: #4a4b4f; }.desktop-window-controls .desktop-window-close:hover { background: var(--color-danger); }.desktop-window-content { min-height: calc(100vh - 36px); }
+.desktop-titlebar { @apply flex h-9 items-center justify-between bg-[#2f3033] px-3 text-sm text-white; }
+.desktop-titlebar-brand, .desktop-window-controls { @apply flex items-center gap-2; }
+.desktop-window-controls button { @apply grid size-8 place-items-center rounded-none border-0 bg-transparent text-inherit hover:bg-white/10; }
+.desktop-window-close:hover { @apply bg-red-700; }
+.desktop-settings { @apply grid gap-4; }

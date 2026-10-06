@@ -1,23 +1,4 @@
-.stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-}
-
-.cluster {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-}
-
-.auto-grid {
-    display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-    gap: var(--space-4);
-}
-
-.flow>*+* {
-    margin-top: var(--space-4);
-}
+.stack { @apply flex flex-col gap-4; }
+.cluster { @apply flex flex-wrap items-center gap-3; }
+.auto-grid { @apply grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-4; }
+.flow > * + * { @apply mt-4; }

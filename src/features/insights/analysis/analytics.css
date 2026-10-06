@@ -1,1 +1,8 @@
-.insights-stage, .insights-overview { display: grid; gap: var(--space-5); }.insights-hero { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }.insights-hero strong { display: block; font-size: var(--text-4xl); }.insights-hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }.insights-pulse-grid, .analytics-grid, .stats-grid, .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-4); }.analytics-highlight, .analysis-chart { min-width: 0; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }.analysis-chart__tooltip { padding: var(--space-2); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-popover); }.insights-paths { display: grid; gap: var(--space-2); }.insights-paths a { display: block; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); color: var(--color-text); text-decoration: none; }
+.analysis-page, .weekly-insight, .analysis-chart { @apply grid gap-4; }
+.insight-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
+.insights-week-chart { @apply grid grid-cols-7 gap-2; }
+.insights-week-chart__day { @apply grid gap-2 text-center text-xs text-echelon-muted; }
+.insights-week-chart__track { @apply flex h-28 items-end rounded-echelon-control bg-echelon-subtle p-1; }
+.insights-week-chart__track i { @apply w-full rounded-sm bg-echelon-command; }
+.analysis-chart__plot { @apply min-h-64; }
+.analysis-chart__table { @apply rounded-echelon-surface border border-echelon-border p-3; }

@@ -1,27 +1,29 @@
-@import "./styles/tokens.css";
-@import "./styles/base.css";
-@import "./styles/forms.css";
-@import "./styles/primitives.css";
+@layer theme, base, components, utilities;
 
-@import "./app/layout/layout.css";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
 
-@import "./features/today/dashboard.css";
-@import "./features/insights/analysis/analytics.css";
-@import "./features/focus/focus.css";
-@import "./features/habits/habits.css";
-@import "./features/insights/review/review.css";
-@import "./features/plan/schedule/schedule.css";
-@import "./features/workouts/workout.css";
-@import "./features/notifications/notifications.css";
-@import "./features/money/money.css";
-@import "./features/plan/legacyTools/tools.css";
-@import "./features/plan/plan.css";
-@import "./features/plan/planner/planner.css";
-@import "./features/plan/notes/notes.css";
-@import "./features/calendar/calendar.css";
+@import "./styles/tokens.css" layer(theme);
+@import "./styles/base.css" layer(base);
+@import "./styles/forms.css" layer(base);
+@import "./styles/primitives.css" layer(components);
+@import "./app/layout/layout.css" layer(components);
 
-/* Shared component contracts load after feature layouts so controls remain coherent. */
-@import "./ui/ui.css";
-
-@import "./core/auth/auth.css";
-@import "./desktop/desktop.css";
+@import "./features/today/dashboard.css" layer(components);
+@import "./features/insights/analysis/analytics.css" layer(components);
+@import "./features/focus/focus.css" layer(components);
+@import "./features/habits/habits.css" layer(components);
+@import "./features/insights/review/review.css" layer(components);
+@import "./features/plan/schedule/schedule.css" layer(components);
+@import "./features/workouts/workout.css" layer(components);
+@import "./features/notifications/notifications.css" layer(components);
+@import "./features/money/money.css" layer(components);
+@import "./features/plan/legacyTools/tools.css" layer(components);
+@import "./features/plan/plan.css" layer(components);
+@import "./features/plan/planner/planner.css" layer(components);
+@import "./features/plan/notes/notes.css" layer(components);
+@import "./features/calendar/calendar.css" layer(components);
+@import "./ui/ui.css" layer(components);
+@import "./core/auth/auth.css" layer(components);
+@import "./desktop/desktop.css" layer(components);

@@ -1,7 +1,7 @@
-textarea, input, select { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-md); }
-textarea { min-height: 96px; resize: vertical; }
-select { cursor: pointer; }
-textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent-command); outline-offset: 1px; border-color: var(--accent-command); }
-input[type="checkbox"], input[type="radio"] { width: auto; min-height: 0; accent-color: var(--accent-command); }
-input[type="date"], input[type="time"], input[type="month"] { font-family: var(--font-mono); }
-label > span, fieldset > legend { color: var(--color-text-muted); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+textarea, input, select { @apply min-h-10 w-full rounded-echelon-control border border-echelon-border-strong bg-echelon-surface px-2.5 py-2 text-sm text-echelon-text; font: inherit; }
+textarea { @apply min-h-24 resize-y; }
+select { @apply cursor-pointer; }
+textarea:focus, input:focus, select:focus { @apply border-echelon-command outline-2 outline-offset-1 outline-echelon-command; }
+input[type="checkbox"], input[type="radio"] { @apply min-h-0 w-auto accent-echelon-command; }
+input[type="date"], input[type="time"], input[type="month"] { @apply font-echelon-mono; }
+label > span, fieldset > legend { @apply text-sm font-medium text-echelon-muted; }

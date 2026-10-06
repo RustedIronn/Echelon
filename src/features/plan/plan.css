@@ -1,1 +1,3 @@
-.plan-app { display: grid; gap: var(--space-5); }.plan-command-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-5); padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-border); }.plan-command-header > div { display: grid; gap: 4px; }.plan-command-header span { color: var(--color-text-muted); font: 500 var(--text-xs) var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }.plan-command-header h1 { margin: 0; font-size: var(--text-3xl); }.plan-command-header .subnav { margin: 0; }.plan-workbench { min-width: 0; } @media (max-width: 760px) { .plan-command-header { align-items: flex-start; flex-direction: column; } }
+.plan-app { @apply min-w-0; }
+.plan-command-header { @apply mb-5 flex flex-wrap items-end justify-between gap-4; }
+.plan-workbench { @apply min-w-0; }

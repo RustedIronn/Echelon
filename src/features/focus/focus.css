@@ -1,1 +1,8 @@
-.focus-page, .focus-workspace { display: grid; gap: var(--space-5); }.mission-card, .focus-card, .mission-selector, .focus-history-panel { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }.focus-card { text-align: center; }.focus-label { color: var(--color-text-muted); font-size: var(--text-sm); }.focus-time { margin: var(--space-4) 0; font: 600 clamp(3rem, 10vw, 5rem)/1 var(--font-mono); }.focus-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-2); }.mission-options { display: grid; gap: var(--space-2); }.mission-option { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; width: 100%; padding: var(--space-3); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); text-align: left; }.mission-option.is-selected { border-color: var(--accent-focus); }.focus-session-list { display: grid; }.session-item { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }.session-item:last-child { border-bottom: 0; }.focus-awareness-tool { margin-top: var(--space-4); } 
+.focus-surface { @apply grid gap-5; }
+.focus-surface__mission-list { @apply grid gap-2; }
+.focus-surface__mission-list button { @apply w-full justify-start text-left; }
+.focus-card { @apply grid gap-4; }
+.focus-label { @apply text-sm font-medium text-echelon-muted; }
+.focus-time { @apply font-echelon-mono text-5xl font-semibold tracking-tight; }
+.focus-actions { @apply flex flex-wrap gap-2; }
+.focus-surface__history, .focus-awareness-tool { @apply rounded-echelon-surface border border-echelon-border bg-echelon-surface p-4; }

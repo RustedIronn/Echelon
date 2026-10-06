@@ -1,36 +1,36 @@
-.planner-day { margin-bottom: 24px; }
-.planner-day > .panel-header { margin: 0 0 8px; padding: 12px 0 16px; border-bottom: 1px solid var(--color-border); background: transparent; }
-.planner-day-heading, .schedule-heading-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.schedule-overview { display: flex; gap: 24px; margin: 0; }
-.schedule-overview div { display: grid; gap: 2px; }
+.planner-day { @apply mb-6; }
+.planner-day > .panel-header { @apply mb-2 border-b border-echelon-border bg-transparent px-0 pt-3 pb-4; }
+.planner-day-heading, .schedule-heading-actions { @apply flex items-center justify-between gap-4; }
+.schedule-overview { @apply m-0 flex gap-6; }
+.schedule-overview div { @apply grid gap-0.5; }
 .schedule-overview dt, .schedule-instrument__readout span, .schedule-instrument__readout small, .schedule-instrument__scale { color: var(--color-text-muted); font: 600 10px var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.schedule-overview dd { margin: 0; color: var(--color-text); font: 600 var(--text-lg) var(--font-display); }
+.schedule-overview dd { @apply m-0 text-[var(--text-lg)] font-semibold text-echelon-text; font-family: var(--font-display); }
 
-.schedule-instrument { margin: 14px 0 18px; padding: 14px 0 13px; border-block: 1px solid var(--color-border); color: var(--color-text); }
-.schedule-instrument__readout { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: baseline; margin-bottom: 12px; }
-.schedule-instrument__readout strong { overflow: hidden; color: var(--color-text); font: 600 var(--text-lg) var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
-.schedule-instrument__track { position: relative; display: flex; height: 8px; gap: 2px; padding: 1px; border-radius: 999px; background: color-mix(in srgb, var(--color-border) 72%, transparent); }
-.schedule-instrument__track > span { min-width: 3px; border-radius: inherit; background: var(--segment-color); opacity: .82; }
+.schedule-instrument { @apply my-[14px] mb-[18px] border-y border-echelon-border py-[13px] text-echelon-text; }
+.schedule-instrument__readout { @apply mb-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-3; }
+.schedule-instrument__readout strong { @apply overflow-hidden text-[var(--text-lg)] font-semibold text-echelon-text text-ellipsis whitespace-nowrap; font-family: var(--font-display); }
+.schedule-instrument__track { @apply relative flex h-2 gap-0.5 rounded-full p-px; background: color-mix(in srgb, var(--color-border) 72%, transparent); }
+.schedule-instrument__track > span { @apply min-w-[3px] rounded-[inherit] bg-[var(--segment-color)]; opacity: .82; }
 .schedule-instrument__track > span.is-complete { opacity: .28; }
 .schedule-instrument__track > i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--color-text); transform: translateX(-1px); }
 .schedule-instrument__track > i::before { position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border: 2px solid var(--color-canvas); border-radius: 50%; background: var(--color-text); content: ""; }
-.schedule-instrument__scale { display: flex; justify-content: space-between; margin-top: 8px; }
+.schedule-instrument__scale { @apply mt-2 flex justify-between; }
 
 /* Time is the geometry: one seeded, responsive stem with an event on every branch. */
-.schedule-field { position: relative; min-width: 0; min-height: var(--field-height, 480px); margin: 0; isolation: isolate; }
-.schedule-field__geometry { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.schedule-field { @apply relative m-0 min-w-0 isolate; min-height: var(--field-height, 480px); }
+.schedule-field__geometry { @apply pointer-events-none absolute inset-0 z-0 size-full overflow-visible; }
 .schedule-field__stem { fill: none; stroke: color-mix(in srgb, var(--color-text) 46%, var(--color-border)); stroke-linecap: round; stroke-width: 2; }
 .schedule-field__branch path { fill: none; stroke: var(--branch-color); stroke-linecap: round; stroke-width: 1.5; opacity: .72; }
 .schedule-field__branch circle { fill: var(--color-canvas); stroke: var(--branch-color); stroke-width: 2; }
 
-.schedule-branch { position: absolute; z-index: 1; top: var(--branch-y); left: var(--branch-x); width: var(--branch-width); min-width: 0; transform: translateY(-50%); }
-.schedule-branch__activity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; width: calc(100% - 30px); min-width: 0; padding: 4px 0; border: 0; border-radius: 0; background: transparent; color: var(--color-text); text-align: left; box-shadow: none; transition: color var(--duration-fast), transform var(--duration-fast), opacity var(--duration-fast); }
+.schedule-branch { @apply absolute z-1 min-w-0; top: var(--branch-y); left: var(--branch-x); width: var(--branch-width); transform: translateY(-50%); }
+.schedule-branch__activity { @apply grid min-w-0 w-[calc(100%-30px)] grid-cols-[auto_minmax(0,1fr)] gap-[14px] rounded-none border-0 bg-transparent py-1 text-left text-echelon-text shadow-none; transition: color var(--duration-fast), transform var(--duration-fast), opacity var(--duration-fast); }
 .schedule-branch__activity:hover { color: var(--category-color); transform: translateX(3px); }
 .schedule-branch__activity:active { transform: translateX(1px) scale(.99); }
 .schedule-branch__activity:focus-visible { outline: 2px solid var(--category-color); outline-offset: 6px; }
-.schedule-branch__meta { display: grid; align-content: start; gap: 5px; min-width: 76px; padding-top: 2px; color: var(--color-text-muted); font: 600 10px/1.2 var(--font-mono); letter-spacing: .02em; }
+.schedule-branch__meta { @apply grid min-w-[76px] content-start gap-[5px] pt-0.5 text-echelon-muted; font: 600 10px/1.2 var(--font-mono); letter-spacing: .02em; }
 .schedule-branch__meta time { color: var(--color-text); font-weight: 700; }
-.schedule-branch__copy { display: grid; min-width: 0; gap: 3px; padding-left: 12px; border-left: 2px solid var(--category-color); }
+.schedule-branch__copy { @apply grid min-w-0 gap-[3px] border-l-2 border-l-[var(--category-color)] pl-3; }
 .schedule-branch__category { display: inline-flex; align-items: center; gap: 5px; color: var(--category-color); font: 700 10px/1 var(--font-mono); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 .schedule-branch__copy strong { overflow: hidden; font: 600 var(--text-lg)/1.2 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
 .schedule-branch__copy > span:last-child { overflow: hidden; color: var(--color-text-muted); font-size: var(--text-sm); text-overflow: ellipsis; white-space: nowrap; }

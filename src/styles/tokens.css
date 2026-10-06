@@ -1,3 +1,21 @@
+@theme inline {
+  --color-echelon-canvas: var(--color-bg);
+  --color-echelon-surface: var(--color-surface);
+  --color-echelon-subtle: var(--color-surface-subtle);
+  --color-echelon-hover: var(--color-surface-hover);
+  --color-echelon-text: var(--color-text);
+  --color-echelon-muted: var(--color-text-muted);
+  --color-echelon-border: var(--color-border);
+  --color-echelon-border-strong: var(--color-border-strong);
+  --color-echelon-command: var(--accent-command);
+  --color-echelon-danger: var(--color-danger);
+  --font-echelon-sans: var(--font-sans);
+  --font-echelon-display: var(--font-display);
+  --font-echelon-mono: var(--font-mono);
+  --radius-echelon-control: var(--radius-sm);
+  --radius-echelon-surface: var(--radius-md);
+}
+
 :root {
   --color-bg: #f5f5f4; --color-canvas: var(--color-bg); --color-surface: #ffffff; --color-surface-subtle: #f0f0ef; --color-surface-hover: #e8e8e6;
   --color-text: #202124; --color-text-muted: #5f6368; --color-text-inverse: #ffffff;

@@ -1,1 +1,4 @@
-.login-page { display: grid; min-height: 100vh; place-items: center; padding: var(--space-5); }.login-card, .auth-loading-card { width: min(100%, 28rem); padding: var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); text-align: center; }.login-card img, .auth-loading-card img { width: 56px; height: 56px; }.login-card p { color: var(--color-text-muted); }.login-card button { margin-top: var(--space-4); }
+.login-page { @apply grid min-h-screen place-items-center bg-echelon-canvas p-6; }
+.login-card { @apply grid w-full max-w-md gap-5 rounded-echelon-surface border border-echelon-border bg-echelon-surface p-6; }
+.form-error { @apply text-sm text-red-700; }
+.form-help { @apply text-sm text-echelon-muted; }
