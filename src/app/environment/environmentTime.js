@@ -15,6 +15,7 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [10, 25, 63], skyHorizon: [43, 65, 108], skyGlow: [123, 151, 201],
     meadowFar: [92, 116, 107], meadowNear: [37, 70, 73], water: [49, 88, 122],
     lightDirection: [.16, .57, -.16], ambient: .66, contrast: .68, haze: .18,
+    cloudLight: [82, 106, 150], cloudShadow: [25, 48, 91], cloudOpacity: .24,
   },
   {
     minute: 5 * 60,
@@ -22,6 +23,7 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [113, 157, 193], skyHorizon: [249, 216, 177], skyGlow: [255, 228, 176],
     meadowFar: [174, 190, 137], meadowNear: [74, 105, 72], water: [97, 138, 150],
     lightDirection: [.34, .79, -.30], ambient: .76, contrast: .86, haze: .27,
+    cloudLight: [247, 235, 207], cloudShadow: [166, 184, 192], cloudOpacity: .43,
   },
   {
     minute: (9 * 60) + 30,
@@ -29,6 +31,7 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [125, 184, 216], skyHorizon: [237, 232, 199], skyGlow: [255, 241, 201],
     meadowFar: [183, 204, 145], meadowNear: [74, 116, 73], water: [92, 145, 150],
     lightDirection: [.43, .87, -.32], ambient: .88, contrast: .98, haze: .18,
+    cloudLight: [250, 244, 220], cloudShadow: [180, 200, 204], cloudOpacity: .34,
   },
   {
     minute: 12 * 60,
@@ -36,6 +39,7 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [83, 160, 217], skyHorizon: [213, 231, 221], skyGlow: [237, 247, 225],
     meadowFar: [174, 204, 132], meadowNear: [61, 116, 67], water: [76, 139, 151],
     lightDirection: [.30, .93, -.25], ambient: .98, contrast: 1.10, haze: .09,
+    cloudLight: [247, 250, 245], cloudShadow: [177, 202, 218], cloudOpacity: .16,
   },
   {
     minute: 16 * 60,
@@ -43,20 +47,23 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [93, 158, 202], skyHorizon: [224, 224, 190], skyGlow: [250, 239, 196],
     meadowFar: [180, 197, 126], meadowNear: [66, 111, 66], water: [79, 135, 145],
     lightDirection: [.54, .82, -.22], ambient: .91, contrast: 1.02, haze: .13,
+    cloudLight: [245, 235, 210], cloudShadow: [174, 186, 191], cloudOpacity: .25,
   },
   {
     minute: 17 * 60,
     mood: "evening",
-    skyTop: [116, 154, 191], skyHorizon: [243, 191, 171], skyGlow: [255, 214, 181],
+    skyTop: [126, 166, 204], skyHorizon: [246, 194, 176], skyGlow: [255, 218, 185],
     meadowFar: [177, 190, 137], meadowNear: [79, 109, 78], water: [99, 134, 146],
     lightDirection: [.58, .70, -.20], ambient: .86, contrast: .90, haze: .22,
+    cloudLight: [248, 190, 181], cloudShadow: [151, 128, 161], cloudOpacity: .48,
   },
   {
     minute: (19 * 60) + 45,
     mood: "evening",
-    skyTop: [79, 107, 154], skyHorizon: [195, 153, 175], skyGlow: [225, 180, 191],
+    skyTop: [96, 124, 173], skyHorizon: [204, 158, 181], skyGlow: [230, 184, 195],
     meadowFar: [128, 145, 119], meadowNear: [54, 86, 78], water: [80, 114, 138],
     lightDirection: [.31, .58, -.18], ambient: .74, contrast: .74, haze: .25,
+    cloudLight: [215, 164, 181], cloudShadow: [94, 99, 141], cloudOpacity: .59,
   },
   {
     minute: 20 * 60,
@@ -64,6 +71,7 @@ const LIGHTING_KEYFRAMES = Object.freeze([
     skyTop: [20, 44, 91], skyHorizon: [74, 89, 137], skyGlow: [145, 164, 210],
     meadowFar: [99, 121, 111], meadowNear: [40, 75, 77], water: [55, 94, 126],
     lightDirection: [.20, .61, -.16], ambient: .67, contrast: .70, haze: .21,
+    cloudLight: [92, 111, 151], cloudShadow: [27, 48, 91], cloudOpacity: .27,
   },
 ]);
 
@@ -85,6 +93,11 @@ function interpolate(first, second, amount) {
     ambient: first.ambient + ((second.ambient - first.ambient) * eased),
     contrast: first.contrast + ((second.contrast - first.contrast) * eased),
     haze: first.haze + ((second.haze - first.haze) * eased),
+    cloudLight: mix(first.cloudLight, second.cloudLight, eased),
+    cloudShadow: mix(first.cloudShadow, second.cloudShadow, eased),
+    cloudOpacity: first.cloudOpacity + ((second.cloudOpacity - first.cloudOpacity) * eased),
+    minuteOfDay: first.minute + ((second.minute - first.minute) * amount),
+    timestamp: 0,
   };
 }
 
@@ -103,7 +116,10 @@ export function getEnvironmentLighting(date = new Date()) {
   const start = before.minute;
   const end = afterIndex === 0 ? after.minute + MINUTES_IN_DAY : after.minute;
   const current = minute < start ? minute + MINUTES_IN_DAY : minute;
-  return Object.freeze(interpolate(before, after, (current - start) / (end - start)));
+  const lighting = interpolate(before, after, (current - start) / (end - start));
+  lighting.minuteOfDay = minute;
+  lighting.timestamp = date.getTime();
+  return Object.freeze(lighting);
 }
 
 export function getDevelopmentPreviewLighting(search = "") {
@@ -111,7 +127,8 @@ export function getDevelopmentPreviewLighting(search = "") {
   const sky = new URLSearchParams(search).get("sky");
   const minute = PREVIEW_MINUTES[sky];
   if (minute === undefined) return null;
-  const previewDate = new Date(2025, 0, 1, 0, minute, 0);
+  const previewDate = new Date();
+  previewDate.setHours(0, minute, 0, 0);
   return getEnvironmentLighting(previewDate);
 }
 

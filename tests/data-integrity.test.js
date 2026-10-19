@@ -288,6 +288,11 @@ import {
   saveToolsDocument,
 } from "../src/features/plan/legacyTools/js/storage.js";
 import { TOOLS_STORAGE_KEY } from "../src/features/plan/legacyTools/js/constants.js";
+import {
+  createStarField,
+  getCelestialVisibility,
+  getLunarPhase,
+} from "../src/app/environment/environmentCelestial.js";
 
 const memory = new Map();
 
@@ -319,7 +324,6 @@ test("local storage falls back safely when JSON is malformed", () => {
   saveData("valid", { value: 1 });
   assert.deepEqual(loadData("valid", null), { value: 1 });
 });
-
 test("saveData reports serialization failures without replacing stored data", () => {
   memory.clear();
   memory.set("serialization-failure", JSON.stringify({ preserved: true }));
@@ -4966,4 +4970,42 @@ test("Composure data never changes execution review scoring", () => {
   });
 
   assert.deepEqual(withComposure, baseline);
+});
+
+test("lunar phase uses the documented new-moon epoch and synodic cycle", () => {
+  const newMoon = getLunarPhase(new Date("2000-01-06T18:14:00.000Z"));
+  const firstQuarter = getLunarPhase(new Date("2000-01-14T03:25:00.000Z"));
+  const fullMoon = getLunarPhase(new Date("2000-01-21T12:36:00.000Z"));
+  const lastQuarter = getLunarPhase(new Date("2000-01-28T21:47:00.000Z"));
+
+  assert.equal(newMoon.phaseName, "new");
+  assert.ok(newMoon.illumination < .01);
+  assert.equal(firstQuarter.phaseName, "first-quarter");
+  assert.equal(fullMoon.phaseName, "full");
+  assert.ok(fullMoon.illumination > .99);
+  assert.equal(lastQuarter.phaseName, "last-quarter");
+});
+
+test("celestial star fields are deterministic and irregular", () => {
+  const first = createStarField(60, 512);
+  const second = createStarField(60, 512);
+
+  assert.deepEqual(first, second);
+  assert.equal(first.length, 60);
+  assert.equal(new Set(first.map((star) => `${star.x}:${star.y}`)).size, 60);
+});
+
+test("celestial visibility transitions keep sun and stars in their intended sky periods", () => {
+  const morning = getCelestialVisibility(8 * 60);
+  const evening = getCelestialVisibility((18 * 60) + 30);
+  const night = getCelestialVisibility(22 * 60);
+
+  assert.ok(morning.sun > .9);
+  assert.ok(morning.stars < .02);
+  assert.equal(evening.sun, 0);
+  assert.ok(evening.moon > .05);
+  assert.equal(evening.stars, 0);
+  assert.ok(evening.earlyStars > .2);
+  assert.ok(night.stars > .75);
+  assert.ok(night.moon > .75);
 });

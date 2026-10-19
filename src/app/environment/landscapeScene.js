@@ -6,6 +6,10 @@ import {
   terrainLight,
   valueNoise,
 } from "./environmentTerrain.js";
+import {
+  getCelestialState,
+  STAR_FIELD,
+} from "./environmentCelestial.js";
 
 export const LANDSCAPE_VIEW = Object.freeze({
   width: 1600,
@@ -39,17 +43,18 @@ function toRgb(color, alpha = 1) {
   return `rgb(${color.map((channel) => Math.round(channel)).join(" ")} / ${alpha})`;
 }
 
-function skyColor(u, y, palette) {
+function skyColor(u, y, palette, celestial) {
   const vertical = clamp(y / .53);
   const base = mix(palette.skyTop, palette.skyHorizon, vertical);
-  const lightDistance = Math.hypot((u - .78) / .9, (y - .20) / .72);
+  const lightSource = celestial.visibility.sun > .02 ? celestial.sun : celestial.moon;
+  const lightDistance = Math.hypot((u - lightSource.x) / .9, (y - lightSource.y) / .72);
   const glow = clamp(1 - lightDistance, 0, 1) ** 2;
   const haze = smoothstep(.22, .56, y) * palette.haze;
-  const glowStrength = .08 + (palette.ambient * .29);
+  const glowStrength = .04 + (palette.ambient * .19) + (celestial.visibility.sun * .15);
   return mix(mix(base, palette.skyGlow, glow * glowStrength), palette.skyHorizon, haze);
 }
 
-function paintSurface(context, palette) {
+function paintSurface(context, palette, celestial) {
   const image = context.createImageData(SCENE_WIDTH, SCENE_HEIGHT);
   const pixels = image.data;
   const farLand = palette.meadowFar;
@@ -61,7 +66,7 @@ function paintSurface(context, palette) {
       const pixel = ((y * SCENE_WIDTH) + x) * 4;
       const horizon = terrainHorizon(u);
 
-      const sky = skyColor(u, screenY, palette);
+      const sky = skyColor(u, screenY, palette, celestial);
       const landCoverage = smoothstep(-.014, .020, screenY - horizon);
       if (landCoverage === 0) {
         pixels[pixel] = sky[0];
@@ -98,6 +103,159 @@ function paintSurface(context, palette) {
   context.putImageData(image, 0, 0);
 }
 
+function withSkyClip(context, draw) {
+  context.save();
+  context.beginPath();
+  context.moveTo(0, 0);
+  context.lineTo(SCENE_WIDTH, 0);
+  for (let x = SCENE_WIDTH; x >= 0; x -= 4) {
+    context.lineTo(x, terrainHorizon(x / SCENE_WIDTH) * SCENE_HEIGHT);
+  }
+  context.closePath();
+  context.clip();
+  draw();
+  context.restore();
+}
+
+function drawStars(context, celestial) {
+  const alpha = celestial.visibility.stars;
+  const earlyAlpha = celestial.visibility.earlyStars;
+  if (alpha < .008 && earlyAlpha < .008) return;
+
+  context.save();
+  const earlyMode = alpha <= .008;
+  const visibleStars = earlyMode ? STAR_FIELD.slice(0, 4) : STAR_FIELD;
+  const opacity = earlyMode ? earlyAlpha * .72 : alpha;
+  for (const star of visibleStars) {
+    const x = star.x * SCENE_WIDTH;
+    const y = star.y * SCENE_HEIGHT;
+    const radius = star.radius * (earlyMode ? 2.5 : 1);
+    const glow = context.createRadialGradient(x, y, 0, x, y, radius * 3.2);
+    glow.addColorStop(0, `rgb(239 244 255 / ${opacity * star.brightness * .86})`);
+    glow.addColorStop(.24, `rgb(202 220 251 / ${opacity * star.brightness * .52})`);
+    glow.addColorStop(1, "rgb(202 220 251 / 0)");
+    context.fillStyle = glow;
+    context.beginPath();
+    context.arc(x, y, radius * 3.2, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+}
+
+function drawSun(context, celestial) {
+  const alpha = celestial.visibility.sun;
+  if (alpha < .01) return;
+  const x = celestial.sun.x * SCENE_WIDTH;
+  const y = celestial.sun.y * SCENE_HEIGHT;
+  const afternoonStrength = smoothstep(12 * 60, 14 * 60, celestial.minuteOfDay)
+    * (1 - smoothstep(16 * 60, 17 * 60, celestial.minuteOfDay));
+  const radius = 10 + (alpha * 4) + (afternoonStrength * 9);
+  const halo = context.createRadialGradient(x, y, radius * .15, x, y, radius * 9);
+  halo.addColorStop(0, `rgb(255 248 208 / ${alpha * .82})`);
+  halo.addColorStop(.16, `rgb(255 238 169 / ${alpha * .42})`);
+  halo.addColorStop(1, "rgb(255 227 155 / 0)");
+  context.fillStyle = halo;
+  context.beginPath();
+  context.arc(x, y, radius * 9, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = `rgb(255 248 211 / ${alpha * .94})`;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+}
+
+function drawMoon(context, celestial, palette) {
+  const visibility = celestial.visibility.moon * celestial.lunarPhase.illumination;
+  if (visibility < .012) return;
+  const x = celestial.moon.x * SCENE_WIDTH;
+  const y = celestial.moon.y * SCENE_HEIGHT;
+  const radius = 10 + (celestial.lunarPhase.illumination * 3);
+  const phase = celestial.lunarPhase.fraction;
+  const halo = context.createRadialGradient(x, y, radius * .2, x, y, radius * 7);
+  halo.addColorStop(0, `rgb(226 236 255 / ${visibility * .36})`);
+  halo.addColorStop(1, "rgb(183 208 255 / 0)");
+  context.fillStyle = halo;
+  context.beginPath();
+  context.arc(x, y, radius * 7, 0, Math.PI * 2);
+  context.fill();
+
+  context.save();
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.clip();
+  context.fillStyle = `rgb(238 241 224 / ${visibility})`;
+  context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  // A shifted sky-coloured disk produces a soft, recognisable crescent,
+  // quarter, gibbous, or full phase without assuming geographic accuracy.
+  const shadowX = phase <= .5
+    ? x - (radius * 4 * phase)
+    : x + (radius * 4 * (1 - phase));
+  context.fillStyle = toRgb(mix(palette.skyTop, palette.skyHorizon, .28), .92);
+  context.beginPath();
+  context.arc(shadowX, y, radius, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+const CLOUD_FORMATIONS = Object.freeze([
+  { x: .16, y: .16, width: 138, height: 20, density: 6, weight: .58, seed: 12 },
+  { x: .50, y: .11, width: 235, height: 26, density: 9, weight: .48, seed: 29 },
+  { x: .72, y: .25, width: 195, height: 34, density: 7, weight: .74, seed: 57 },
+  { x: .34, y: .34, width: 120, height: 18, density: 4, weight: .62, seed: 81 },
+  { x: .88, y: .10, width: 105, height: 20, density: 4, weight: .34, seed: 94 },
+]);
+
+function paintCloudDab(context, x, y, radiusX, radiusY, color, alpha) {
+  context.save();
+  context.translate(x, y);
+  context.scale(1, radiusY / radiusX);
+  const gradient = context.createRadialGradient(0, 0, radiusX * .08, 0, 0, radiusX);
+  gradient.addColorStop(0, toRgb(color, alpha));
+  gradient.addColorStop(.48, toRgb(color, alpha * .64));
+  gradient.addColorStop(1, toRgb(color, 0));
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, radiusX, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawClouds(context, palette) {
+  if (palette.cloudOpacity < .01) return;
+  context.save();
+  context.globalCompositeOperation = "source-over";
+
+  for (const formation of CLOUD_FORMATIONS) {
+    const random = createRandom(formation.seed);
+    const centerX = formation.x * SCENE_WIDTH;
+    const centerY = formation.y * SCENE_HEIGHT;
+    const baseAlpha = palette.cloudOpacity * formation.weight * 1.45;
+
+    // The lower shadow and many uneven feathered dabs make a formation read
+    // as a shared atmospheric mass rather than a row of cloud icons.
+    for (let index = 0; index < formation.density; index += 1) {
+      const progress = formation.density === 1 ? .5 : index / (formation.density - 1);
+      const x = centerX + ((progress - .5) * formation.width) + ((random() - .5) * 22);
+      const y = centerY + ((random() - .18) * formation.height * .48);
+      const radiusX = (formation.width / formation.density) * (2.15 + (random() * 1.1));
+      const radiusY = formation.height * (.62 + (random() * .38));
+      paintCloudDab(context, x + 5, y + (radiusY * .48), radiusX, radiusY, palette.cloudShadow, baseAlpha * (.38 + (random() * .18)));
+      paintCloudDab(context, x, y, radiusX, radiusY, palette.cloudLight, baseAlpha * (.52 + (random() * .25)));
+    }
+  }
+  context.restore();
+}
+
+function drawCelestialSky(context, palette, celestial) {
+  withSkyClip(context, () => {
+    drawStars(context, celestial);
+    drawSun(context, celestial);
+    drawMoon(context, celestial, palette);
+    drawClouds(context, palette);
+  });
+}
+
 function createRandom(seed = 73129) {
   let value = seed >>> 0;
   return () => {
@@ -110,9 +268,9 @@ function createRandom(seed = 73129) {
 }
 
 function drawGrass(context, palette) {
-  const random = createRandom(48219);
   const grassShade = mix(palette.meadowNear, [30, 73, 52], .42);
   const grassWarmth = mix(palette.meadowFar, [196, 176, 102], .38);
+  const random = createRandom(48219);
   context.save();
   context.lineCap = "round";
 
@@ -176,8 +334,12 @@ function buildScene(sourceCanvas, palette) {
   const surface = getOffscreenCanvas(sourceCanvas);
   const context = surface?.getContext("2d", { alpha: false });
   if (!surface || !context) return null;
-  paintSurface(context, palette);
+  const celestial = getCelestialState(
+    palette.timestamp ? new Date(palette.timestamp) : new Date(),
+  );
+  paintSurface(context, palette, celestial);
   drawAtmosphere(context, palette);
+  drawCelestialSky(context, palette, celestial);
   drawGrass(context, palette);
   return surface;
 }
