@@ -7,6 +7,7 @@ import Toast from "@ui/Toast";
 import ScrollToTop from "./ScrollToTop";
 import FocusSurface from "@features/focus/components/FocusSurface.jsx";
 import LegacyToolsMigration from "@features/plan/legacyTools/LegacyToolsMigration.jsx";
+import LandscapeEnvironment from "@/app/environment/LandscapeEnvironment.jsx";
 
 export default function Layout() {
   useKeyboard();
@@ -16,6 +17,7 @@ export default function Layout() {
     : location.pathname.split("/").filter(Boolean)[0] ?? "today";
   return (
     <div className="app" data-route={route}>
+      <LandscapeEnvironment />
       <Toast />
       <FocusSurface />
       <LegacyToolsMigration />

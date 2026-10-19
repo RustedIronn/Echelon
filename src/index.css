@@ -9,6 +9,7 @@
 @import "./styles/forms.css" layer(base);
 @import "./styles/primitives.css" layer(components);
 @import "./app/layout/layout.css" layer(components);
+@import "./app/environment/environment.css" layer(components);
 
 @import "./features/today/dashboard.css" layer(components);
 @import "./features/insights/analysis/analytics.css" layer(components);

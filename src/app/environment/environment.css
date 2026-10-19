@@ -1,0 +1,32 @@
+.landscape-environment {
+  @apply pointer-events-none fixed inset-0 z-0 overflow-hidden;
+  background: #d7e3dd;
+}
+
+.landscape-environment__canvas,
+.landscape-environment__fallback {
+  @apply absolute inset-0 size-full;
+}
+
+.landscape-environment__canvas {
+  display: block;
+  z-index: 1;
+}
+
+.landscape-environment__fallback {
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 46% 51% at 77% 20%, rgb(255 246 207 / .55), transparent 73%),
+    linear-gradient(180deg, #94bdd3 0%, #d7e3dd 48%, #8da772 100%);
+}
+
+/* This preserves the world in view while giving route content a stable reading field. */
+.app { @apply relative isolate; }
+.app > :not(.landscape-environment) { position: relative; z-index: 1; }
+.app-main {
+  background: linear-gradient(90deg, rgb(250 251 246 / .7), rgb(250 251 246 / .51) 62%, rgb(250 251 246 / .3));
+}
+
+@media (max-width: 760px) {
+  .app-main { background: linear-gradient(180deg, rgb(250 251 246 / .74), rgb(250 251 246 / .55)); }
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echelon · Base Landscape</title>
+    <style>
+      html, body, main, canvas { width: 100%; height: 100%; margin: 0; }
+      body { overflow: hidden; background: #d7e3dd; }
+      canvas { display: block; }
+      .label { position: fixed; top: 20px; left: 24px; color: rgb(36 63 51 / .72); font: 600 11px/1.2 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <main aria-label="Echelon base landscape preview">
+      <canvas id="landscape-preview" aria-label="Static meadow and stream landscape"></canvas>
+      <p class="label">Echelon · base landscape</p>
+    </main>
+    <script type="module" src="/src/app/environment/landscapePreview.js"></script>
+  </body>
+</html>
