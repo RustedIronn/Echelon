@@ -76,7 +76,7 @@ export function sampleTerrain(u, v) {
   };
 }
 
-export function terrainLight(u, v) {
+export function terrainLight(u, v, lighting = {}) {
   const step = .0014;
   const left = sampleTerrain(clamp(u - step), v).height;
   const right = sampleTerrain(clamp(u + step), v).height;
@@ -85,6 +85,9 @@ export function terrainLight(u, v) {
   const normalX = (left - right) * 28;
   const normalZ = (distant - near) * 28;
   const length = Math.hypot(normalX, 1, normalZ);
-  const light = ((normalX * .43) + .84 + (normalZ * -.32)) / length;
-  return clamp(.65 + (light * .34), .52, 1.04);
+  const [lightX = .43, lightY = .84, lightZ = -.32] = lighting.lightDirection ?? [];
+  const light = ((normalX * lightX) + lightY + (normalZ * lightZ)) / length;
+  const ambient = lighting.ambient ?? .88;
+  const contrast = lighting.contrast ?? .98;
+  return clamp((ambient * .57) + (light * .43 * contrast), .25, 1.06);
 }

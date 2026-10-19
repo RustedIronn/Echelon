@@ -1,4 +1,5 @@
 import { LANDSCAPE_VIEW, renderLandscape } from "./landscapeScene.js";
+import { getDevelopmentPreviewLighting, getEnvironmentLighting } from "./environmentTime.js";
 
 const canvas = document.querySelector("#landscape-preview");
 const context = canvas?.getContext("2d", { alpha: false });
@@ -17,7 +18,8 @@ function render() {
   canvas.width = Math.round(width * density);
   canvas.height = Math.round(height * density);
   context.setTransform(density * scale, 0, 0, density * scale, density * offsetX, density * offsetY);
-  renderLandscape(context);
+  const previewLighting = getDevelopmentPreviewLighting(window.location.search);
+  renderLandscape(context, previewLighting ?? getEnvironmentLighting());
 }
 
 window.addEventListener("resize", render);

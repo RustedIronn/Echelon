@@ -2,8 +2,6 @@ import {
   clamp,
   sampleTerrain,
   smoothstep,
-  streamCenter,
-  streamWidth,
   terrainHorizon,
   terrainLight,
   valueNoise,
@@ -19,9 +17,14 @@ export const LANDSCAPE_VIEW = Object.freeze({
 export const DAYLIGHT_PALETTE = Object.freeze({
   skyTop: [138, 183, 207],
   skyHorizon: [244, 227, 190],
+  skyGlow: [255, 245, 207],
   meadowFar: [180, 200, 139],
   meadowNear: [69, 111, 72],
   water: [91, 143, 146],
+  lightDirection: [.43, .84, -.32],
+  ambient: .88,
+  contrast: .98,
+  haze: .18,
 });
 
 const SCENE_WIDTH = 960;
@@ -41,14 +44,15 @@ function skyColor(u, y, palette) {
   const base = mix(palette.skyTop, palette.skyHorizon, vertical);
   const lightDistance = Math.hypot((u - .78) / .9, (y - .20) / .72);
   const glow = clamp(1 - lightDistance, 0, 1) ** 2;
-  const haze = smoothstep(.22, .56, y) * .22;
-  return mix(mix(base, [255, 245, 207], glow * .36), [245, 234, 211], haze);
+  const haze = smoothstep(.22, .56, y) * palette.haze;
+  const glowStrength = .08 + (palette.ambient * .29);
+  return mix(mix(base, palette.skyGlow, glow * glowStrength), palette.skyHorizon, haze);
 }
 
 function paintSurface(context, palette) {
   const image = context.createImageData(SCENE_WIDTH, SCENE_HEIGHT);
   const pixels = image.data;
-  const farLand = [171, 192, 144];
+  const farLand = palette.meadowFar;
 
   for (let y = 0; y < SCENE_HEIGHT; y += 1) {
     const screenY = y / (SCENE_HEIGHT - 1);
@@ -68,9 +72,9 @@ function paintSurface(context, palette) {
       }
       const v = clamp((screenY - horizon) / (1 - horizon));
       const terrain = sampleTerrain(u, v);
-      const light = terrainLight(u, v);
+      const light = terrainLight(u, v, palette);
       const depthColor = mix(farLand, palette.meadowNear, v ** 1.16);
-      const grain = (valueNoise((u * 46) + 20, (v * 46) + 30, 706) - .5) * (2 + (v * 7));
+      const grain = (valueNoise((u * 46) + 20, (v * 46) + 30, 706) - .5) * (2 + (v * 7) * palette.contrast);
       const relief = clamp(.5 + (terrain.height * 2.65), .22, .78);
       let color = depthColor.map((channel) => (channel * light) + grain + ((relief - .5) * 38));
 
@@ -81,7 +85,7 @@ function paintSurface(context, palette) {
         color = mix(color, waterBase.map((channel) => channel + shimmer), terrain.water * .76);
       }
 
-      const atmosphericFade = (1 - smoothstep(.03, .31, v)) * .30;
+      const atmosphericFade = (1 - smoothstep(.03, .31, v)) * (palette.haze * 1.2);
       color = mix(color, palette.skyHorizon, atmosphericFade);
       color = mix(sky, color, landCoverage);
       pixels[pixel] = clamp(Math.round(color[0]), 0, 255);
@@ -105,8 +109,10 @@ function createRandom(seed = 73129) {
   };
 }
 
-function drawGrass(context) {
+function drawGrass(context, palette) {
   const random = createRandom(48219);
+  const grassShade = mix(palette.meadowNear, [30, 73, 52], .42);
+  const grassWarmth = mix(palette.meadowFar, [196, 176, 102], .38);
   context.save();
   context.lineCap = "round";
 
@@ -132,8 +138,8 @@ function drawGrass(context) {
       const wind = (.8 + (v * 2.1)) + ((random() - .5) * 1.6);
       const shade = .23 + (v * .34);
       context.strokeStyle = random() > .72
-        ? `rgb(190 183 112 / ${shade * .55})`
-        : `rgb(48 98 68 / ${shade})`;
+        ? toRgb(grassWarmth, shade * .55)
+        : toRgb(grassShade, shade);
       context.lineWidth = .28 + (v * .45);
       context.beginPath();
       context.moveTo(startX, startY);
@@ -148,7 +154,7 @@ function drawAtmosphere(context, palette) {
   const horizon = LANDSCAPE_VIEW.horizon / LANDSCAPE_VIEW.height;
   const haze = context.createLinearGradient(0, SCENE_HEIGHT * (horizon - .03), 0, SCENE_HEIGHT * (horizon + .17));
   haze.addColorStop(0, "rgb(255 244 215 / 0)");
-  haze.addColorStop(.48, toRgb(palette.skyHorizon, .12));
+  haze.addColorStop(.48, toRgb(palette.skyHorizon, palette.haze * .7));
   haze.addColorStop(1, "rgb(255 244 215 / 0)");
   context.fillStyle = haze;
   context.fillRect(0, SCENE_HEIGHT * (horizon - .03), SCENE_WIDTH, SCENE_HEIGHT * .21);
@@ -172,7 +178,7 @@ function buildScene(sourceCanvas, palette) {
   if (!surface || !context) return null;
   paintSurface(context, palette);
   drawAtmosphere(context, palette);
-  drawGrass(context);
+  drawGrass(context, palette);
   return surface;
 }
 
