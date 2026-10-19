@@ -293,6 +293,8 @@ import {
   getCelestialVisibility,
   getLunarPhase,
 } from "../src/app/environment/environmentCelestial.js";
+import { FLOWER_ANCHORS } from "../src/app/environment/environmentFlowers.js";
+import { sampleTerrain } from "../src/app/environment/environmentTerrain.js";
 
 const memory = new Map();
 
@@ -4993,6 +4995,16 @@ test("celestial star fields are deterministic and irregular", () => {
   assert.deepEqual(first, second);
   assert.equal(first.length, 60);
   assert.equal(new Set(first.map((star) => `${star.x}:${star.y}`)).size, 60);
+});
+
+test("flower anchors are deterministic terrain positions outside the stream", () => {
+  assert.ok(FLOWER_ANCHORS.length >= 60);
+  for (const flower of FLOWER_ANCHORS) {
+    assert.ok(flower.v >= .24 && flower.v <= .94);
+    assert.ok(sampleTerrain(flower.u, flower.v).water <= .001);
+    assert.ok(sampleTerrain(Math.max(0, flower.u - .012), flower.v).water <= .001);
+    assert.ok(sampleTerrain(Math.min(1, flower.u + .012), flower.v).water <= .001);
+  }
 });
 
 test("celestial visibility transitions keep sun and stars in their intended sky periods", () => {

@@ -10,6 +10,10 @@ import {
   getCelestialState,
   STAR_FIELD,
 } from "./environmentCelestial.js";
+import {
+  FLOWER_ANCHORS,
+  FLOWER_FAMILIES,
+} from "./environmentFlowers.js";
 
 export const LANDSCAPE_VIEW = Object.freeze({
   width: 1600,
@@ -308,6 +312,84 @@ function drawGrass(context, palette) {
   context.restore();
 }
 
+function flowerColor(color, palette, v, tint = 1) {
+  const light = .42 + (palette.ambient * .58);
+  const lit = color.map((channel) => Math.min(255, channel * light * tint));
+  return mix(lit, palette.skyHorizon, (1 - v) * palette.haze * .18);
+}
+
+function drawFlowers(context, palette) {
+  context.save();
+  context.lineCap = "round";
+
+  for (const flower of FLOWER_ANCHORS) {
+    if (sampleTerrain(flower.u, flower.v).water > .001) continue;
+    const horizon = terrainHorizon(flower.u);
+    const baseX = flower.u * SCENE_WIDTH;
+    const baseY = (horizon + (flower.v * (1 - horizon))) * SCENE_HEIGHT;
+    const perspective = .30 + (flower.v ** 1.35) * .90;
+    const stemHeight = flower.size * perspective * 9.2;
+    const topY = Math.max(baseY - stemHeight, (horizon * SCENE_HEIGHT) + 1);
+    const topX = baseX + (flower.lean * perspective);
+    const stemColor = flowerColor([63, 109, 67], palette, flower.v, .88);
+    const family = FLOWER_FAMILIES[flower.family];
+    const petalColor = flowerColor(family.petal, palette, flower.v, flower.tint);
+    const centerColor = flowerColor(family.center, palette, flower.v, flower.tint);
+    const bloomRadius = flower.size * perspective * 2.45;
+
+    context.strokeStyle = toRgb(stemColor, .38 + (flower.v * .34));
+    context.lineWidth = .28 + (perspective * .38);
+    context.beginPath();
+    context.moveTo(baseX, baseY);
+    context.quadraticCurveTo(
+      baseX + (flower.lean * .28),
+      baseY - (stemHeight * .54),
+      topX,
+      topY,
+    );
+    context.stroke();
+
+    // One modest leaf keeps the stem legible at normal viewing distance
+    // without turning every flower into a repeated icon.
+    context.fillStyle = toRgb(stemColor, .22 + (flower.v * .27));
+    context.beginPath();
+    context.ellipse(
+      baseX + (flower.lean * .18),
+      baseY - (stemHeight * .42),
+      bloomRadius * .42,
+      bloomRadius * .16,
+      flower.lean * .12,
+      0,
+      Math.PI * 2,
+    );
+    context.fill();
+
+    context.save();
+    context.translate(topX, topY);
+    context.rotate(flower.rotation);
+    for (let petal = 0; petal < flower.petalCount; petal += 1) {
+      const angle = ((petal / flower.petalCount) * Math.PI * 2) + (Math.sin((petal + 1) * 4.7) * .08);
+      const petalRadius = bloomRadius * (.72 + (((petal + flower.family) % 3) * .09));
+      const petalWidth = petalRadius * (.48 + (flower.petalShape * .07));
+      const petalHeight = petalRadius * (.24 + ((2 - flower.petalShape) * .055));
+      context.save();
+      context.rotate(angle);
+      context.fillStyle = toRgb(petalColor, .46 + (flower.v * .35));
+      context.beginPath();
+      context.ellipse(petalRadius * .56, 0, petalWidth, petalHeight, .18, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+    context.fillStyle = toRgb(centerColor, .58 + (flower.v * .30));
+    context.beginPath();
+    context.arc(0, 0, bloomRadius * .34, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  context.restore();
+}
+
 function drawAtmosphere(context, palette) {
   const horizon = LANDSCAPE_VIEW.horizon / LANDSCAPE_VIEW.height;
   const haze = context.createLinearGradient(0, SCENE_HEIGHT * (horizon - .03), 0, SCENE_HEIGHT * (horizon + .17));
@@ -341,6 +423,7 @@ function buildScene(sourceCanvas, palette) {
   drawAtmosphere(context, palette);
   drawCelestialSky(context, palette, celestial);
   drawGrass(context, palette);
+  drawFlowers(context, palette);
   return surface;
 }
 
