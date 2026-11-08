@@ -562,7 +562,7 @@ const at = (y, mo, d, h) => new Date(y, mo - 1, d, Math.floor(h), Math.round((h 
 
 test('the solar day follows the calendar: longer in summer, sun rises behind the camera and sets in front', () => {
   const summer = solarDay(at(2026, 6, 21, 12)), winter = solarDay(at(2026, 12, 21, 12));
-  assert.ok(summer.dayLength > winter.dayLength + 3 && summer.maxElevation > winter.maxElevation);
+  assert.ok(summer.dayLength > winter.dayLength + 1.8 && summer.maxElevation > winter.maxElevation);
   const noon = sunPose(at(2026, 6, 21, summer.noon)); assert.ok(noon.elevation > 55);
   assert.ok(Math.abs(sunPose(at(2026, 6, 21, summer.sunrise)).elevation) < 1 && Math.abs(sunPose(at(2026, 6, 21, summer.sunset - 0.001)).elevation) < 1.5);
   assert.ok(sunPose(at(2026, 6, 21, 0.5)).elevation < -30);

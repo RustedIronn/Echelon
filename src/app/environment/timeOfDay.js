@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-
+import { GRADE } from './linearResolve.js';
 // Time of day for the living world: an artistically controlled solar cycle driven by the device clock, date and timezone (no location needed).
 // The four moods (morning, afternoon, evening, night) are colour anchors blended continuously by solar elevation along a rising (morning) and a
 // setting (evening) timeline, so there are no presets and no fixed-hour palette swaps. "Approved" keeps the earlier renderer for comparison.
@@ -12,7 +12,7 @@ export const dayOfYear = (date) => Math.floor((date - new Date(date.getFullYear(
 
 // ---- astronomy-lite: believable, not geographic
 export function solarDay(date) {
-  const season = Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365); const dayLength = 12 + 2.4 * season; const noon = 12.75;
+  const season = Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365); const dayLength = 12.4 + 1.0 * season; const noon = 12.75;
   return { dayLength, noon, sunrise: noon - dayLength / 2, sunset: noon + dayLength / 2, maxElevation: 50 + 14 * season };
 }
 // The sun rises behind and to the left of the camera, climbs through the open sky and sets in front, behind the mountains.
@@ -28,8 +28,8 @@ export const moonIllumination = (phase) => (1 - Math.cos(2 * Math.PI * phase)) /
 // The moon crosses the open western sky in front of the camera (low enough to be seen) and keeps to the calendar phase: a full moon rises near sunset.
 export function moonPose(date, sun) {
   const phase = moonPhase(date); const rise = (sun.solar.sunrise + phase * 24.84) % 24; const into = (((sun.hour - rise) % 24) + 24) % 24; const arc = 12.4; let elevation, azimuth;
-  if (into <= arc) { const f = into / arc; elevation = 26 * Math.sin(Math.PI * f); azimuth = (-150 + 120 * f) * DEG; }
-  else { const g = (into - arc) / (24 - arc); elevation = -30 * Math.sin(Math.PI * g); azimuth = (-30 - 120 * g) * DEG; }
+  if (into <= arc) { const f = into / arc; elevation = 18 * Math.sin(Math.PI * f); azimuth = (-122 + 64 * f) * DEG; }
+  else { const g = (into - arc) / (24 - arc); elevation = -30 * Math.sin(Math.PI * g); azimuth = (-58 - 64 * g) * DEG; }
   const e = elevation * DEG; return { phase, illumination: moonIllumination(phase), elevation, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
 }
 
@@ -38,24 +38,28 @@ export function moonPose(date, sun) {
 const C = ['zen', 'hor', 'belt', 'sunC', 'hemiSky', 'ground', 'fog', 'cloud']; const N = ['sunK', 'glowK', 'beltK', 'hemiK', 'env', 'exp', 'fogK', 'cover', 'stars', 'glow', 'moon'];
 const stop = (e, v) => { const out = { e }; for (const k of C) out[k] = new THREE.Color(v[k]); for (const k of N) out[k] = v[k]; return out; };
 const NIGHT = { zen: '#162650', hor: '#2c3f70', belt: '#2c3f70', sunC: '#d98aa0', hemiSky: '#6179b0', ground: '#58786a', fog: '#2a3961', cloud: '#4c5d8c', sunK: 0, glowK: 0, beltK: 0, hemiK: 0.42, env: 0.34, exp: 1.42, fogK: 1, cover: 0.38, stars: 1, glow: 1, moon: 1 };
-const DAY = { zen: '#2f7fdc', hor: '#9fc8f0', belt: '#cfe2f1', sunC: '#fff4e2', hemiSky: '#c7dbee', ground: '#8d9d6c', fog: '#cfdeea', cloud: '#ffffff', sunK: 1, glowK: 0.35, beltK: 0, hemiK: 0.28, env: 0.85, exp: 1, fogK: 1, cover: 0.38, stars: 0, glow: 0, moon: 0 };
+const DAY = { zen: '#2c7fe0', hor: '#9cc8f0', belt: '#cfe2f1', sunC: '#fff4e4', hemiSky: '#c7dbee', ground: '#8f9e6a', fog: '#cfdeea', cloud: '#ffffff', sunK: 1.08, glowK: 0.35, beltK: 0, hemiK: 0.26, env: 0.8, exp: 1, fogK: 1, cover: 0.5, stars: 0, glow: 0, moon: 0 };
 const EVENING = [
   stop(-18, NIGHT),
-  stop(-10, { zen: '#2d3d73', hor: '#6d73a2', belt: '#5e5f96', sunC: '#d98aa0', hemiSky: '#6578aa', ground: '#5e7a62', fog: '#47517e', cloud: '#6a77a6', sunK: 0, glowK: 0.15, beltK: 0.3, hemiK: 0.45, env: 0.3, exp: 1.32, fogK: 1, cover: 0.4, stars: 0.75, glow: 1, moon: 1 }),
-  stop(-5, { zen: '#4b5c96', hor: '#cf90a4', belt: '#b887ab', sunC: '#d98aa0', hemiSky: '#9a8fb6', ground: '#6f8566', fog: '#9d89a8', cloud: '#b384ab', sunK: 0.03, glowK: 0.65, beltK: 0.6, hemiK: 0.32, env: 0.24, exp: 1.22, fogK: 1.05, cover: 0.45, stars: 0.3, glow: 0.9, moon: 0.6 }),
-  stop(0, { zen: '#6d82b8', hor: '#f0aa92', belt: '#e49aae', sunC: '#ff9f7a', hemiSky: '#cfa3ae', ground: '#7d8a62', fog: '#d6a2a6', cloud: '#e690aa', sunK: 0.22, glowK: 1.0, beltK: 0.75, hemiK: 0.3, env: 0.36, exp: 1.12, fogK: 1.1, cover: 0.5, stars: 0, glow: 0.55, moon: 0.2 }),
-  stop(6, { zen: '#6f95d6', hor: '#fba97c', belt: '#f08f9a', sunC: '#ffbe84', hemiSky: '#e5bba8', ground: '#8b925f', fog: '#ebc0a6', cloud: '#f79aa8', sunK: 0.82, glowK: 1.4, beltK: 0.6, hemiK: 0.36, env: 0.56, exp: 1.04, fogK: 1.15, cover: 0.5, stars: 0, glow: 0.15, moon: 0 }),
-  stop(14, { zen: '#5a8ed4', hor: '#f6c294', belt: '#f0a894', sunC: '#ffd2a0', hemiSky: '#e3cdb8', ground: '#8e9462', fog: '#ecd0b8', cloud: '#ffd0c0', sunK: 0.95, glowK: 0.9, beltK: 0.3, hemiK: 0.34, env: 0.74, exp: 1, fogK: 1.1, cover: 0.42, stars: 0, glow: 0, moon: 0 }),
-  stop(26, { zen: '#3a85dc', hor: '#b4d2ee', belt: '#b4d2ee', sunC: '#fff0d6', hemiSky: '#cddbe8', ground: '#8e9b68', fog: '#d6e0e6', cloud: '#fff6ec', sunK: 0.98, glowK: 0.5, beltK: 0, hemiK: 0.27, env: 0.82, exp: 1, fogK: 1, cover: 0.38, stars: 0, glow: 0, moon: 0 }),
+  stop(-10, { zen: '#2d3d73', hor: '#6d73a2', belt: '#5e5f96', sunC: '#ff8a78', hemiSky: '#6578aa', ground: '#5e7a62', fog: '#47517e', cloud: '#6a77a6', sunK: 0, glowK: 0.2, beltK: 0.3, hemiK: 0.45, env: 0.3, exp: 1.32, fogK: 1, cover: 0.5, stars: 0.75, glow: 1, moon: 1 }),
+  stop(-7.5, { zen: '#3b4c85', hor: '#8c7ba6', belt: '#a67ea4', sunC: '#ff8f76', hemiSky: '#8083b0', ground: '#68805f', fog: '#6f6a95', cloud: '#9a7eaa', sunK: 0.01, glowK: 0.5, beltK: 0.45, hemiK: 0.4, env: 0.27, exp: 1.27, fogK: 1.02, cover: 0.54, stars: 0.5, glow: 0.95, moon: 0.8 }),
+  stop(-5, { zen: '#4b5c96', hor: '#b88aa4', belt: '#b887ab', sunC: '#ff9a6e', hemiSky: '#9a8fb6', ground: '#6f8566', fog: '#9d89a8', cloud: '#b384ab', sunK: 0.03, glowK: 0.8, beltK: 0.6, hemiK: 0.32, env: 0.24, exp: 1.22, fogK: 1.05, cover: 0.58, stars: 0.3, glow: 0.9, moon: 0.6 }),
+  stop(-2.5, { zen: '#5a6fa8', hor: '#e8927e', belt: '#d092ab', sunC: '#ff9d72', hemiSky: '#b698b2', ground: '#778462', fog: '#c09aa8', cloud: '#d088a8', sunK: 0.1, glowK: 1.1, beltK: 0.68, hemiK: 0.31, env: 0.3, exp: 1.17, fogK: 1.08, cover: 0.59, stars: 0.1, glow: 0.7, moon: 0.35 }),
+  stop(0, { zen: '#6d82b8', hor: '#f79f70', belt: '#e49aae', sunC: '#ffa070', hemiSky: '#cfa3ae', ground: '#7d8a62', fog: '#d6a2a6', cloud: '#e690aa', sunK: 0.22, glowK: 1.35, beltK: 0.75, hemiK: 0.3, env: 0.36, exp: 1.12, fogK: 1.1, cover: 0.6, stars: 0, glow: 0.55, moon: 0.2 }),
+  stop(6, { zen: '#6f95d6', hor: '#ff9d66', belt: '#f08f9a', sunC: '#ffbe84', hemiSky: '#e5bba8', ground: '#8b925f', fog: '#ebc0a6', cloud: '#f79aa8', sunK: 0.82, glowK: 1.4, beltK: 0.6, hemiK: 0.36, env: 0.56, exp: 1.04, fogK: 1.15, cover: 0.58, stars: 0, glow: 0.15, moon: 0 }),
+  stop(14, { zen: '#5a8ed4', hor: '#f6c294', belt: '#f0a894', sunC: '#ffd2a0', hemiSky: '#e3cdb8', ground: '#8e9462', fog: '#ecd0b8', cloud: '#ffd0c0', sunK: 0.95, glowK: 0.9, beltK: 0.3, hemiK: 0.34, env: 0.74, exp: 1, fogK: 1.1, cover: 0.54, stars: 0, glow: 0, moon: 0 }),
+  stop(20, { zen: '#4688d8', hor: '#c2d2e6', belt: '#d4cfe0', sunC: '#ffdcaa', hemiSky: '#d4d2dc', ground: '#929664', fog: '#e0d8d8', cloud: '#fff0e0', sunK: 1.0, glowK: 0.7, beltK: 0.12, hemiK: 0.3, env: 0.75, exp: 1, fogK: 1.05, cover: 0.53, stars: 0, glow: 0, moon: 0 }),
+  stop(26, { zen: '#3a86dc', hor: '#b0cfee', belt: '#bcd0e6', sunC: '#ffe6c0', hemiSky: '#cbd9e8', ground: '#929b66', fog: '#d6dfe5', cloud: '#fff4e4', sunK: 1.04, glowK: 0.55, beltK: 0, hemiK: 0.27, env: 0.78, exp: 1, fogK: 1, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
+  stop(34, { zen: '#3585de', hor: '#a8cbed', belt: '#bcd3ec', sunC: '#fff3e3', hemiSky: '#c9d9ea', ground: '#909c68', fog: '#d1dde6', cloud: '#fffaf0', sunK: 1.06, glowK: 0.42, beltK: 0, hemiK: 0.26, env: 0.8, exp: 1, fogK: 1, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
   stop(40, DAY),
 ];
 const MORNING = [
   stop(-18, NIGHT),
   stop(-8, { zen: '#3d4f88', hor: '#9ca2c2', belt: '#c6a9bb', sunC: '#c9a0b0', hemiSky: '#7f8cb6', ground: '#68826a', fog: '#7c86ac', cloud: '#8b93bb', sunK: 0, glowK: 0.1, beltK: 0.4, hemiK: 0.42, env: 0.3, exp: 1.3, fogK: 1.4, cover: 0.35, stars: 0.5, glow: 0.9, moon: 0.5 }),
-  stop(1, { zen: '#7d9ccf', hor: '#f0d2c8', belt: '#f1c5be', sunC: '#ffd6c0', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dccdd0', cloud: '#f6d3d0', sunK: 0.1, glowK: 0.5, beltK: 0.6, hemiK: 0.3, env: 0.3, exp: 1.16, fogK: 2.2, cover: 0.4, stars: 0.08, glow: 0.6, moon: 0.15 }),
-  stop(7, { zen: '#6fa4e4', hor: '#d4e4f0', belt: '#f2d2c4', sunC: '#fff0de', hemiSky: '#d2e1ee', ground: '#8da676', fog: '#dde8ef', cloud: '#ffffff', sunK: 0.5, glowK: 0.6, beltK: 0.3, hemiK: 0.3, env: 0.55, exp: 1.06, fogK: 2, cover: 0.35, stars: 0, glow: 0.3, moon: 0 }),
-  stop(14, { zen: '#4a8fe0', hor: '#c2dcf0', belt: '#c2dcf0', sunC: '#fff3e2', hemiSky: '#cbdcec', ground: '#8ea36f', fog: '#d6e5ee', cloud: '#ffffff', sunK: 0.85, glowK: 0.45, beltK: 0.1, hemiK: 0.28, env: 0.75, exp: 1.02, fogK: 1.4, cover: 0.36, stars: 0, glow: 0, moon: 0 }),
-  stop(26, { zen: '#3a85dc', hor: '#b4d2ee', belt: '#b4d2ee', sunC: '#fff0d6', hemiSky: '#cddbe8', ground: '#8e9b68', fog: '#d6e0e6', cloud: '#fff6ec', sunK: 0.98, glowK: 0.5, beltK: 0, hemiK: 0.27, env: 0.82, exp: 1, fogK: 1, cover: 0.38, stars: 0, glow: 0, moon: 0 }),
+  stop(1, { zen: '#5f9fe6', hor: '#d6e3f0', belt: '#f2c4b4', sunC: '#ffdcb4', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dde4ec', cloud: '#fbe4d8', sunK: 0.4, glowK: 0.6, beltK: 0.55, hemiK: 0.3, env: 0.3, exp: 1.16, fogK: 1.3, cover: 0.5, stars: 0.08, glow: 0.6, moon: 0.15 }),
+  stop(7, { zen: '#5a9be8', hor: '#cfe2f2', belt: '#f0d2c4', sunC: '#ffe6c2', hemiSky: '#cfe0f0', ground: '#86a572', fog: '#d9e6f0', cloud: '#ffffff', sunK: 0.82, glowK: 0.6, beltK: 0.3, hemiK: 0.3, env: 0.52, exp: 1.05, fogK: 1.15, cover: 0.5, stars: 0, glow: 0.3, moon: 0 }),
+  stop(14, { zen: '#4a92e6', hor: '#bcd9f2', belt: '#c8def0', sunC: '#ffeacd', hemiSky: '#cbdcec', ground: '#8ea36f', fog: '#d6e5ee', cloud: '#ffffff', sunK: 0.96, glowK: 0.45, beltK: 0.1, hemiK: 0.27, env: 0.7, exp: 1.02, fogK: 1.05, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
+  stop(26, { zen: '#3585e0', hor: '#a8cdee', belt: '#a8cdee', sunC: '#fff0d6', hemiSky: '#cddbe8', ground: '#8d9d68', fog: '#d6e0e6', cloud: '#fff6ec', sunK: 1.06, glowK: 0.5, beltK: 0, hemiK: 0.26, env: 0.78, exp: 1, fogK: 1, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
   stop(40, DAY),
 ];
 function sample(stops, e) {
@@ -71,7 +75,11 @@ export function moodState(date) {
   const m = mixStops(sample(MORNING, sun.elevation), sample(EVENING, sun.elevation), evening);
   const moonVisible = smooth(-1, 6, moon.elevation) * clamp01(m.moon);
   const e = sun.elevation; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
-  return { ...m, gain, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
+  // valley mist: thickest just after sunrise, gone by mid-morning; only a trace at dusk
+  const morningMist = smooth(-6, 0, e) * (1 - smooth(0.5, 11, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
+  const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
+  const dayK = smooth(3, 24, e); // daylight presence: more vibrance and a little more contrast as the sun climbs
+  return { ...m, gain, mist, mistColor, sat: 1 + 0.2 * dayK, contrast: 1 + 0.08 * dayK, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
 }
 
 // ---- store (mode: approved | manual | live)
@@ -105,7 +113,9 @@ if (typeof window !== 'undefined') applyTodQuery(window.location.search);
 export function applyTimeOfDay(scene, ref, date, base) {
   const sun = scene.getObjectByName('sun'), moon = scene.getObjectByName('moon'), hemi = scene.getObjectByName('tod-ambient'), rig = scene.userData.todRig;
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
+  const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
+    mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1;
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
@@ -114,7 +124,8 @@ export function applyTimeOfDay(scene, ref, date, base) {
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
-  rig?.setActive(true); rig?.update(s);
+  GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast;
+  rig?.setActive(true); rig?.update(s); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK };
 }
