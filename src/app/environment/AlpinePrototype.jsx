@@ -11,7 +11,7 @@ import { applyBlenderDisplay, applyGrassHabitat, applyWetSediment, makeSkyMateri
 import { createBankWetness } from './bankWetness.js';
 import { applyLook, getLook, subscribeLook, isApprovedHeld } from './lookDev.js';
 import Hamlet from './Hamlet.jsx';
-import { applyTimeOfDay, currentMoment, subscribeTod, getTod } from './timeOfDay.js';
+import { applyTimeOfDay, createLiveMoodSampler, currentMoment, subscribeTod, getTod } from './timeOfDay.js';
 import GeneratedSky from './GeneratedSky.jsx';
 import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
 import { buildRealFlowerGroup, proxyDistance } from './realFlowers.js';
@@ -643,15 +643,20 @@ function LookDevBridge({ baseline, resources, manifest }) {
   const gl = useThree((state) => state.gl); const scene = useThree((state) => state.scene); const invalidate = useThree((state) => state.invalidate);
   useEffect(() => {
     const base = { exposure: baseline ? .7 : resources.metadata.display.exposure, environmentIntensity: scene.environmentIntensity, fogDensity: scene.fog?.density ?? 0 };
-    let timer = 0; const ref = { sunDir: manifest.sun.direction, sunColor: manifest.sun.color, sunEnergy: manifest.sun.sourceEnergy, fogColor: '#bacad8' };
+    let timer = 0,lastOptics=performance.now(); const sampleLive=createLiveMoodSampler(); const ref = { sunDir: manifest.sun.direction, sunColor: manifest.sun.color, sunEnergy: manifest.sun.sourceEnergy, fogColor: '#bacad8' };
     const apply = (refreshOptics) => {
       const moment = baseline || isApprovedHeld() ? null : currentMoment();
-      applyLook({ scene, gl }, getLook(), applyTimeOfDay(scene, ref, moment, base)); invalidate();
+      applyLook({ scene, gl }, getLook(), applyTimeOfDay(scene, ref, moment, base, {state:moment&&getTod().mode==='live'?sampleLive(moment):null,refreshEnvironment:refreshOptics||getTod().mode!=='live'})); invalidate();
       // The cached reflection and bed capture contain terrain, hamlet and light, so refresh them shortly after a change settles.
-      if (refreshOptics) { clearTimeout(timer); timer = setTimeout(() => window.__echelonPrototype?.refreshWaterOptics?.(), 250); }
+      if (refreshOptics && (!moment || !scene.userData.todRig)) { clearTimeout(timer); timer = setTimeout(() => window.__echelonPrototype?.refreshWaterOptics?.(), 250); }
     };
     apply(false); const unsubscribe = subscribeLook(() => apply(true)); const unsubscribeTod = subscribeTod(() => apply(true));
-    const tick = window.setInterval(() => { if (getTod().mode === 'live') apply(true); }, 30000);
+    // Interpolate the 30-second lighting samples at 4 Hz. The sun's movement
+    // per tick is subpixel; expensive sky/reflection caches stay at 30 seconds.
+    const tick=window.setInterval(()=>{
+      if(getTod().mode!=='live')return;
+      const refresh=performance.now()-lastOptics>=30000;if(refresh)lastOptics=performance.now();apply(refresh);
+    },250);
     return () => { unsubscribe(); unsubscribeTod(); window.clearInterval(tick); clearTimeout(timer); };
   }, [gl, scene, invalidate, baseline, resources, manifest]);
   return null;

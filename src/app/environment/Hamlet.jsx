@@ -6,6 +6,7 @@ import { ALPINE_ASSET_ROOT } from './alpinePrototypeData.js';
 import { HeightField, buildHamlet } from './hamletGeometry.js';
 import { bankLowering } from './bankLowering.js';
 import { makeHamletTextures } from './hamletTextures.js';
+import {applyWindowWarmth} from './hamletWindowLighting.js';
 import { attachHamletGround } from './hamletGround.js';
 
 // material key -> [texture key, base colour, roughness, extras]
@@ -41,6 +42,7 @@ export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
       if (key === 'lane') { material.polygonOffset = true; material.polygonOffsetFactor = -2; material.polygonOffsetUnits = -2; }
       if (key === 'glass') { material.emissive = new THREE.Color('#ffb25c'); material.emissiveIntensity = windowGlow; material.userData.windowGlow = true; } // dusk hook: ?windowglow=1
       applyBlenderDisplay(material, resources);
+      if(key==='glass')applyWindowWarmth(material);
       material.userData.lookRole = 'hamlet'; material.userData.baseColor = material.color.clone();
       const mesh = new THREE.Mesh(geometry, material); mesh.name = `Hamlet / ${key}`; mesh.castShadow = key !== 'lane' && key !== 'soil'; mesh.receiveShadow = true; group.add(mesh); materials.push(material);
     }
