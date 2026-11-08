@@ -9,9 +9,9 @@ export const COMMUNITIES = Object.freeze([
   { name: 'oxeye', cell: 6, rgb: [0.76, 0.74, 0.60] },
   { name: 'cranesbill', cell: 7, rgb: [0.34, 0.18, 0.62] },
 ]);
-export const COMMUNITY_MIX = Object.freeze({ 6: [['Marguerite', 0.92], ['Carthusian Pink', 0.08]], 7: [['Carthusian Pink', 0.6], ['Red Clover', 0.4]], 8: [['Dandelion', 1]] });
+export const COMMUNITY_MIX = Object.freeze({ 6: [['Marguerite', 0.92], ['Carthusian Pink', 0.08]], 7: [['Carthusian Pink', 0.72], ['Red Clover', 0.28]], 8: [['Dandelion', 1]] });
 // The first area to be made beautiful: the far bank between the river and the hamlet. Widening this window carries the same look through the valley.
-export const VIGNETTE = { x0: -8, x1: 100, z0: -136, z1: -26, soft: 10 };
+export const VIGNETTE = { x0: -125, x1: 125, z0: -165, z1: -26, soft: 12 }; // the whole visible valley (the camera's view cone limits it further)
 
 const CELL = [24, 28]; // the visible middle ground is a thin band of screen (depth is foreshortened), so a drift must be deep to be seen as a drift
 const value = (x, z) => { const i = Math.floor(x), j = Math.floor(z), u = smooth(0, 1, x - i), v = smooth(0, 1, z - j); const a = habitatHash(i, j, 7), b = habitatHash(i + 1, j, 7), c = habitatHash(i, j + 1, 7), d = habitatHash(i + 1, j + 1, 7); return (a + (b - a) * u) * (1 - v) + (c + (d - c) * u) * v; };
@@ -30,7 +30,7 @@ export function communityAt(x, z, moisture = 0, window = VIGNETTE) {
   d1 += 0.16 * (value(x * 0.11, z * 0.23) - 0.5) + 0.07 * (value(x * 0.5, z * 0.8) - 0.5); // ragged, irregular edges
   const present = habitatHash(id[0], id[1], 103) < 0.88 ? 0.62 + 0.38 * habitatHash(id[0], id[1], 105) : 0; /* each drift has its own richness: some lavish, some sparse */ const core = 1 - smooth(0.3, 0.7, d1);
   const r = habitatHash(id[0], id[1], 104); const wet = smooth(0.12, 0.5, moisture);
-  const t0 = 0.26 + 0.3 * wet, t1 = t0 + 0.3 * (1 - 0.3 * wet), t2 = t1 + 0.12; const kind = r < t0 ? 0 : r < t1 ? 1 : r < t2 ? 2 : 3;
+  const t0 = 0.26 + 0.3 * wet, t1 = t0 + 0.21 * (1 - 0.3 * wet), t2 = t1 + 0.14; /* campion stands are 30% fewer than before */ const kind = r < t0 ? 0 : r < t1 ? 1 : r < t2 ? 2 : 3;
   // a ragged ribbon of buttercup along the wet ground at the water's edge
   const ribbon = smooth(0.3, 0.75, moisture) * smooth(0.25, 0.6, value(x * 0.09, z * 0.3)) * mask;
   return ribbon > present * core * mask ? { strength: ribbon, kind: 0 } : { strength: present * core * mask, kind };
@@ -45,14 +45,14 @@ export function placeCommunityFlowers(field, habitat, { bank = null, from = 34, 
     const h = habitat.sample(x, z); if (h.density < 0.05) continue;
     const c = communityAt(x, z, h.moisture, window); if (c.strength < 0.04) continue;
     const fade = smooth(from, from + 10, d) * (1 - smooth(to - 35, to, d));
-    if (habitatHash(i, j, 113) > c.strength ** 1.1 * (0.5 + 0.5 * h.density) * 0.72 * (1 - 0.5 * smooth(60, 115, d)) * fade) continue; // thinner far away: the blades carry the colour there, and fewer flowers keep the cost down
+    if (habitatHash(i, j, 113) > c.strength ** 1.1 * (0.5 + 0.5 * h.density) * 0.72 * (1 - 0.6 * smooth(55, 120, d)) * fade) continue; // thinner far away: the blades carry the colour there, and fewer flowers keep the cost down
     const n = 1 + (habitatHash(i, j, 114) > 0.55 ? 1 : 0);
     for (let k = 0; k < n; k += 1) {
       const px = x + (habitatHash(i, j, 115 + k) - 0.5) * cell, pz = z + (habitatHash(i, j, 125 + k) - 0.5) * cell; const local = habitat.sample(px, pz);
       let y = field.at(px, pz); if (bank) y += bank.offsetAt(px, pz, y); if (local.waterDistance < 3 && y < local.waterLevel + 0.035) continue;
       // species by the drift's kind, with a few strays of the neighbouring kind so no drift is a perfect monoculture
       let cell8 = COMMUNITIES[c.kind].cell; if (habitatHash(i, j, 135 + k) > 0.9) cell8 = COMMUNITIES[(c.kind + 1) % 4].cell;
-      const size = (1 + 0.5 * smooth(from, 100, d)) * (0.85 + 0.3 * habitatHash(i, j, 145 + k)) * (1 + 0.22 * c.strength);
+      const size = (1 + 0.3 * smooth(from, 100, d)) * (0.74 + 0.24 * habitatHash(i, j, 145 + k)) * (1 + 0.08 * c.strength); // about 20% lower than the first pass
       const yaw = habitatHash(i, j, 155 + k) * Math.PI * 2, cs = Math.cos(yaw) * size, sn = Math.sin(yaw) * size;
       matrices[cell8].push(cs, 0, -sn, 0, 0, size, 0, 0, sn, 0, cs, 0, px, y - 0.012, pz, 1);
     }
