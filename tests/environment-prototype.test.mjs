@@ -493,7 +493,8 @@ test('real reflection switches the water to a mip-chain lookup only in the refin
 });
 
 // ---- procedural hamlet ----
-import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_APRON, createHamletClearing, footprint, pointInPolygon, yardPolygon } from '../src/app/environment/hamletLayout.js';
+import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_APRON, HAMLET_DOORS, HAMLET_TERRAIN_BOUNDS, sampleCurve, distanceToSegment, createHamletClearing, footprint, pointInPolygon, yardPolygon } from '../src/app/environment/hamletLayout.js';
+import {buildHamletGroundMask} from '../src/app/environment/hamletGround.js';
 import { HeightField, buildHamlet } from '../src/app/environment/hamletGeometry.js';
 
 const heightMeta = JSON.parse(readFileSync(new URL('public/assets/environment/alpine-prototype/hamlet-heights.json', root), 'utf8'));
@@ -509,7 +510,7 @@ test('hamlet buildings keep clear of each other and sit on the site raster with 
   }
 });
 
-test('hamlet clearing removes grass from footprints, yards, lanes and the apron but not the open meadow', () => {
+test('hamlet clearing removes grass from buildings and lanes but preserves the open meadow', () => {
   const clearing = createHamletClearing();
   for (const b of HAMLET_BUILDINGS) assert.ok(clearing.contains(b.x, b.z), `${b.id} centre is cleared`);
   assert.ok(clearing.contains(HAMLET_APRON.x, HAMLET_APRON.z));
@@ -519,10 +520,34 @@ test('hamlet clearing removes grass from footprints, yards, lanes and the apron 
 
 test('hamlet geometry builds deterministic, grounded, budgeted triangles per material', () => {
   const a = buildHamlet(heightField), b = buildHamlet(heightField);
-  assert.equal(a.triangles, b.triangles); assert.ok(a.triangles > 8000 && a.triangles < 40000, `triangle budget ${a.triangles}`);
+  assert.equal(a.triangles, b.triangles); assert.ok(a.triangles > 1000 && a.triangles < 40000, `triangle budget ${a.triangles}`);
   for (const [key, g] of Object.entries(a.geometries)) { const p = g.attributes.position.array; assert.ok(p.every(Number.isFinite), `${key} finite`); assert.equal(g.attributes.normal.count, g.attributes.position.count); assert.ok(g.index.count % 3 === 0); }
   for (const placed of a.placed) assert.ok(Math.abs(placed.floorY - heightField.at(placed.x, placed.z)) < 1.2, `${placed.id} floor sits near the terrain`);
   assert.ok(Object.keys(a.geometries).length <= 13, 'about a dozen draw calls');
+});
+
+test('every entrance reaches the shared lane network without roads crossing buildings',()=>{
+  const paths=HAMLET_LANES.map(l=>({...l,samples:sampleCurve(l.points,.2)}));
+  const distance=(point,path)=>Math.min(...path.samples.slice(1).map((p,i)=>distanceToSegment(...point,path.samples[i],p)));
+  const connected=new Set(['main']);
+  for(let pass=0;pass<paths.length;pass++)for(const p of paths)if(!connected.has(p.id)&&paths.some(other=>connected.has(other.id)&&distance(p.samples.at(-1),other)<.25))connected.add(p.id);
+  assert.equal(connected.size,paths.length,'all access paths merge into the one lane');
+  for(const b of HAMLET_BUILDINGS){
+    const path=paths.find(p=>p.id==='door-'+b.id);assert.deepEqual(path.samples[0],HAMLET_DOORS[b.id]);
+    for(const route of paths)for(const p of route.samples)assert.ok(!footprint(b,.05).some(poly=>pointInPolygon(...p,poly)),`${route.id} crosses ${b.id}`);
+  }
+});
+test('hamlet ground treatment joins continuously and keeps geography protection independent of road layout',()=>{
+  const m=buildHamletGroundMask(),at=([x,z],channel=0)=>{const i=Math.floor((x-m.minX)/m.spanX*m.width),j=Math.floor((z-m.minZ)/m.spanZ*m.height);return m.data[(j*m.width+i)*4+channel];};
+  for(const l of HAMLET_LANES.filter(p=>p.id!=='main'))for(const p of sampleCurve(l.points,.2))assert.ok(at(p)>85,`${l.id} has a visible joined ground surface`);
+  assert.ok(m.width<512&&m.height<512,'local mask, not a whole-world texture');
+  const clearing=createHamletClearing();assert.deepEqual(clearing.terrainBounds,HAMLET_TERRAIN_BOUNDS);
+  assert.deepEqual(clearing.terrainBounds,{minX:8.2,maxX:80.35089297217868,minZ:-182,maxZ:-25},'approved relief mask is unchanged');
+  for(const b of HAMLET_BUILDINGS.filter(b=>b.yard)){
+    const points=yardPolygon(b);let found=false;
+    for(let x=Math.min(...points.map(p=>p[0]));x<Math.max(...points.map(p=>p[0]));x+=.5)for(let z=Math.min(...points.map(p=>p[1]));z<Math.max(...points.map(p=>p[1]));z+=.5)if(pointInPolygon(x,z,points)&&!clearing.contains(x,z)&&clearing.softness(x,z)>0&&clearing.softness(x,z)<1)found=true;
+    assert.ok(found,`${b.id} retains living tended grass rather than a bare rectangular yard`);
+  }
 });
 
 test('hamlet is a gated flag: preview default is procedural and pass=previous restores the authored mesh', () => {

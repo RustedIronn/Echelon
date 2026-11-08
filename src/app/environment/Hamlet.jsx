@@ -1,11 +1,12 @@
 import { useEffect, useMemo } from 'react';
-import { useLoader } from '@react-three/fiber';
+import { useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { applyBlenderDisplay } from './alpineParityMaterials.js';
 import { ALPINE_ASSET_ROOT } from './alpinePrototypeData.js';
 import { HeightField, buildHamlet } from './hamletGeometry.js';
 import { bankLowering } from './bankLowering.js';
 import { makeHamletTextures } from './hamletTextures.js';
+import { attachHamletGround } from './hamletGround.js';
 
 // material key -> [texture key, base colour, roughness, extras]
 const SPEC = {
@@ -15,20 +16,23 @@ const SPEC = {
 };
 
 // Ground heights follow the terrain, including any lowered stream bank.
-function groundField(meta, raw) {
-  const field = new HeightField(meta, new Float32Array(raw)); const base = field.at.bind(field); const bank = bankLowering.current;
+function groundField(meta, raw, bank) {
+  const field = new HeightField(meta, new Float32Array(raw)); const base = field.at.bind(field);
   if (bank) field.at = (x, z) => { const h = base(x, z); return h + bank.offsetAt(x, z, h); };
   return field;
 }
 
-// The procedural settlement: chapel, homesteads, barn, shed, boundaries, lanes and trees, grounded on the delivered terrain heights.
-export default function Hamlet({ resources, mode = 'detailed' }) {
+// The procedural settlement: chapel, homesteads, barn, shed, boundaries and a shared lane, grounded on the delivered terrain heights.
+export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
+  const invalidate=useThree(state=>state.invalidate);
   const root = ALPINE_ASSET_ROOT;
   const meta = useLoader(THREE.FileLoader, `${root}/hamlet-heights.json`, (loader) => loader.setResponseType('json'));
   const raw = useLoader(THREE.FileLoader, `${root}/hamlet-heights.bin`, (loader) => loader.setResponseType('arraybuffer'));
   const windowGlow = Number(new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('windowglow')) || 0;
+  const bank=bankLowering.current;
+  const field=useMemo(()=>groundField(meta,raw,bank),[meta,raw,bank]);
   const built = useMemo(() => {
-    const textures = makeHamletTextures(); const { geometries, triangles } = buildHamlet(groundField(meta, raw));
+    const textures = makeHamletTextures(); const { geometries, triangles } = buildHamlet(field);
     const group = new THREE.Group(); group.name = 'Procedural hamlet'; const materials = [];
     for (const [key, geometry] of Object.entries(geometries)) {
       const [textureKey, color, roughness] = SPEC[key];
@@ -40,8 +44,9 @@ export default function Hamlet({ resources, mode = 'detailed' }) {
       material.userData.lookRole = 'hamlet'; material.userData.baseColor = material.color.clone();
       const mesh = new THREE.Mesh(geometry, material); mesh.name = `Hamlet / ${key}`; mesh.castShadow = key !== 'lane' && key !== 'soil'; mesh.receiveShadow = true; group.add(mesh); materials.push(material);
     }
-    return { group, triangles, dispose: () => { group.children.forEach((m) => m.geometry.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); } };
-  }, [meta, raw, resources, mode, windowGlow]);
+    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); } };
+  }, [field, resources, mode, windowGlow]);
+  useEffect(() => { if(!terrain)return; const restore=attachHamletGround(terrain,built.textures.lane); invalidate(); return restore; }, [terrain,built,invalidate]);
   useEffect(() => () => built.dispose(), [built]);
-  return <primitive object={built.group} />;
+  return <primitive object={built.group}/>;
 }

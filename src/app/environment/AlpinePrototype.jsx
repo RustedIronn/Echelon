@@ -145,7 +145,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
   }
   if (bank && waterWorld) { // valley relief (valleyRelief.js): gentle landforms in the middle ground; ?relief=0 compares with the flat valley, ?relief=1.5 exaggerates
     const asked = new URLSearchParams(window.location.search).get('relief'); const amount = asked === null ? 1.2 : Number(asked); // 1.2 by default; ?relief=0 restores the authored flat valley, ?relief=1.8 exaggerates
-    if (amount > 0) bank = withValleyRelief(bank, createValleyRelief({ water: waterWorld, hamletBounds: createHamletClearing().bounds, amount }));
+    if (amount > 0) bank = withValleyRelief(bank, createValleyRelief({ water: waterWorld, hamletBounds: createHamletClearing().terrainBounds, amount }));
   }
   bankLowering.current = bank;
   const reliefMeshes = [];
@@ -324,7 +324,9 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
         geometries.push(geometry);
         const mesh = new THREE.InstancedMesh(geometry, layer.layer >= 2 && stripMaterial && !layer.synthetic && !layer.readable ? stripMaterial : material, indices.length); mesh.name = `${layer.source} / shape ${variant}`;
         indices.forEach((record, i) => {
-          const offset = record * (layer.stride || 8); const placed = grassMatrix(records, offset, matrix, baseline ? records[offset + 4] : records[offset + 8] * softs[i]);
+          const offset = record * (layer.stride || 8); const placed = grassMatrix(records, offset, matrix, baseline ? records[offset + 4] : records[offset + 8] * (.75+.25*softs[i]));
+          // Only the hamlet's tended ring is shortened; open meadow stays untouched.
+          if(!baseline&&softs[i]<1){placed.elements[0]*=softs[i];placed.elements[2]*=softs[i];placed.elements[4]*=softs[i];placed.elements[5]*=softs[i];placed.elements[6]*=softs[i];}
           if (bankLowering.current && !(habitat && layer.synthetic)) placed.elements[13] += bankLowering.current.offsetAt(records[offset], -records[offset + 1], records[offset + 2]);
           if(habitat && !layer.synthetic) {
             const d=Math.hypot(records[offset]+3,-records[offset+1]-10),fade=habitatSmooth(32,60,d),h=habitat.sample(records[offset],-records[offset+1]);
@@ -691,7 +693,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     <SourceExposure resources={resources} baseline={baseline} />
     <Daylight manifest={manifest} resources={resources} baseline={baseline} />
     <primitive object={geometry.group} />
-    {hamletNew && <Hamlet resources={resources} mode={hamletStyle === 'blockout' ? 'blockout' : 'detailed'} />}
+    {hamletNew && <Hamlet terrain={geometry.group} resources={resources} mode={hamletStyle === 'blockout' ? 'blockout' : 'detailed'} />}
     {vegetation && <><Grass manifest={manifest} gltf={grass} resources={resources} baseline={baseline} refinement={refinement} corridor={corridor} stripNormals={stripNormals} resolve={resolve} fillRoots={fillRoots} clearing={clearing} meadowDetail={meadowDetail} meadowMode={meadowMode} flowers={flowers} habitat={habitat} /><Flowers manifest={manifest} gltf={flowers} resources={resources} baseline={baseline} flowerFilter={flowerFilter} flowerStyle={flowerStyle} clearing={clearing} /></>}
     {!baseline && <GeneratedSky resources={resources} />}
     <LookDevBridge baseline={baseline} resources={resources} manifest={manifest} />
