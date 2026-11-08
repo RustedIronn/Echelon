@@ -16,7 +16,7 @@ import GeneratedSky from './GeneratedSky.jsx';
 import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
 import { buildRealFlowerGroup } from './realFlowers.js';
 import { createMeadowHabitat, applyHabitatMaterial, smooth as habitatSmooth, habitatHash } from './meadowHabitat.js';
-import { communityAt, scatterDensity, placeCommunityFlowers, COMMUNITIES, COMMUNITY_MIX } from './meadowCommunities.js';
+import { communityAt, scatterDensity, slopeFacing, placeCommunityFlowers, COMMUNITIES, COMMUNITY_MIX } from './meadowCommunities.js';
 import { growHabitatGrass, placeHabitatFlowers, tintHabitatBlade } from './meadowHabitatGrowth.js';
 import { occupancyMap, synthesizeMeadow, SYNTH } from './meadowSynthesis.js';
 import { HeightField } from './hamletGeometry.js';
@@ -348,7 +348,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
           if(habitat && Math.hypot(records[offset]+3,-records[offset+1]-10)>32)tintHabitatBlade(tint,habitat.sample(records[offset],-records[offset+1]),habitatSmooth(32,60,Math.hypot(records[offset]+3,-records[offset+1]-10)));
           if(habitat){ // flowering communities: some of the blades inside a drift take its colour, so the drift reads as colour even where individual flowers are too small
             const bx=records[offset],bz=-records[offset+1];
-            if(Math.hypot(bx+3,bz-10)>38){const hs=habitat.sample(bx,bz);const c=communityAt(bx,bz,hs.moisture);if(c.strength>.08&&habitatHash(bx,bz,131)<c.strength*.7*Math.min(1.5,scatterDensity(bx,bz)))tint.lerp(driftColor.setRGB(...COMMUNITIES[c.kind].rgb),.45+.3*habitatHash(bx,bz,132));}
+            if(Math.hypot(bx+3,bz-10)>38){const hs=habitat.sample(bx,bz);const c=communityAt(bx,bz,hs.moisture);if(c.strength>.08&&habitatHash(bx,bz,131)<c.strength*.7*Math.min(1.5,scatterDensity(bx,bz))*(1+.9*slopeFacing(bankLowering.current,bx,bz)))tint.lerp(driftColor.setRGB(...COMMUNITIES[c.kind].rgb),.45+.3*habitatHash(bx,bz,132));}
           }
           mesh.setColorAt(i, tint);
         });

@@ -8,8 +8,8 @@ export const RELIEF = Object.freeze({
   camera: [-3, 10],
   // x, z, half-width across the view, half-length along it, height in metres (negative = hollow)
   swells: [
-    { x: -74, z: -128, sx: 48, sz: 30, h: 5.4 }, { x: 96, z: -124, sx: 42, sz: 30, h: 5.2 }, { x: -120, z: -198, sx: 64, sz: 38, h: 5.6 },
-    { x: 16, z: -178, sx: 56, sz: 24, h: 3.4 }, { x: -24, z: -92, sx: 30, sz: 18, h: -1.2 }, { x: 74, z: -88, sx: 36, sz: 22, h: 2.8 },
+    { x: -46, z: -108, sx: 36, sz: 26, h: 5.0 }, { x: -108, z: -152, sx: 52, sz: 34, h: 6.2 }, { x: 60, z: -94, sx: 30, sz: 20, h: 2.4 },
+    { x: 106, z: -132, sx: 44, sz: 30, h: 5.8 }, { x: 22, z: -192, sx: 72, sz: 26, h: 4.2 }, { x: -8, z: -86, sx: 26, sz: 14, h: -1.0 },
   ],
   near: [42, 74], water: [9, 36], hamletFade: 22, far: [172, 238], cell: 2, minX: -240, maxX: 240, minZ: -330, maxZ: -20,
 });
