@@ -672,8 +672,8 @@ test('tuft cards: deterministic, in view and band, grounded, irregular, cheap, w
 });
 
 import { resolveSamples } from '../src/app/environment/linearResolve.js';
-test('anti-aliasing: 8 samples by default (capped by the GPU), ?msaa=4 restores the earlier setting', () => {
-  assert.equal(resolveSamples(8, ''), 8); assert.equal(resolveSamples(16, ''), 8); assert.equal(resolveSamples(4, ''), 4); assert.equal(resolveSamples(16, '?msaa=4'), 4); assert.equal(resolveSamples(16, '?msaa=nonsense'), 8);
+test('anti-aliasing: 4 samples by default with 1.25x supersampling (capped by the GPU), ?msaa=8 still available', () => {
+  assert.equal(resolveSamples(8, ''), 4); assert.equal(resolveSamples(16, ''), 4); assert.equal(resolveSamples(2, ''), 2); assert.equal(resolveSamples(16, '?msaa=8'), 8); assert.equal(resolveSamples(16, '?msaa=nonsense'), 4);
 });
 
 // ---- real blades and flowers for the middle ground

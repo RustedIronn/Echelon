@@ -28,6 +28,7 @@ import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
+import { FOLIAGE_A2C } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
 import { createHamletClearing } from './hamletLayout.js';
@@ -415,7 +416,7 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld);
       const originals = Array.isArray(source.material) ? source.material : [source.material];
       const materials = originals.map((original) => {
-        const material = original.clone(); material.transparent = false; material.alphaTest = .3; material.side = THREE.DoubleSide; material.roughness = .8;
+        const material = original.clone(); material.transparent = false; material.alphaTest = .3; material.side = THREE.DoubleSide; if (FOLIAGE_A2C) material.alphaToCoverage = true; material.roughness = .8;
         if (!baseline) applyBlenderDisplay(material, resources);
         if (!baseline && flowerStyle !== 'previous') applyFlowerResponse(material);
         if (!baseline && material.map) {

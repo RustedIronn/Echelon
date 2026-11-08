@@ -157,7 +157,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe;
-  { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; } } // ?grade=contrast,saturation (look-dev experiment)
+  { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat, toe] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; if (toe === toe && toe !== undefined) GRADE.toe.value = toe; } } // ?grade=contrast,saturation (look-dev experiment)
   rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK * s.haze };

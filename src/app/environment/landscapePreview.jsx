@@ -3,6 +3,7 @@ import AlpinePrototype from './AlpinePrototype.jsx';
 import { ALPINE_ASSET_ROOT } from './alpinePrototypeData.js';
 import './alpinePrototype.css';
 import LookDevPanel from './LookDevPanel.jsx';
+import { SUPERSAMPLE } from './antialias.js';
 import { applyLookQuery } from './lookDev.js';
 
 applyLookQuery(window.location.search);
@@ -46,7 +47,7 @@ export default function LandscapePreview() {
   const [metrics, setMetrics] = useState(null);
   // Auto follows the screen's pixel ratio (capped at 2). A fixed 1x made the canvas get stretched on scaled displays: soft, jagged edges.
   const [dprChoice, setDprChoice] = useState(params.get('dpr') || 'auto');
-  const dpr = dprChoice === 'auto' ? Math.min(2, window.devicePixelRatio || 1) : Math.min(2, Math.max(.5, Number(dprChoice) || 1));
+  const dpr = dprChoice === 'auto' ? Math.min(2.5, (window.devicePixelRatio || 1) * SUPERSAMPLE) : Math.min(2.5, Math.max(.5, Number(dprChoice) || 1)); // auto renders 1.25x the screen's pixels (antialias.js)
   const onReady = useCallback(() => setReady(true), [setReady]);
   useEffect(() => {
     function update(event) { setMetrics(event.detail); }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { inheritedMetadata } from './alpinePrototypeData.js';
 import { applyBlenderDisplay, applyFlowerResponse } from './alpineParityMaterials.js';
 import { TUFTS } from './tufts.js';
+import { FOLIAGE_A2C } from './antialias.js';
 import {isMeadowFlowerEnabled} from './flowerPalette.js';
 
 // Real flower models (the delivered meshes, at their lowest level of detail) for the middle ground, at the positions of the flower clumps chosen by tufts.js.
@@ -76,7 +77,7 @@ export function buildRealFlowerGroup({ flowerScene, placed, resources, maxFlower
     for (const source of entry.parts) {
       const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld); disposables.push(geometry);
       const originals = Array.isArray(source.material) ? source.material : [source.material];
-      const materials = originals.map((original) => { const m = original.clone(); m.transparent = false; m.alphaTest = 0.3; m.side = THREE.DoubleSide; m.roughness = 0.8; applyBlenderDisplay(m, resources); applyFlowerResponse(m); m.userData.lookRole = 'flowers'; m.userData.baseColor = m.color.clone(); disposables.push(m); return m; });
+      const materials = originals.map((original) => { const m = original.clone(); m.transparent = false; m.alphaTest = 0.3; if (FOLIAGE_A2C) m.alphaToCoverage = true; m.side = THREE.DoubleSide; m.roughness = 0.8; applyBlenderDisplay(m, resources); applyFlowerResponse(m); m.userData.lookRole = 'flowers'; m.userData.baseColor = m.color.clone(); disposables.push(m); return m; });
       const mesh = new THREE.InstancedMesh(geometry, Array.isArray(source.material) ? materials : materials[0], count); mesh.name = `${species} (mid-ground)`;
       for (let k = 0; k < count; k += 1) { matrix.fromArray(matrices, k * 16); mesh.setMatrixAt(k, matrix); }
       mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = receiveShadow; mesh.frustumCulled = false; group.add(mesh); disposables.push(mesh);

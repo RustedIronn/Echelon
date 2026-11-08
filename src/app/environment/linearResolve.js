@@ -1,3 +1,4 @@
+import { DEFAULT_MSAA } from './antialias.js';
 import * as THREE from 'three';
 
 // Optional comparison path. The default framebuffer resolves MSAA after the Blender display transform has already been
@@ -6,7 +7,7 @@ import * as THREE from 'three';
 // light, and applies the same sampled Blender display LUT exactly once afterwards.
 export const RESOLVE_SAMPLES = 4; // the earlier setting, kept as the comparison (?msaa=4)
 // Thin cut-out geometry (blade tufts, flower petals) needs more coverage samples than 4 to look smooth: 8 by default, capped by what the GPU offers.
-export function resolveSamples(maxSamples, search = typeof window === 'undefined' ? '' : window.location.search) { const asked = Number(new URLSearchParams(search).get('msaa')) || 8; return Math.max(1, Math.min(maxSamples || 4, asked)); }
+export function resolveSamples(maxSamples, search = typeof window === 'undefined' ? '' : window.location.search) { const asked = Number(new URLSearchParams(search).get('msaa')) || DEFAULT_MSAA; return Math.max(1, Math.min(maxSamples || 4, asked)); }
 
 // The colour grade applied once, after the display transform: a vibrance (muted colours gain more than vivid ones) and a gentle contrast. The time of day drives it, so daylight has presence and dusk stays soft.
 // toe: deepens the darks (only below mid grey), which the flat display transform leaves lifted in sunlit scenes.
