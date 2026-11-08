@@ -3,12 +3,12 @@
   background: #d7e3dd;
 }
 
-.landscape-environment__canvas,
+.landscape-environment__three,
 .landscape-environment__fallback {
   @apply absolute inset-0 size-full;
 }
 
-.landscape-environment__canvas {
+.landscape-environment__three {
   display: block;
   z-index: 1;
 }
