@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {windowWarmth} from './hamletWindowLighting.js';
 import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_PALETTE, mulberry32, sampleCurve, footprint, yardPolygon, distanceToSegment, pointInPolygon } from './hamletLayout.js';
 
 // Procedural hamlet geometry. Everything is built as flat-shaded "soups" (positions, normals, metric UVs, vertex colours that carry the
@@ -204,11 +205,14 @@ function fence(S, samples, field, rng) {
 // Shared lanes are blended onto the terrain material (hamletGround.js), so no
 // lifted road ribbon, junction overlap or disconnected apron is generated here.
 export function buildHamlet(field,{seed=20260107}={}){
-  const S=newSoups(),placed=[],rng=mulberry32(seed);
+  const S=newSoups(),placed=[],windowWeights=[],rng=mulberry32(seed);
   const routes=HAMLET_LANES.map(l=>({half:l.width/2+.28,samples:sampleCurve(l.points,.5)}));
   for(const b of HAMLET_BUILDINGS){
     const local=newSoups(),br=mulberry32(seed+b.id.length*131+Math.round(b.x*10));
     if(b.kind==='chapel')chapel(local,b);else cottageShell(local,b,br);
+    const glazing=local.glass.position;
+    for(let i=0;i<glazing.length;i+=12){const centre=[0,0,0];for(let v=0;v<4;v++)for(let axis=0;axis<3;axis++)centre[axis]+=glazing[i+v*3+axis]/4;
+      const weight=windowWarmth(b,centre);windowWeights.push(weight,weight,weight,weight);}
     const corners=footprint(b).flat().map(([x,z])=>field.at(x,z));
     const floorY=Math.max(...corners)+.025,minGround=Math.min(...corners),depth=floorY-minGround+.2;
     // Low masonry footings disappear into the actual terrain; no raised podium.
@@ -245,5 +249,6 @@ export function buildHamlet(field,{seed=20260107}={}){
     S.wood.box(x,y+.75,z-.2,1.7,.25,.06,{color:PAL.honeyTimber});
   }
   const geometries={};let triangles=0;for(const k of KEYS)if(S[k].triangles){geometries[k]=S[k].toGeometry();triangles+=S[k].triangles;}
+  if(geometries.glass)geometries.glass.setAttribute('aWindowWarmth',new THREE.Float32BufferAttribute(windowWeights,1));
   return{geometries,placed,triangles};
 }

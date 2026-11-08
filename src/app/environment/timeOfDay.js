@@ -7,7 +7,7 @@ const DEG = Math.PI / 180;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 export const wrapHour = (hour) => ((Number(hour) % 24) + 24) % 24;
-export const hourOf = (date) => date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+export const hourOf = (date) => date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600 + date.getMilliseconds() / 3600000;
 export const dayOfYear = (date) => Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
 
 // ---- astronomy-lite: believable, not geographic
@@ -38,7 +38,7 @@ export function moonPose(date, sun) {
 const C = ['zen', 'hor', 'belt', 'sunC', 'hemiSky', 'ground', 'fog', 'cloud']; const N = ['sunK', 'glowK', 'beltK', 'hemiK', 'env', 'exp', 'fogK', 'cover', 'stars', 'glow', 'moon'];
 const stop = (e, v) => { const out = { e }; for (const k of C) out[k] = new THREE.Color(v[k]); for (const k of N) out[k] = v[k]; return out; };
 const NIGHT = { zen: '#162650', hor: '#2c3f70', belt: '#2c3f70', sunC: '#d98aa0', hemiSky: '#6179b0', ground: '#58786a', fog: '#2a3961', cloud: '#4c5d8c', sunK: 0, glowK: 0, beltK: 0, hemiK: 0.42, env: 0.34, exp: 1.42, fogK: 1, cover: 0.38, stars: 1, glow: 1, moon: 1 };
-const DAY = { zen: '#2c7fe0', hor: '#9cc8f0', belt: '#cfe2f1', sunC: '#fff4e4', hemiSky: '#c7dbee', ground: '#8f9e6a', fog: '#cfdeea', cloud: '#ffffff', sunK: 1.08, glowK: 0.35, beltK: 0, hemiK: 0.26, env: 0.8, exp: 1, fogK: 1, cover: 0.5, stars: 0, glow: 0, moon: 0 };
+const DAY = { zen: '#2c7fe0', hor: '#9cc8f0', belt: '#cfe2f1', sunC: '#fff4e4', hemiSky: '#c7dbee', ground: '#8f9e6a', fog: '#cfdeea', cloud: '#ffffff', sunK: 0.82, glowK: 0.35, beltK: 0, hemiK: 0.12, env: 0.50, exp: 1, fogK: 1, cover: 0.5, stars: 0, glow: 0, moon: 0 };
 const EVENING = [
   stop(-18, NIGHT),
   stop(-10, { zen: '#2d3d73', hor: '#6d73a2', belt: '#5e5f96', sunC: '#ff8a78', hemiSky: '#6578aa', ground: '#5e7a62', fog: '#47517e', cloud: '#6a77a6', sunK: 0, glowK: 0.2, beltK: 0.3, hemiK: 0.45, env: 0.3, exp: 1.32, fogK: 1, cover: 0.5, stars: 0.75, glow: 1, moon: 1 }),
@@ -79,7 +79,31 @@ export function moodState(date) {
   const morningMist = smooth(-6, 0, e) * (1 - smooth(0.5, 11, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
   const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
   const dayK = smooth(3, 24, e); // daylight presence: more vibrance and a little more contrast as the sun climbs
-  return { ...m, gain, mist, mistColor, sat: 1 + 0.2 * dayK, contrast: 1 + 0.08 * dayK, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
+  return { ...m, gain, mist, mistColor, sat: 1 + 0.07 * dayK, contrast: 1 + 0.025 * dayK, sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+}
+
+// Sample the lighting model twice per 30-second interval. Cheap interpolated
+// uniforms advance at display cadence without rebuilding environment maps.
+export function interpolateMood(a,b,t) {
+  t=clamp01(t);const out=mixStops(a,b,t),lerp=(x,y)=>x+(y-x)*t;
+  for(const k of ['gain','mist','sat','contrast','moonVisible','moonLight','cloudShift'])out[k]=lerp(a[k],b[k]);
+  out.mistColor=a.mistColor.clone().lerp(b.mistColor,t);
+  for(const key of ['sun','moon']){
+    const av=a[key],bv=b[key],dir=av.dir.map((v,i)=>lerp(v,bv.dir[i])),length=Math.hypot(...dir)||1;
+    out[key]={...av,elevation:lerp(av.elevation,bv.elevation),dir:dir.map(v=>v/length)};
+  }
+  out.sun.hour=wrapHour(a.sun.hour+(((b.sun.hour-a.sun.hour+36)%24)-12)*t);
+  out.moon.phase=(a.moon.phase+(((b.moon.phase-a.moon.phase+1.5)%1)-.5)*t+1)%1;
+  out.moon.illumination=lerp(a.moon.illumination,b.moon.illumination);
+  return out;
+}
+export function createLiveMoodSampler(period=30000) {
+  let bucket=null,start,end;
+  return date=>{
+    const ms=date.getTime(),next=Math.floor(ms/period)*period;
+    if(next!==bucket){bucket=next;start=moodState(new Date(bucket));end=moodState(new Date(bucket+period));}
+    return interpolateMood(start,end,(ms-bucket)/period);
+  };
 }
 
 // ---- store (mode: approved | manual | live)
@@ -110,22 +134,22 @@ export function applyTodQuery(search) {
 if (typeof window !== 'undefined') applyTodQuery(window.location.search);
 
 // ---- imperative application to the live scene. Returns the base values (exposure, environment, haze) the look-dev layer should multiply.
-export function applyTimeOfDay(scene, ref, date, base) {
+export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = null, refreshEnvironment = true } = {}) {
   const sun = scene.getObjectByName('sun'), moon = scene.getObjectByName('moon'), hemi = scene.getObjectByName('tod-ambient'), rig = scene.userData.todRig;
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
   const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
     mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1;
-    if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
+    if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); if(Array.isArray(ref.sunColor))sun.color.fromArray(ref.sunColor);else sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
   }
-  const s = moodState(date);
+  const s = sampledState ?? moodState(date);
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast;
-  rig?.setActive(true); rig?.update(s); mistLayer?.userData.update?.(s);
+  rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK };
 }
