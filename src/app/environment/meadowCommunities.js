@@ -36,6 +36,23 @@ export function communityAt(x, z, moisture = 0, window = VIGNETTE) {
   return ribbon > present * core * mask ? { strength: ribbon, kind: 0 } : { strength: present * core * mask, kind };
 }
 
+// How flowers really scatter: not evenly through a patch but as a clustered point process. Small clumps (a plant and its seedlings, about a metre across) sit in looser
+// groups (several metres), with sparse strays between them and bare ground in the gaps. This returns a density multiplier with a mean near 1 (about 0.2 in a gap,
+// above 2 at the heart of a clump), used for both the flower models and the blade colour so that the two agree.
+const clump = (x, z, size, presence, seed, spread) => {
+  const gi = Math.floor(x / size), gj = Math.floor(z / size); let best = 0;
+  for (let j = -1; j <= 1; j += 1) for (let i = -1; i <= 1; i += 1) {
+    const ci = gi + i, cj = gj + j; if (habitatHash(ci, cj, seed) > presence) continue;
+    const px = (ci + 0.1 + 0.8 * habitatHash(ci, cj, seed + 1)) * size, pz = (cj + 0.1 + 0.8 * habitatHash(ci, cj, seed + 2)) * size; const s = size * (spread[0] + spread[1] * habitatHash(ci, cj, seed + 3));
+    best = Math.max(best, Math.exp(-((x - px) ** 2 + (z - pz) ** 2) / (2 * s * s)) * (0.55 + 0.45 * habitatHash(ci, cj, seed + 4)));
+  }
+  return best;
+};
+export function scatterDensity(x, z) {
+  const small = clump(x, z, 2.4, 0.64, 201, [0.2, 0.28]), loose = clump(x, z, 8.5, 0.7, 211, [0.22, 0.2]);
+  return 0.2 + 2.3 * Math.min(1, small * (0.45 + 0.9 * loose) + 0.35 * loose * small + 0.2 * loose);
+}
+
 // Flower models for the communities: dense in the core of each drift, thinning to scattered singles at its edge, a little larger with distance so they read.
 export function placeCommunityFlowers(field, habitat, { bank = null, from = 34, to = 132, cell = 0.55, window = VIGNETTE } = {}) {
   const matrices = Array.from({ length: 9 }, () => []);
@@ -45,13 +62,14 @@ export function placeCommunityFlowers(field, habitat, { bank = null, from = 34, 
     const h = habitat.sample(x, z); if (h.density < 0.05) continue;
     const c = communityAt(x, z, h.moisture, window); if (c.strength < 0.04) continue;
     const fade = smooth(from, from + 10, d) * (1 - smooth(to - 35, to, d));
-    if (habitatHash(i, j, 113) > c.strength ** 1.1 * (0.5 + 0.5 * h.density) * 0.72 * (1 - 0.6 * smooth(55, 120, d)) * fade) continue; // thinner far away: the blades carry the colour there, and fewer flowers keep the cost down
-    const n = 1 + (habitatHash(i, j, 114) > 0.55 ? 1 : 0);
+    const scatter = scatterDensity(x, z); // clustered, not even: clumps, looser groups, strays and bare gaps
+    if (habitatHash(i, j, 113) > c.strength ** 1.1 * (0.5 + 0.5 * h.density) * 0.72 * scatter * (1 - 0.6 * smooth(55, 120, d)) * fade) continue; // thinner far away: the blades carry the colour there
+    const n = 1 + (habitatHash(i, j, 114) > 0.55 ? 1 : 0) + (scatter > 1.6 && habitatHash(i, j, 116) > 0.5 ? 1 : 0);
     for (let k = 0; k < n; k += 1) {
       const px = x + (habitatHash(i, j, 115 + k) - 0.5) * cell, pz = z + (habitatHash(i, j, 125 + k) - 0.5) * cell; const local = habitat.sample(px, pz);
       let y = field.at(px, pz); if (bank) y += bank.offsetAt(px, pz, y); if (local.waterDistance < 3 && y < local.waterLevel + 0.035) continue;
       // species by the drift's kind, with a few strays of the neighbouring kind so no drift is a perfect monoculture
-      let cell8 = COMMUNITIES[c.kind].cell; if (habitatHash(i, j, 135 + k) > 0.9) cell8 = COMMUNITIES[(c.kind + 1) % 4].cell;
+      let cell8 = COMMUNITIES[c.kind].cell; if (habitatHash(i, j, 135 + k) > (scatter < 0.8 ? 0.62 : 0.86)) cell8 = COMMUNITIES[(c.kind + 1 + Math.floor(3 * habitatHash(i, j, 165 + k))) % 4].cell; /* strays between the clumps are more often another species */
       const size = (1 + 0.3 * smooth(from, 100, d)) * (0.74 + 0.24 * habitatHash(i, j, 145 + k)) * (1 + 0.08 * c.strength); // about 20% lower than the first pass
       const yaw = habitatHash(i, j, 155 + k) * Math.PI * 2, cs = Math.cos(yaw) * size, sn = Math.sin(yaw) * size;
       matrices[cell8].push(cs, 0, -sn, 0, 0, size, 0, 0, sn, 0, cs, 0, px, y - 0.012, pz, 1);
