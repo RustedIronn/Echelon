@@ -11,6 +11,7 @@ import { applyBlenderDisplay, applyGrassHabitat, applyWetSediment, makeSkyMateri
 import { createBankWetness } from './bankWetness.js';
 import { applyLook, getLook, subscribeLook, isApprovedHeld } from './lookDev.js';
 import Hamlet from './Hamlet.jsx';
+import {isMeadowFlowerEnabled} from './flowerPalette.js';
 import { applyTimeOfDay, createLiveMoodSampler, currentMoment, subscribeTod, getTod } from './timeOfDay.js';
 import GeneratedSky from './GeneratedSky.jsx';
 import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
@@ -399,14 +400,11 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
     gltf.scene.updateMatrixWorld(true); const group = new THREE.Group(); const owned = [];
     gltf.scene.traverse((source) => {
       if (!source.isMesh) return;
-      const species = inheritedMetadata(source, 'species'); let records = manifest.flowers[species];
+      const species = inheritedMetadata(source, 'species'); if(!isMeadowFlowerEnabled(species))return;
+      let records = manifest.flowers[species];
       if (!records) return;
       const lod = inheritedMetadata(source, 'lod') ?? 0;
       if (clearing) records = records.filter((record) => clearing.softness(record[12], record[14]) > 0.7);
-      if (!baseline && species === 'Red Clover') { // the dark magenta heads were too many: keep a share (?clover=0.4 by default, 0 removes them, 1 restores all)
-        const asked = new URLSearchParams(window.location.search).get('clover'); const keep = asked === null ? 0.4 : Number(asked);
-        records = records.filter((record, index) => ((Math.sin(index * 12.9898 + record[12] * 78.233 + record[14] * 37.719) * 43758.5453) % 1 + 1) % 1 < keep);
-      }
       if (!baseline) records = records.filter((record) => {
         const distance = Math.hypot(record[12] - manifest.camera.matrix[12], record[14] - manifest.camera.matrix[14]);
         return (distance < 26 ? 0 : distance < 65 ? 1 : 2) === lod;

@@ -681,7 +681,7 @@ import { planRealFlowers } from '../src/app/environment/realFlowers.js';
 test('real mid-ground flowers: capped, deterministic, only the three flower kinds, positioned at the clump positions', () => {
   const placed = buildTufts(farField, { palette: delivery.grassPalette }); const a = planRealFlowers(placed, { maxFlowers: 3500 }), b = planRealFlowers(placed, { maxFlowers: 3500 });
   const total = [...a.values()].reduce((x, m) => x + m.length / 16, 0); assert.ok(total > 400 && total <= 3700, 'flowers ' + total); assert.deepEqual([...a.keys()], [...b.keys()]);
-  for (const k of a.keys()) assert.ok(['Marguerite', 'Carthusian Pink', 'Red Clover', 'Dandelion'].includes(k));
+  for (const k of a.keys()) assert.ok(['Marguerite', 'Carthusian Pink', 'Dandelion'].includes(k));
   const all = [...a.values()].flatMap((m) => { const out = []; for (let i = 0; i < m.length; i += 16) out.push([m[i + 12], m[i + 14]]); return out; }); const cx = TUFTS.camera[0], cz = TUFTS.camera[1];
   assert.ok(all.every(([x, z]) => Math.hypot(x - cx, z - cz) >= TUFTS.from - 4 && Math.hypot(x - cx, z - cz) <= TUFTS.to + 4));
   assert.ok(planRealFlowers(placed, { maxFlowers: 100 }).size >= 1 && [...planRealFlowers(placed, { maxFlowers: 100 }).values()].reduce((x, m) => x + m.length / 16, 0) <= 160);
@@ -695,4 +695,18 @@ import { flowerDrift } from '../src/app/environment/meadowDetail.js';
 test('flowering drifts through blade colour: bounded, patchy, smooth, warm-pale colours only', () => {
   let present = 0, absent = 0; for (let x = -150; x < 150; x += 5) for (let z = -250; z < -30; z += 5) { const f = flowerDrift(x, z); assert.ok(f.amount >= 0 && f.amount <= 1); assert.equal(f.rgb.length, 3); f.amount > 0.3 ? present += 1 : absent += 1; }
   assert.ok(present > 200 && absent > 200, 'drifts are patchy: ' + present + ' / ' + absent); assert.ok(Math.abs(flowerDrift(20, -100).amount - flowerDrift(20.5, -100).amount) < 0.12, 'smooth');
+});
+
+import {COMMUNITY_MIX} from '../src/app/environment/meadowCommunities.js';
+import {isMeadowFlowerEnabled} from '../src/app/environment/flowerPalette.js';
+test('retired red clover is absent from all planned mixes without redistributing the remaining flowers',()=>{
+ const placed=buildTufts(farField,{palette:delivery.grassPalette});
+ const original={6:[['Marguerite',.8],['Carthusian Pink',.2]],7:[['Marguerite',.55],['Red Clover',.2],['Dandelion',.25]],8:[['Dandelion',.6],['Marguerite',.4]]};
+ const oldChoices=planRealFlowers(placed,{mix:original}),current=planRealFlowers(placed);
+ assert.deepEqual([...current],[...oldChoices],'remaining species keep the same instance transforms');
+ for(const options of [{},{naturalScale:true},{mix:COMMUNITY_MIX},{mix:{6:[['Red Clover',1]],7:[['Red Clover',1]],8:[['Red Clover',1]]}}]){
+  const plan=planRealFlowers(placed,options);assert.ok(!plan.has('Red Clover'));assert.ok([...plan.keys()].every(isMeadowFlowerEnabled));
+ }
+ assert.equal(isMeadowFlowerEnabled('Red Clover'),false);assert.equal(isMeadowFlowerEnabled(null),false);
+ for(const cell of CELLS)for(const [species]of cell.mix??[])assert.ok(species===null||isMeadowFlowerEnabled(species));
 });

@@ -1,14 +1,15 @@
 import * as THREE from 'three';
+import {isMeadowFlowerEnabled} from './flowerPalette.js';
 import { grassMatrix, inheritedMetadata } from './alpinePrototypeData.js';
 
 // Tuft cards for the middle and far meadow. Each card is baked once at load by rendering the real foreground blades (and the real flower models) into a small
 // transparent texture: about a dozen blades of the delivered shapes, lengths and widths for a grass tuft; broad basal leaves for the understory; clusters of the
-// delivered daisies, clover, dandelions and pinks with their leaves for the flower cards. A card is then two crossed quads standing for the whole tuft.
+// delivered daisies, dandelions and pinks with their leaves for the flower cards. A card is then two crossed quads standing for the whole tuft.
 export const CARD = { size: 512, width: 0.7, height: 0.7, bladeWidth: 1.35 };
 export const CELLS = [
   { kind: 'grass', blades: 34, spread: 0.2, tall: 1.0, seed: 1 }, { kind: 'grass', blades: 42, spread: 0.22, tall: 1.2, seed: 2 }, { kind: 'grass', blades: 26, spread: 0.18, tall: 0.85, seed: 3 }, { kind: 'grass', blades: 36, spread: 0.2, tall: 1.55, seed: 4 },
   { kind: 'leaf', blades: 22, spread: 0.18, tall: 1, seed: 5 }, { kind: 'leaf', blades: 16, spread: 0.16, tall: 1, seed: 6, mixed: true },
-  { kind: 'flower', seed: 7, mix: [['Marguerite', 10], ['Carthusian Pink', 4]] }, { kind: 'flower', seed: 8, mix: [['Red Clover', 3], ['Marguerite', 6], ['Dandelion', 3]] }, { kind: 'flower', seed: 9, mix: [['Dandelion', 8], ['Marguerite', 4]] },
+  { kind: 'flower', seed: 7, mix: [['Marguerite', 10], ['Carthusian Pink', 4]] }, { kind: 'flower', seed: 8, mix: [[null, 3], ['Marguerite', 6], ['Dandelion', 3]] }, { kind: 'flower', seed: 9, mix: [['Dandelion', 8], ['Marguerite', 4]] },
 ];
 const rand = (seed) => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 
@@ -37,10 +38,11 @@ function flowerGroup(flowerScene, cell, rng) {
   const basic = (original) => { const m = new THREE.MeshBasicMaterial({ map: original.map ?? null, color: original.color?.clone() ?? new THREE.Color('#fff'), alphaTest: 0.3, side: THREE.DoubleSide }); disposables.push(m); return m; };
   let index = 0;
   for (const [species, number] of cell.mix) {
+    if(!isMeadowFlowerEnabled(species))continue;
     const parts = pick(species); if (!parts) continue;
     for (let n = 0; n < number; n += 1, index += 1) {
       const angle = rng() * Math.PI * 2, r = 0.24 * Math.sqrt(rng()); const placed = new THREE.Group(); placed.position.set(Math.cos(angle) * r, 0, Math.sin(angle) * r); placed.rotation.y = rng() * Math.PI * 2;
-      const box = new THREE.Box3(); for (const source of parts) box.expandByObject(source); const size = box.getSize(new THREE.Vector3()); const target = (species === 'Red Clover' ? 0.46 : species === 'Dandelion' ? 0.28 : 0.38) * (0.8 + 0.4 * rng());
+      const box = new THREE.Box3(); for (const source of parts) box.expandByObject(source); const size = box.getSize(new THREE.Vector3()); const target = (species === 'Dandelion' ? 0.28 : 0.38) * (0.8 + 0.4 * rng());
       const scale = target / Math.max(size.y, 1e-3); placed.scale.setScalar(scale);
       for (const source of parts) {
         const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld).translate(-(box.min.x + box.max.x) / 2, -box.min.y, -(box.min.z + box.max.z) / 2); disposables.push(geometry);
