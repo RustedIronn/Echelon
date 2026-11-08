@@ -1,8 +1,18 @@
 // Wind through the meadow: grass blades and flowers sway with slow travelling gusts and a quicker flutter, bending more toward their tips.
 // One shared time and strength (WIND); every grass and flower material reads them, so turning the wind on or off never recompiles anything.
-// The scene normally redraws only when something changes; wind needs a redraw every frame, so it is opt-in (?wind=1, or setWind(true)).
 export const WIND = { time: { value: 0 }, strength: { value: 0 } };
-export const windWanted = () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('wind') === '1';
+
+// The user's reduced-motion preference turns vegetation movement off; ?wind=0 also turns it off (for comparisons).
+export const prefersReducedMotion = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+export const windWanted = (search = typeof window === 'undefined' ? '' : window.location.search) => new URLSearchParams(search).get('wind') !== '0' && !prefersReducedMotion();
+
+// How actively the landscape is being looked at, which sets the animation cadence (frames per second; 0 = paused, redraw only on change):
+// 'scenic' the user is looking at the world, 'work' it sits behind UI panels, 'obscured' nothing of it is visible. The tab being hidden always pauses.
+export const ACTIVITY_FPS = Object.freeze({ scenic: 60, work: 30, obscured: 0 });
+export function animationFps({ activity = 'scenic', hidden = false, wind = true } = {}) {
+  if (hidden || !wind) return 0;
+  return ACTIVITY_FPS[activity] ?? ACTIVITY_FPS.scenic;
+}
 
 // GLSL replacing three.js's <project_vertex> for instanced vegetation: the sway is added in world space, so every blade bends the same way.
 // heightExpr: 0 at the root, 1 at the tip (in the mesh's local units).
