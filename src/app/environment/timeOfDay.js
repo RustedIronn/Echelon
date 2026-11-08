@@ -79,7 +79,11 @@ export function moodState(date) {
   const morningMist = smooth(-6, 0, e) * (1 - smooth(0.5, 11, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
   const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
   const dayK = smooth(3, 24, e); // daylight presence: more vibrance and a little more contrast as the sun climbs
-  return { ...m, gain, mist, mistColor, sat: 1 + 0.07 * dayK, contrast: 1 + 0.025 * dayK, sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  // daylight depth: a little more air between the meadow and the far valley and foothills while the sun is up (aerial perspective), none at night
+  const haze = 1 + 0.4 * dayK;
+  // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
+  const nightK = 1 - smooth(-14, -4, e);
+  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.07 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.025 * dayK, sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated
@@ -151,5 +155,5 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast;
   rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
-  return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK };
+  return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK * s.haze };
 }
