@@ -8,6 +8,7 @@ import { bankLowering } from './bankLowering.js';
 import { makeHamletTextures } from './hamletTextures.js';
 import {applyWindowWarmth} from './hamletWindowLighting.js';
 import { attachHamletGround } from './hamletGround.js';
+import { makeGroundTexture, applyWeathering, buildContactSkirt } from './hamletWeathering.js';
 
 // material key -> [texture key, base colour, roughness, extras]
 const SPEC = {
@@ -35,6 +36,8 @@ export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
   const built = useMemo(() => {
     const textures = makeHamletTextures(); const { geometries, triangles } = buildHamlet(field);
     const group = new THREE.Group(); group.name = 'Procedural hamlet'; const materials = [];
+    const weather = mode !== 'blockout' && new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('weathering') !== 'off'; // ?weathering=off compares (hamletWeathering.js)
+    const ground = weather ? makeGroundTexture(field) : null;
     for (const [key, geometry] of Object.entries(geometries)) {
       const [textureKey, color, roughness] = SPEC[key];
       const blockout = mode === 'blockout'; // flat grey massing for layout review: walls light, roofs dark, ground and lanes neutral
@@ -43,10 +46,13 @@ export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
       if (key === 'glass') { material.emissive = new THREE.Color('#ffb25c'); material.emissiveIntensity = windowGlow; material.userData.windowGlow = true; } // dusk hook: ?windowglow=1
       applyBlenderDisplay(material, resources);
       if(key==='glass')applyWindowWarmth(material);
+      if (weather && ['plaster', 'timber', 'stone'].includes(key)) applyWeathering(material, ground, 'wall');
+      if (weather && key.startsWith('roof')) applyWeathering(material, ground, 'roof');
       material.userData.lookRole = 'hamlet'; material.userData.baseColor = material.color.clone();
       const mesh = new THREE.Mesh(geometry, material); mesh.name = `Hamlet / ${key}`; mesh.castShadow = key !== 'lane' && key !== 'soil'; mesh.receiveShadow = true; group.add(mesh); materials.push(material);
     }
-    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); } };
+    const skirt = weather ? buildContactSkirt(field) : null; if (skirt) group.add(skirt);
+    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); ground?.texture.dispose(); skirt?.geometry.dispose(); skirt?.material.dispose(); } };
   }, [field, resources, mode, windowGlow]);
   useEffect(() => { if(!terrain)return; const restore=attachHamletGround(terrain,built.textures.lane); invalidate(); return restore; }, [terrain,built,invalidate]);
   useEffect(() => () => built.dispose(), [built]);
