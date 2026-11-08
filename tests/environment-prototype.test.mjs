@@ -456,7 +456,7 @@ test('flower response lets petals glow and fades dark distant parts without touc
   assert.ok(shader.fragmentShader.includes('dot(-geometryNormal, directLight.direction)') && shader.fragmentShader.includes((1 + FLOWER_RESPONSE.ambientWrap).toFixed(3)));
   assert.ok(shader.fragmentShader.includes('smoothstep(40.0, 110.0, length(vViewPosition))'), 'dark parts fade only with distance');
   assert.ok(shader.fragmentShader.includes('(1.0 - smoothstep(0.25, 0.6, sat))'), 'saturated petals are protected from the fade');
-  assert.equal(material.customProgramCacheKey(), 'flower-base-flower-v1');
+  assert.equal(material.customProgramCacheKey(), 'flower-base-flower-v2');
 });
 
 test('far water feathers its shoreline with distance and only in the refined shader', () => {

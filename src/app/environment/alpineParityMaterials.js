@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addWind } from './wind.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -44,7 +45,7 @@ export function applyGrassHabitat(material, refinement = true, corridor = false,
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous.call(material, shader, renderer);
-    shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader;
+    shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader; addWind(shader, 'position.y');
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLeafHeight = clamp(position.y, 0.0, 1.0);');
     shader.fragmentShader = 'varying float vLeafHeight;\n' + shader.fragmentShader;
     // Canopy occlusion: inside a real meadow the light falls off steeply toward the ground between the blades, which is where a photograph's darks come from.
@@ -62,7 +63,9 @@ normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0))
       const leafLighting = THREE.ShaderChunk.lights_physical_pars_fragment.replace(
         'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
         `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
-         reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * 0.16 * smoothstep(0.05, 0.7, vLeafHeight);`,
+         reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * 0.16 * smoothstep(0.05, 0.7, vLeafHeight);
+         // backlight: looking toward the sun, thin blades glow with the light coming through them (a warm-green halo on the tips), shadowed like the rest
+         reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * vec3(1.05, 1.2, 0.55) * 0.55 * smoothstep(0.25, 0.95, vLeafHeight);`,
       );
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', leafLighting);
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
@@ -78,7 +81,7 @@ reflectedLight.directDiffuse *= ${strip.gain.toFixed(3)}; reflectedLight.indirec
     }
   };
 
-  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}${typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep' ? '-deep' : ''}`;
+  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-bl1-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}${typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep' ? '-deep' : ''}`;
   return material;
 }
 
@@ -295,7 +298,8 @@ normal = normalize(mix(normal, vTreeNormal, ${style.sphericalBlend.toFixed(3)}))
     shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment.replace(
       'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
       `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
-       reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * ${style.translucency.toFixed(3)};`));
+       reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * ${style.translucency.toFixed(3)};
+       reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * 0.5; /* petals glow when backlit */`));
     shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 reflectedLight.indirectDiffuse *= ${(1 + style.ambientWrap).toFixed(3)};`);
   };
@@ -311,6 +315,7 @@ export function applyFlowerResponse(material, style = FLOWER_RESPONSE) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
+    addWind(shader, 'position.y / 0.45'); // flower models are about 0.3-0.6 m tall in their own units
     // Beyond 40-110 m the dark, desaturated parts (stems, leaves, shaded petals) melt into the meadow; bright and strongly coloured petals stay.
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 fc = diffuseColor.rgb; float fl = dot(fc, vec3(0.2126, 0.7152, 0.0722)); float hi = max(max(fc.r, fc.g), fc.b); float sat = (hi - min(min(fc.r, fc.g), fc.b)) / max(hi, 1e-4);
@@ -323,7 +328,7 @@ export function applyFlowerResponse(material, style = FLOWER_RESPONSE) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 reflectedLight.indirectDiffuse *= ${(1 + style.ambientWrap).toFixed(3)};`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : 'flower'}-flower-v1`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : 'flower'}-flower-v2`;
   return material;
 }
 
