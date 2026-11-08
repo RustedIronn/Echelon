@@ -1,0 +1,728 @@
+[
+  {
+    "name": "hero-physical",
+    "width": 2560,
+    "height": 1440,
+    "query": "capture=1",
+    "readyMilliseconds": 2931.2044,
+    "data": {
+      "ready": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 668,
+        "samples": 600,
+        "rafP50ms": 16.40000000037253,
+        "rafP95ms": 17.90000000037253,
+        "cpuSubmitP50ms": 1.900000000372529,
+        "gpuP50ms": 16.101056,
+        "gpuP95ms": 18.074976,
+        "gpuSamples": 61,
+        "callsAllPasses": 190,
+        "trianglesAllPasses": 36901878,
+        "geometryResources": 79,
+        "textureResources": 22,
+        "programs": 22,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "resourceTimings": [
+        {
+          "name": "manifest.json",
+          "duration": 22.399999999441206,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "geography.glb",
+          "duration": 149.19999999925494,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 91.09999999962747,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 4.7000000001862645,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 6.800000000745058,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 90.40000000037253,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 8.200000000186265,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 6.7999999998137355,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ],
+      "navigation": {
+        "name": "http://127.0.0.1:4174/landscape-preview.html?capture=1",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 119.70000000018626,
+        "navigationId": 6842,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1.6000000005587935,
+        "domainLookupStart": 1.6000000005587935,
+        "domainLookupEnd": 1.6000000005587935,
+        "connectStart": 1.6000000005587935,
+        "secureConnectionStart": 0,
+        "connectEnd": 1.6000000005587935,
+        "requestStart": 3,
+        "responseStart": 11.799999999813735,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 11.799999999813735,
+        "responseEnd": 12.100000000558794,
+        "transferSize": 1317,
+        "encodedBodySize": 1017,
+        "decodedBodySize": 1017,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 24,
+        "domContentLoadedEventStart": 119.29999999981374,
+        "domContentLoadedEventEnd": 119.40000000037253,
+        "domComplete": 119.70000000018626,
+        "loadEventStart": 119.70000000018626,
+        "loadEventEnd": 119.70000000018626,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {
+          "randomizedTriggerRate": 0.4994798,
+          "value": "low"
+        }
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "hero-simple-water",
+    "width": 2560,
+    "height": 1440,
+    "query": "capture=1&water=simple",
+    "readyMilliseconds": 1066.5488999999998,
+    "data": {
+      "ready": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 707,
+        "samples": 600,
+        "rafP50ms": 9.700000000186265,
+        "rafP95ms": 11.299999999813735,
+        "cpuSubmitP50ms": 0.7999999998137355,
+        "gpuP50ms": 9.439168,
+        "gpuP95ms": 10.778816,
+        "gpuSamples": 65,
+        "callsAllPasses": 114,
+        "trianglesAllPasses": 24245105,
+        "geometryResources": 79,
+        "textureResources": 21,
+        "programs": 15,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "resourceTimings": [
+        {
+          "name": "manifest.json",
+          "duration": 20.299999999813735,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "geography.glb",
+          "duration": 132.30000000074506,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 69.29999999981374,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 4.7999999998137355,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 85.70000000018626,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 6.7000000001862645,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 7.5,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 6.2999999998137355,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ],
+      "navigation": {
+        "name": "http://127.0.0.1:4174/landscape-preview.html?capture=1&water=simple",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 75,
+        "navigationId": 4514,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1.2999999998137355,
+        "domainLookupStart": 1.2999999998137355,
+        "domainLookupEnd": 1.2999999998137355,
+        "connectStart": 1.2999999998137355,
+        "secureConnectionStart": 0,
+        "connectEnd": 1.2999999998137355,
+        "requestStart": 2.2000000001862645,
+        "responseStart": 4.2000000001862645,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 4.2000000001862645,
+        "responseEnd": 4.599999999627471,
+        "transferSize": 1317,
+        "encodedBodySize": 1017,
+        "decodedBodySize": 1017,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 12.200000000186265,
+        "domContentLoadedEventStart": 74.8999999994412,
+        "domContentLoadedEventEnd": 74.8999999994412,
+        "domComplete": 75,
+        "loadEventStart": 75,
+        "loadEventEnd": 75,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {
+          "randomizedTriggerRate": 0.4994798,
+          "value": "high"
+        }
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "geography-only",
+    "width": 2560,
+    "height": 1440,
+    "query": "capture=1&vegetation=0",
+    "readyMilliseconds": 703.7937999999995,
+    "data": {
+      "ready": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 774,
+        "samples": 600,
+        "rafP50ms": 5.599999999627471,
+        "rafP95ms": 5.7000000001862645,
+        "cpuSubmitP50ms": 1.1000000005587935,
+        "gpuP50ms": 3.36544,
+        "gpuP95ms": 4.9816,
+        "gpuSamples": 72,
+        "callsAllPasses": 61,
+        "trianglesAllPasses": 1523585,
+        "geometryResources": 22,
+        "textureResources": 13,
+        "programs": 12,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "resourceTimings": [
+        {
+          "name": "manifest.json",
+          "duration": 19.700000000186265,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "geography.glb",
+          "duration": 117.29999999981374,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 67.70000000018626,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 4.2999999998137355,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        }
+      ],
+      "navigation": {
+        "name": "http://127.0.0.1:4174/landscape-preview.html?capture=1&vegetation=0",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 74.20000000018626,
+        "navigationId": 9546,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1.2000000001862645,
+        "domainLookupStart": 1.2000000001862645,
+        "domainLookupEnd": 1.2000000001862645,
+        "connectStart": 1.2000000001862645,
+        "secureConnectionStart": 0,
+        "connectEnd": 1.2000000001862645,
+        "requestStart": 2,
+        "responseStart": 4.099999999627471,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 4.099999999627471,
+        "responseEnd": 4.3999999994412065,
+        "transferSize": 1317,
+        "encodedBodySize": 1017,
+        "decodedBodySize": 1017,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 12.599999999627471,
+        "domContentLoadedEventStart": 74,
+        "domContentLoadedEventEnd": 74,
+        "domComplete": 74.09999999962747,
+        "loadEventStart": 74.20000000018626,
+        "loadEventEnd": 74.20000000018626,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {
+          "randomizedTriggerRate": 0.4994798,
+          "value": "low"
+        }
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "hero-dpr-1.5",
+    "width": 2560,
+    "height": 1440,
+    "query": "capture=1&dpr=1.5",
+    "readyMilliseconds": 1107.806199999999,
+    "data": {
+      "ready": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 693,
+        "samples": 600,
+        "rafP50ms": 21.799999999813735,
+        "rafP95ms": 23.5,
+        "cpuSubmitP50ms": 1.900000000372529,
+        "gpuP50ms": 21.1392,
+        "gpuP95ms": 22.919296,
+        "gpuSamples": 63,
+        "callsAllPasses": 190,
+        "trianglesAllPasses": 36901878,
+        "geometryResources": 79,
+        "textureResources": 22,
+        "programs": 22,
+        "drawingBuffer": [
+          3840,
+          2160
+        ],
+        "dpr": 1.5
+      },
+      "resourceTimings": [
+        {
+          "name": "manifest.json",
+          "duration": 20.300000000745058,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "geography.glb",
+          "duration": 130.20000000018626,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 68.6000000005588,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 3.8999999994412065,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 93.5,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 8.5,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 10.5,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 8.5,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ],
+      "navigation": {
+        "name": "http://127.0.0.1:4174/landscape-preview.html?capture=1&dpr=1.5",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 76.80000000074506,
+        "navigationId": 7236,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1.300000000745058,
+        "domainLookupStart": 1.300000000745058,
+        "domainLookupEnd": 1.300000000745058,
+        "connectStart": 1.300000000745058,
+        "secureConnectionStart": 0,
+        "connectEnd": 1.300000000745058,
+        "requestStart": 2.400000000372529,
+        "responseStart": 5.1000000005587935,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 5.1000000005587935,
+        "responseEnd": 5.5,
+        "transferSize": 1317,
+        "encodedBodySize": 1017,
+        "decodedBodySize": 1017,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 13.400000000372529,
+        "domContentLoadedEventStart": 76.6000000005588,
+        "domContentLoadedEventEnd": 76.70000000018626,
+        "domComplete": 76.80000000074506,
+        "loadEventStart": 76.80000000074506,
+        "loadEventEnd": 76.80000000074506,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {
+          "randomizedTriggerRate": 0.4994798,
+          "value": "low"
+        }
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "narrow",
+    "width": 760,
+    "height": 1000,
+    "query": "capture=1",
+    "readyMilliseconds": 1051.1583000000028,
+    "data": {
+      "ready": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 692,
+        "samples": 600,
+        "rafP50ms": 11.599999999627471,
+        "rafP95ms": 12.899999999441206,
+        "cpuSubmitP50ms": 1.7000000001862645,
+        "gpuP50ms": 11.709248,
+        "gpuP95ms": 12.511648,
+        "gpuSamples": 63,
+        "callsAllPasses": 178,
+        "trianglesAllPasses": 36880464,
+        "geometryResources": 79,
+        "textureResources": 20,
+        "programs": 20,
+        "drawingBuffer": [
+          760,
+          1000
+        ],
+        "dpr": 1
+      },
+      "resourceTimings": [
+        {
+          "name": "manifest.json",
+          "duration": 20.399999999441206,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "geography.glb",
+          "duration": 128.29999999981374,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 67.80000000074506,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 4,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 88.6000000005588,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 6.3999999994412065,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 7.900000000372529,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 6.300000000745058,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ],
+      "navigation": {
+        "name": "http://127.0.0.1:4174/landscape-preview.html?capture=1",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 79.40000000037253,
+        "navigationId": 8156,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1.300000000745058,
+        "domainLookupStart": 1.300000000745058,
+        "domainLookupEnd": 1.300000000745058,
+        "connectStart": 1.300000000745058,
+        "secureConnectionStart": 0,
+        "connectEnd": 1.300000000745058,
+        "requestStart": 2.300000000745058,
+        "responseStart": 4.400000000372529,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 4.400000000372529,
+        "responseEnd": 4.7000000001862645,
+        "transferSize": 1317,
+        "encodedBodySize": 1017,
+        "decodedBodySize": 1017,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 11.700000000186265,
+        "domContentLoadedEventStart": 79.30000000074506,
+        "domContentLoadedEventEnd": 79.40000000037253,
+        "domComplete": 79.40000000037253,
+        "loadEventStart": 79.40000000037253,
+        "loadEventEnd": 79.40000000037253,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {
+          "randomizedTriggerRate": 0.4994798,
+          "value": "low"
+        }
+      }
+    },
+    "errors": []
+  }
+]

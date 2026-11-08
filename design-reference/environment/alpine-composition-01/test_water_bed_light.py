@@ -1,0 +1,11 @@
+import bpy
+from pathlib import Path
+r=Path(__file__).resolve().parent;bpy.ops.wm.open_mainfile(filepath=str(r/'echelon_alpine_composition_01.blend'));s=bpy.context.scene
+bpy.data.objects['Water inside carved channel - static graded surface'].cycles.is_caustics_caster=True
+bpy.data.objects['Continuous meadow foothills and mountain range'].cycles.is_caustics_receiver=True
+bpy.data.objects['Simple afternoon sun'].data.cycles.is_caustics_light=True
+for o in s.objects:
+ if o.name.startswith(('Bank limestone','SOURCE - habitat limestone','Embedded limestone','Fluvial pebbles')):o.cycles.is_caustics_receiver=True
+p=bpy.context.preferences.addons['cycles'].preferences;p.compute_device_type='OPTIX';p.get_devices()
+for d in p.devices:d.use=d.type!='CPU'
+s.cycles.device='GPU';s.cycles.samples=96;s.cycles.use_denoising=True;s.render.resolution_x=3840;s.render.resolution_y=2160;s.render.resolution_percentage=100;s.render.use_border=True;s.render.use_crop_to_border=True;s.render.border_min_x=.73;s.render.border_max_x=.995;s.render.border_min_y=.015;s.render.border_max_y=.27;s.render.filepath=str(r/'structure_water_light_test.png');bpy.ops.render.render(write_still=True)

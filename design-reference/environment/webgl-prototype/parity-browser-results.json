@@ -1,0 +1,1094 @@
+[
+  {
+    "name": "baseline-physical",
+    "query": "look=baseline&water=physical",
+    "readyMilliseconds": 3030.8990999999996,
+    "data": {
+      "ready": true,
+      "totalFrames": 716,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 716,
+        "samples": 600,
+        "rafP50ms": 16.700000001117587,
+        "rafP95ms": 18.40000000037253,
+        "cpuSubmitP50ms": 1.800000000745058,
+        "gpuP50ms": 16.493952,
+        "gpuP95ms": 18.027936,
+        "gpuSamples": 66,
+        "callsAllPasses": 190,
+        "trianglesAllPasses": 36901878,
+        "geometryResources": 79,
+        "textureResources": 22,
+        "programs": 22,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 21.40000000037253,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 2.699999999254942,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 13.599999999627471,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 5.700000001117587,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 9.400000000372529,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 10.099999999627471,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 3.400000000372529,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 10.199999999254942,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 6,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 8.400000000372529,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 36.40000000037253,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "geography.glb",
+          "duration": 122.70000000111759,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 70.30000000074506,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 5.5,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 89.90000000037253,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 4.800000000745058,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 6,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 4.699999999254942,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "baseline-alpha",
+    "query": "look=baseline&water=alpha",
+    "readyMilliseconds": 1276.1820000000007,
+    "data": {
+      "ready": true,
+      "totalFrames": 687,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 687,
+        "samples": 600,
+        "rafP50ms": 10.200000001117587,
+        "rafP95ms": 11.799999998882413,
+        "cpuSubmitP50ms": 1,
+        "gpuP50ms": 9.933376,
+        "gpuP95ms": 11.162592,
+        "gpuSamples": 63,
+        "callsAllPasses": 114,
+        "trianglesAllPasses": 24245105,
+        "geometryResources": 79,
+        "textureResources": 21,
+        "programs": 15,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 20,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 2.900000000372529,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 13.899999998509884,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 5.800000000745058,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 9.400000000372529,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 10.400000000372529,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 3.599999999627471,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 9.699999999254942,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 5.300000000745058,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 7.599999999627471,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 16.700000001117587,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "geography.glb",
+          "duration": 108.90000000037253,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers.glb",
+          "duration": 62.80000000074506,
+          "transferSize": 23527980,
+          "decodedBodySize": 23527680
+        },
+        {
+          "name": "grass.glb",
+          "duration": 3.600000001490116,
+          "transferSize": 65180,
+          "decodedBodySize": 64880
+        },
+        {
+          "name": "grass-0.bin",
+          "duration": 88.90000000037253,
+          "transferSize": 2199308,
+          "decodedBodySize": 2199008
+        },
+        {
+          "name": "grass-1.bin",
+          "duration": 6.200000001117587,
+          "transferSize": 273452,
+          "decodedBodySize": 273152
+        },
+        {
+          "name": "grass-2.bin",
+          "duration": 7.699999999254942,
+          "transferSize": 715180,
+          "decodedBodySize": 714880
+        },
+        {
+          "name": "grass-3.bin",
+          "duration": 6.299999998882413,
+          "transferSize": 257900,
+          "decodedBodySize": 257600
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "parity-physical",
+    "query": "water=physical",
+    "readyMilliseconds": 3523.453599999997,
+    "data": {
+      "ready": true,
+      "totalFrames": 712,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 712,
+        "samples": 600,
+        "rafP50ms": 16.700000001117587,
+        "rafP95ms": 19,
+        "cpuSubmitP50ms": 2.399999998509884,
+        "gpuP50ms": 16.325504,
+        "gpuP95ms": 18.332896,
+        "gpuSamples": 65,
+        "callsAllPasses": 223,
+        "trianglesAllPasses": 25851770,
+        "geometryResources": 102,
+        "textureResources": 28,
+        "programs": 27,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 20.799999998882413,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 2.5,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 16.199999999254942,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 6.599999999627471,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 11.400000000372529,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 12.300000000745058,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 3.800000000745058,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 11.099999999627471,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 5.600000001490116,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 8.900000000372529,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 24.600000001490116,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "geography.glb",
+          "duration": 119.29999999888241,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers-lod.glb",
+          "duration": 69.19999999925494,
+          "transferSize": 24019084,
+          "decodedBodySize": 24018784
+        },
+        {
+          "name": "grass-parity.glb",
+          "duration": 4.199999999254942,
+          "transferSize": 67184,
+          "decodedBodySize": 66884
+        },
+        {
+          "name": "grass-parity-0.bin",
+          "duration": 194.59999999962747,
+          "transferSize": 5178144,
+          "decodedBodySize": 5177844
+        },
+        {
+          "name": "grass-parity-1.bin",
+          "duration": 9.599999999627471,
+          "transferSize": 739020,
+          "decodedBodySize": 738720
+        },
+        {
+          "name": "grass-parity-2.bin",
+          "duration": 188.09999999962747,
+          "transferSize": 2346312,
+          "decodedBodySize": 2346012
+        },
+        {
+          "name": "grass-parity-3.bin",
+          "duration": 13.599999999627471,
+          "transferSize": 1416828,
+          "decodedBodySize": 1416528
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "parity-alpha",
+    "query": "water=alpha",
+    "readyMilliseconds": 1706.1820000000007,
+    "data": {
+      "ready": true,
+      "totalFrames": 738,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 738,
+        "samples": 600,
+        "rafP50ms": 9.5,
+        "rafP95ms": 11.099999999627471,
+        "cpuSubmitP50ms": 1.099999999627471,
+        "gpuP50ms": 9.233728,
+        "gpuP95ms": 10.769888,
+        "gpuSamples": 68,
+        "callsAllPasses": 134,
+        "trianglesAllPasses": 16375297,
+        "geometryResources": 102,
+        "textureResources": 27,
+        "programs": 18,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 19.699999999254942,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 3.199999999254942,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 15.199999999254942,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 6,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 9.800000000745058,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 10.800000000745058,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 4.099999999627471,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 11.900000000372529,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 19.90000000037253,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 6.400000000372529,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 9.300000000745058,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "geography.glb",
+          "duration": 111.79999999888241,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers-lod.glb",
+          "duration": 70.69999999925494,
+          "transferSize": 24019084,
+          "decodedBodySize": 24018784
+        },
+        {
+          "name": "grass-parity.glb",
+          "duration": 3.599999999627471,
+          "transferSize": 67184,
+          "decodedBodySize": 66884
+        },
+        {
+          "name": "grass-parity-0.bin",
+          "duration": 189.80000000074506,
+          "transferSize": 5178144,
+          "decodedBodySize": 5177844
+        },
+        {
+          "name": "grass-parity-1.bin",
+          "duration": 8.400000000372529,
+          "transferSize": 739020,
+          "decodedBodySize": 738720
+        },
+        {
+          "name": "grass-parity-2.bin",
+          "duration": 183.09999999962747,
+          "transferSize": 2346312,
+          "decodedBodySize": 2346012
+        },
+        {
+          "name": "grass-parity-3.bin",
+          "duration": 11.799999998882413,
+          "transferSize": 1416828,
+          "decodedBodySize": 1416528
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "parity-fresnel",
+    "query": "water=fresnel",
+    "readyMilliseconds": 1626.495799999997,
+    "data": {
+      "ready": true,
+      "totalFrames": 737,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 737,
+        "samples": 600,
+        "rafP50ms": 9.400000000372529,
+        "rafP95ms": 10.899999998509884,
+        "cpuSubmitP50ms": 1.099999999627471,
+        "gpuP50ms": 9.195648,
+        "gpuP95ms": 10.50032,
+        "gpuSamples": 68,
+        "callsAllPasses": 134,
+        "trianglesAllPasses": 16375297,
+        "geometryResources": 102,
+        "textureResources": 27,
+        "programs": 18,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 20.300000000745058,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 3,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 16.799999998882413,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 8.199999999254942,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 12.099999999627471,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 13.099999999627471,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 3.900000000372529,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 12,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 31.800000000745058,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 7,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 9.699999999254942,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "geography.glb",
+          "duration": 123.80000000074506,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers-lod.glb",
+          "duration": 69.70000000111759,
+          "transferSize": 24019084,
+          "decodedBodySize": 24018784
+        },
+        {
+          "name": "grass-parity.glb",
+          "duration": 4,
+          "transferSize": 67184,
+          "decodedBodySize": 66884
+        },
+        {
+          "name": "grass-parity-0.bin",
+          "duration": 184.19999999925494,
+          "transferSize": 5178144,
+          "decodedBodySize": 5177844
+        },
+        {
+          "name": "grass-parity-1.bin",
+          "duration": 9.800000000745058,
+          "transferSize": 739020,
+          "decodedBodySize": 738720
+        },
+        {
+          "name": "grass-parity-3.bin",
+          "duration": 13.800000000745058,
+          "transferSize": 1416828,
+          "decodedBodySize": 1416528
+        },
+        {
+          "name": "grass-parity-2.bin",
+          "duration": 178.7000000011176,
+          "transferSize": 2346312,
+          "decodedBodySize": 2346012
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "parity-no-surface-detail",
+    "query": "water=fresnel&detail=0",
+    "readyMilliseconds": 1591.5377000000008,
+    "data": {
+      "ready": true,
+      "totalFrames": 741,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 741,
+        "samples": 600,
+        "rafP50ms": 9.300000000745058,
+        "rafP95ms": 10.899999998509884,
+        "cpuSubmitP50ms": 1.099999999627471,
+        "gpuP50ms": 9.039968,
+        "gpuP95ms": 10.570784,
+        "gpuSamples": 68,
+        "callsAllPasses": 134,
+        "trianglesAllPasses": 16375297,
+        "geometryResources": 102,
+        "textureResources": 23,
+        "programs": 18,
+        "drawingBuffer": [
+          2560,
+          1440
+        ],
+        "dpr": 1
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 20.59999999962747,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 2.699999999254942,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 13.100000001490116,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 5.799999998882413,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 9.900000000372529,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 11.099999999627471,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 3.799999998882413,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 10.5,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 5.900000000372529,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 8.5,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 28.5,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "geography.glb",
+          "duration": 138.5,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "flowers-lod.glb",
+          "duration": 70.5,
+          "transferSize": 24019084,
+          "decodedBodySize": 24018784
+        },
+        {
+          "name": "grass-parity.glb",
+          "duration": 3.599999999627471,
+          "transferSize": 67184,
+          "decodedBodySize": 66884
+        },
+        {
+          "name": "grass-parity-0.bin",
+          "duration": 182.89999999850988,
+          "transferSize": 5178144,
+          "decodedBodySize": 5177844
+        },
+        {
+          "name": "grass-parity-1.bin",
+          "duration": 9.599999999627471,
+          "transferSize": 739020,
+          "decodedBodySize": 738720
+        },
+        {
+          "name": "grass-parity-2.bin",
+          "duration": 178,
+          "transferSize": 2346312,
+          "decodedBodySize": 2346012
+        },
+        {
+          "name": "grass-parity-3.bin",
+          "duration": 13.700000001117587,
+          "transferSize": 1416828,
+          "decodedBodySize": 1416528
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "parity-high-dpr",
+    "query": "water=fresnel&dpr=1.5",
+    "readyMilliseconds": 1579.5771999999997,
+    "data": {
+      "ready": true,
+      "totalFrames": 724,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "timerAvailable": true,
+      "camera": {
+        "position": [
+          -3,
+          4.3629326820373535,
+          10
+        ],
+        "quaternion": [
+          0.01652452394555494,
+          0.004544692915045745,
+          -0.00007511069835276566,
+          0.9998531293310349
+        ],
+        "fov": 39.76070761559628
+      },
+      "metrics": {
+        "frames": 724,
+        "samples": 600,
+        "rafP50ms": 12.399999998509884,
+        "rafP95ms": 14.400000000372529,
+        "cpuSubmitP50ms": 1.099999999627471,
+        "gpuP50ms": 11.863264,
+        "gpuP95ms": 13.938208,
+        "gpuSamples": 67,
+        "callsAllPasses": 134,
+        "trianglesAllPasses": 16375297,
+        "geometryResources": 102,
+        "textureResources": 27,
+        "programs": 18,
+        "drawingBuffer": [
+          3840,
+          2160
+        ],
+        "dpr": 1.5
+      },
+      "requests": [
+        {
+          "name": "manifest.json",
+          "duration": 20,
+          "transferSize": 262641,
+          "decodedBodySize": 921280
+        },
+        {
+          "name": "parity.json",
+          "duration": 3,
+          "transferSize": 1375,
+          "decodedBodySize": 3075
+        },
+        {
+          "name": "blender-display-lut.bin",
+          "duration": 15.199999999254942,
+          "transferSize": 2197300,
+          "decodedBodySize": 2197000
+        },
+        {
+          "name": "water-depth.bin",
+          "duration": 5.900000000372529,
+          "transferSize": 156224,
+          "decodedBodySize": 155924
+        },
+        {
+          "name": "sediment-wetness.bin",
+          "duration": 10.800000000745058,
+          "transferSize": 954540,
+          "decodedBodySize": 954240
+        },
+        {
+          "name": "meadow-coverage.bin",
+          "duration": 11.5,
+          "transferSize": 1048876,
+          "decodedBodySize": 1048576
+        },
+        {
+          "name": "afternoon-sky.exr",
+          "duration": 5,
+          "transferSize": 807509,
+          "decodedBodySize": 807209
+        },
+        {
+          "name": "terrain-near-normal.png",
+          "duration": 10.5,
+          "transferSize": 1298276,
+          "decodedBodySize": 1297976
+        },
+        {
+          "name": "terrain-range-normal.png",
+          "duration": 17.40000000037253,
+          "transferSize": 4624040,
+          "decodedBodySize": 4623740
+        },
+        {
+          "name": "terrain-near-roughness.png",
+          "duration": 5.800000000745058,
+          "transferSize": 264576,
+          "decodedBodySize": 264276
+        },
+        {
+          "name": "terrain-range-roughness.png",
+          "duration": 8.199999999254942,
+          "transferSize": 714104,
+          "decodedBodySize": 713804
+        },
+        {
+          "name": "geography.glb",
+          "duration": 120.70000000111759,
+          "transferSize": 40078644,
+          "decodedBodySize": 40078344
+        },
+        {
+          "name": "grass-parity.glb",
+          "duration": 3.699999999254942,
+          "transferSize": 67184,
+          "decodedBodySize": 66884
+        },
+        {
+          "name": "flowers-lod.glb",
+          "duration": 49.79999999888241,
+          "transferSize": 24019084,
+          "decodedBodySize": 24018784
+        },
+        {
+          "name": "grass-parity-0.bin",
+          "duration": 192.09999999962747,
+          "transferSize": 5178144,
+          "decodedBodySize": 5177844
+        },
+        {
+          "name": "grass-parity-1.bin",
+          "duration": 10.900000000372529,
+          "transferSize": 739020,
+          "decodedBodySize": 738720
+        },
+        {
+          "name": "grass-parity-2.bin",
+          "duration": 181,
+          "transferSize": 2346312,
+          "decodedBodySize": 2346012
+        },
+        {
+          "name": "grass-parity-3.bin",
+          "duration": 17.09999999962747,
+          "transferSize": 1416828,
+          "decodedBodySize": 1416528
+        }
+      ]
+    },
+    "errors": []
+  }
+]

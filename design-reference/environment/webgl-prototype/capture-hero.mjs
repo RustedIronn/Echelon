@@ -1,0 +1,10 @@
+import { chromium } from './browser-tools/node_modules/playwright/index.mjs';
+import { fileURLToPath } from 'node:url';
+const browser=await chromium.launch({channel:'msedge',headless:true,args:['--ignore-gpu-blocklist','--use-angle=d3d11']});
+const page=await browser.newPage({viewport:{width:2560,height:1440}});
+page.on('pageerror',e=>console.log('ERROR',e.message));
+await page.goto('http://127.0.0.1:5173/landscape-preview.html?capture=1&benchmark=1');
+await page.waitForFunction(()=>window.__echelonPrototype?.metrics?.samples>30,{timeout:120000});
+await page.screenshot({path:fileURLToPath(new URL('hero-calibration.png',import.meta.url))});
+console.log(await page.evaluate(()=>window.__echelonPrototype.metrics));
+await browser.close();

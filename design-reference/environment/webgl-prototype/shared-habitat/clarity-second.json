@@ -1,0 +1,182 @@
+{
+  "ready": true,
+  "totalFrames": 737,
+  "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Laptop GPU (0x00002D98) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "inventory": {
+    "trees": [
+      {
+        "name": "Reusable_Norway_Spruce_geometry002",
+        "visible": true,
+        "worldBounds": [
+          [
+            -18.14763864448193,
+            2.6366689391405274,
+            -20.26676117634766
+          ],
+          [
+            -14.352887612229475,
+            8.259355854922319,
+            -16.401285376216485
+          ]
+        ],
+        "matrixWorld": [
+          0.3397192622968405,
+          0,
+          -0.1240072082317585,
+          0,
+          0,
+          0.36164480447769165,
+          0,
+          0,
+          0.1240072082317585,
+          0,
+          0.3397192622968405,
+          0,
+          -16.37105941772461,
+          2.2593560218811035,
+          -18.29685401916504,
+          1
+        ],
+        "projectedBounds": [
+          [
+            -0.8761569151950861,
+            -0.5653155651998766
+          ],
+          [
+            -0.27214209532648304,
+            0.3136050318705926
+          ]
+        ],
+        "alphaTest": 0.3
+      },
+      {
+        "name": "Reusable_Norway_Spruce_geometry002_1",
+        "visible": true,
+        "worldBounds": [
+          [
+            -17.436182656628276,
+            1.9589612503318818,
+            -19.48683991737595
+          ],
+          [
+            -15.057303308115255,
+            7.565278544302259,
+            -17.043280906571898
+          ]
+        ],
+        "matrixWorld": [
+          0.3397192622968405,
+          0,
+          -0.1240072082317585,
+          0,
+          0,
+          0.36164480447769165,
+          0,
+          0,
+          0.1240072082317585,
+          0,
+          0.3397192622968405,
+          0,
+          -16.37105941772461,
+          2.2593560218811035,
+          -18.29685401916504,
+          1
+        ],
+        "projectedBounds": [
+          [
+            -0.8151277663036819,
+            -0.6177574565945048
+          ],
+          [
+            -0.3372672036333284,
+            0.23381669424134
+          ]
+        ],
+        "alphaTest": 0.3
+      }
+    ],
+    "grass": {
+      "instances": 1267529,
+      "prototypeVertices": 1116,
+      "habitat": {
+        "mapSize": [
+          440,
+          304
+        ],
+        "nearGrass": 193964,
+        "farGrass": 470272,
+        "flowers": 2168
+      }
+    },
+    "msaaSamples": 4
+  },
+  "timerAvailable": true,
+  "camera": {
+    "position": [
+      -3,
+      4.3629326820373535,
+      10
+    ],
+    "quaternion": [
+      0.01652452394555494,
+      0.004544692915045745,
+      -0.00007511069835276566,
+      0.9998531293310349
+    ],
+    "fov": 39.76070761559628
+  },
+  "metrics": {
+    "frames": 679,
+    "samples": 600,
+    "rafP50ms": 16.200000001117587,
+    "rafP95ms": 18,
+    "cpuSubmitP50ms": 1.5,
+    "gpuP50ms": 15.815936,
+    "gpuP95ms": 17.727968,
+    "gpuSamples": 62,
+    "callsAllPasses": 207,
+    "trianglesAllPasses": 25687519,
+    "geometryResources": 167,
+    "textureResources": 45,
+    "programs": 22,
+    "drawingBuffer": [
+      2560,
+      1440
+    ],
+    "dpr": 1
+  },
+  "tributary": {
+    "height": 2.695420961380005,
+    "streamHeight": 2.715420961380005,
+    "samples": 4272,
+    "resolution": [
+      1920,
+      1080
+    ]
+  },
+  "reflection": {
+    "height": 1.7540003051272453,
+    "calls": 121,
+    "triangles": 10374735,
+    "resolution": [
+      1920,
+      1080
+    ],
+    "content": "full",
+    "cached": true,
+    "captures": 1,
+    "gpuMilliseconds": 4.3256
+  },
+  "waterBed": {
+    "calls": 153,
+    "triangles": 19008546,
+    "resolution": [
+      1280,
+      720
+    ],
+    "captures": 1,
+    "cached": true,
+    "gpuMilliseconds": 7.489984
+  },
+  "errors": []
+}

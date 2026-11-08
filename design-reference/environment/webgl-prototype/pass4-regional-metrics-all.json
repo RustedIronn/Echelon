@@ -1,0 +1,236 @@
+{
+  "v4-approved": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -25.7,
+      "cRatio": 1.3,
+      "blurMAE": 20.09
+    },
+    "spruce": {
+      "dL": 0.7,
+      "cRatio": 1.11,
+      "blurMAE": 9.54
+    },
+    "waterMid": {
+      "dL": 13,
+      "cRatio": 1.42,
+      "blurMAE": 7.97
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "grassHorizon": {
+      "dL": -1.2,
+      "cRatio": 1.47,
+      "blurMAE": 3.96
+    },
+    "grassFar": {
+      "dL": 1.4,
+      "cRatio": 0.95,
+      "blurMAE": 3.87
+    },
+    "grassMid": {
+      "dL": 0.4,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassLeftMid": {
+      "dL": 5.3,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassNear": {
+      "dL": 28.9,
+      "cRatio": 1.04,
+      "blurMAE": 13.18
+    },
+    "flowerBandMid": {
+      "dL": 0.3,
+      "cRatio": 1.52,
+      "blurMAE": 6.74
+    },
+    "flowerNearLeft": {
+      "dL": 16.3,
+      "cRatio": 1.32,
+      "blurMAE": 8.7
+    },
+    "_meanBlurMAE": 7.264
+  },
+  "v4-new": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -25.7,
+      "cRatio": 1.3,
+      "blurMAE": 20.09
+    },
+    "spruce": {
+      "dL": 0.1,
+      "cRatio": 1.11,
+      "blurMAE": 9.3
+    },
+    "waterMid": {
+      "dL": 3.1,
+      "cRatio": 1.41,
+      "blurMAE": 5.33
+    },
+    "waterNear": {
+      "dL": 0.8,
+      "cRatio": 0.36,
+      "blurMAE": 5.08
+    },
+    "grassHorizon": {
+      "dL": -1.2,
+      "cRatio": 1.47,
+      "blurMAE": 3.96
+    },
+    "grassFar": {
+      "dL": 1.4,
+      "cRatio": 0.95,
+      "blurMAE": 3.87
+    },
+    "grassMid": {
+      "dL": 0.4,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassLeftMid": {
+      "dL": 5.3,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassNear": {
+      "dL": 28.6,
+      "cRatio": 1.05,
+      "blurMAE": 12.99
+    },
+    "flowerBandMid": {
+      "dL": -1.6,
+      "cRatio": 1.52,
+      "blurMAE": 6.23
+    },
+    "flowerNearLeft": {
+      "dL": 16.5,
+      "cRatio": 1.32,
+      "blurMAE": 8.61
+    },
+    "_meanBlurMAE": 6.738
+  },
+  "v4-new-linear": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 6.3,
+      "cRatio": 1.01,
+      "blurMAE": 3.84
+    },
+    "mountainCenter": {
+      "dL": 9.1,
+      "cRatio": 0.97,
+      "blurMAE": 7.62
+    },
+    "mountainRight": {
+      "dL": 8.9,
+      "cRatio": 0.95,
+      "blurMAE": 5.77
+    },
+    "hamlet": {
+      "dL": -23.8,
+      "cRatio": 1.27,
+      "blurMAE": 18.63
+    },
+    "spruce": {
+      "dL": 0.9,
+      "cRatio": 1.11,
+      "blurMAE": 9.13
+    },
+    "waterMid": {
+      "dL": 10.8,
+      "cRatio": 1.45,
+      "blurMAE": 6.5
+    },
+    "waterNear": {
+      "dL": 0.8,
+      "cRatio": 0.37,
+      "blurMAE": 5.08
+    },
+    "grassHorizon": {
+      "dL": 2.4,
+      "cRatio": 1.42,
+      "blurMAE": 3.82
+    },
+    "grassFar": {
+      "dL": -2.5,
+      "cRatio": 0.94,
+      "blurMAE": 3.76
+    },
+    "grassMid": {
+      "dL": 3.2,
+      "cRatio": 1.05,
+      "blurMAE": 4.7
+    },
+    "grassLeftMid": {
+      "dL": 4.5,
+      "cRatio": 1.08,
+      "blurMAE": 5.61
+    },
+    "grassNear": {
+      "dL": 37.1,
+      "cRatio": 1.09,
+      "blurMAE": 14.73
+    },
+    "flowerBandMid": {
+      "dL": 11.5,
+      "cRatio": 1.56,
+      "blurMAE": 6.65
+    },
+    "flowerNearLeft": {
+      "dL": 29.2,
+      "cRatio": 1.38,
+      "blurMAE": 10.91
+    },
+    "_meanBlurMAE": 7.303
+  }
+}

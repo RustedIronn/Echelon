@@ -1,0 +1,114 @@
+{
+  "v4-previous": {
+    "query": "pass=previous",
+    "frames": 3,
+    "errors": [],
+    "optics": {
+      "reflection": {
+        "height": 1.7540003051272453,
+        "calls": 20,
+        "triangles": 609978,
+        "resolution": [
+          640,
+          360
+        ],
+        "cached": true,
+        "captures": 1
+      },
+      "waterBed": {
+        "calls": 89,
+        "triangles": 9736005,
+        "resolution": [
+          1280,
+          720
+        ],
+        "captures": 1,
+        "cached": true
+      }
+    }
+  },
+  "v4-approved": {
+    "query": "waterpass=approved",
+    "frames": 3,
+    "errors": [],
+    "optics": {
+      "reflection": {
+        "height": 1.7540003051272453,
+        "calls": 20,
+        "triangles": 609978,
+        "resolution": [
+          640,
+          360
+        ],
+        "cached": true,
+        "captures": 1
+      },
+      "waterBed": {
+        "calls": 89,
+        "triangles": 9736005,
+        "resolution": [
+          1280,
+          720
+        ],
+        "captures": 1,
+        "cached": true
+      }
+    }
+  },
+  "v4-new": {
+    "query": "",
+    "frames": 3,
+    "errors": [],
+    "optics": {
+      "reflection": {
+        "height": 1.7540003051272453,
+        "calls": 44,
+        "triangles": 3529058,
+        "resolution": [
+          640,
+          360
+        ],
+        "cached": true,
+        "captures": 1
+      },
+      "waterBed": {
+        "calls": 89,
+        "triangles": 9736005,
+        "resolution": [
+          1280,
+          720
+        ],
+        "captures": 1,
+        "cached": true
+      }
+    }
+  },
+  "v4-new-linear": {
+    "query": "resolve=linear",
+    "frames": 3,
+    "errors": [],
+    "optics": {
+      "reflection": {
+        "height": 1.7540003051272453,
+        "calls": 44,
+        "triangles": 3529058,
+        "resolution": [
+          640,
+          360
+        ],
+        "cached": true,
+        "captures": 1
+      },
+      "waterBed": {
+        "calls": 89,
+        "triangles": 9736005,
+        "resolution": [
+          1280,
+          720
+        ],
+        "captures": 1,
+        "cached": true
+      }
+    }
+  }
+}

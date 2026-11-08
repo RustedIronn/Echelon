@@ -1,0 +1,25 @@
+{
+  "sourceGeographySha256": "4444548b4429f55764a8aa22ebb30ab22a3635fc754e1df92379299eae265b18",
+  "sourceMasterSha256": "0abcb3c95ae349e9c7831d0e8913c3d40016fc049675aa738df773b1aae25506",
+  "method": "Direction-independent geometry AO, no baked sun or sky illumination",
+  "surfaces": {
+    "terrain-near": {
+      "resolution": 1024,
+      "distance": 2.0,
+      "seconds": 121.86607122421265,
+      "file": "terrain-near-ao.png"
+    },
+    "terrain-range": {
+      "resolution": 2048,
+      "distance": 32.0,
+      "seconds": 2.1287927627563477,
+      "file": "terrain-range-ao.png"
+    },
+    "hamlet": {
+      "resolution": 1024,
+      "distance": 2.5,
+      "seconds": 0.7642989158630371,
+      "file": "hamlet-ao.png"
+    }
+  }
+}

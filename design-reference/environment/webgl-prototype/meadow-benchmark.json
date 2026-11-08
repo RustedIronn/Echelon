@@ -1,0 +1,42 @@
+[
+  {
+    "name": "previous",
+    "query": "meadow=previous",
+    "gpuP50": 10.021344,
+    "gpuP95": 11.869856,
+    "rafP50": 10.299999999813735,
+    "draws": 163,
+    "triangles": 16509819,
+    "errors": []
+  },
+  {
+    "name": "detailed",
+    "query": "",
+    "gpuP50": 10.942016,
+    "gpuP95": 12.451168,
+    "rafP50": 11.099999999627471,
+    "draws": 172,
+    "triangles": 16620723,
+    "errors": []
+  },
+  {
+    "name": "detailed-repeat",
+    "query": "",
+    "gpuP50": 11.37712,
+    "gpuP95": 13.108224,
+    "rafP50": 11.299999999813735,
+    "draws": 172,
+    "triangles": 16620723,
+    "errors": []
+  },
+  {
+    "name": "previous-repeat",
+    "query": "meadow=previous",
+    "gpuP50": 9.881408,
+    "gpuP95": 11.572256,
+    "rafP50": 10.099999999627471,
+    "draws": 163,
+    "triangles": 16509819,
+    "errors": []
+  }
+]

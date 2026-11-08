@@ -1,0 +1,17 @@
+{
+  "measurement_mode": "Blender viewport dependency graph; not a WebGL benchmark or Cycles render workload",
+  "visible_mesh_objects": 159,
+  "visible_mesh_triangles": 15045665,
+  "grass_vertices": 10902888,
+  "grass_triangles": 11278048,
+  "hamlet_meshes": 124,
+  "hamlet_triangles": 13726,
+  "flower_instances": 2145,
+  "flower_expanded_triangles": 23226924,
+  "all_instance_expanded_triangles": 23306444,
+  "reachable_image_datablocks": 35,
+  "reachable_packed_bytes": 233665048,
+  "rgba8_mips_equivalent_bytes_NOT_MEASURED_VRAM": 2618824192.0,
+  "saved_scene_unchanged": true,
+  "sha256": "0abcb3c95ae349e9c7831d0e8913c3d40016fc049675aa738df773b1aae25506"
+}

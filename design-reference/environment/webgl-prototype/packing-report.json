@@ -1,0 +1,18 @@
+[
+  {
+    "file": "flowers.glb",
+    "bytes": 16622892,
+    "convertedOpaqueAlbedos": 0
+  },
+  {
+    "file": "geography.glb",
+    "beforeBytes": 65357072,
+    "bytes": 34226476,
+    "convertedOpaqueAlbedos": 3
+  },
+  {
+    "file": "grass.glb",
+    "bytes": 64880,
+    "convertedOpaqueAlbedos": 0
+  }
+]

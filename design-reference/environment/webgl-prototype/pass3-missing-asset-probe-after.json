@@ -1,0 +1,105 @@
+{
+  "as-is-dev-server": {
+    "before": {
+      "sentinel": true,
+      "canvas": false
+    },
+    "after": {
+      "sentinel": true,
+      "shell": true,
+      "rootChildren": 1,
+      "fallbackPresent": true,
+      "environmentMounted": true,
+      "bodyText": "PRODUCTIVITY-APP-SENTINEL (stands in for Sidebar, Today, Planner...)",
+      "canvas": false,
+      "riskErrors": [
+        "window.error: Uncaught Error: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined",
+        "React onCaughtError: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+      ]
+    },
+    "requests": [
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png",
+      "200 text/html /assets/environment/terrain/grass-variation/Grass007_2K-PNG_Color.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_AmbientOcclusion.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_NormalGL.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_Roughness.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Opacity.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_NormalGL.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Roughness.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Color.png"
+    ],
+    "requestFailed": [],
+    "consoleErrors": [
+      "pageerror: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+    ]
+  },
+  "host-rewrites-missing-files-to-index-html": {
+    "before": {
+      "sentinel": true,
+      "canvas": false
+    },
+    "after": {
+      "sentinel": true,
+      "shell": true,
+      "rootChildren": 1,
+      "fallbackPresent": true,
+      "environmentMounted": true,
+      "bodyText": "PRODUCTIVITY-APP-SENTINEL (stands in for Sidebar, Today, Planner...)",
+      "canvas": false,
+      "riskErrors": [
+        "window.error: Uncaught Error: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined",
+        "React onCaughtError: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+      ]
+    },
+    "requests": [
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_NormalGL.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_Roughness.png",
+      "200 text/html /assets/environment/terrain/grass-base/Grass006_2K-PNG_AmbientOcclusion.png",
+      "200 text/html /assets/environment/terrain/grass-variation/Grass007_2K-PNG_Color.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Color.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Opacity.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_NormalGL.png",
+      "200 text/html /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Roughness.png"
+    ],
+    "requestFailed": [],
+    "consoleErrors": [
+      "pageerror: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+    ]
+  },
+  "host-returns-404": {
+    "before": {
+      "sentinel": true,
+      "canvas": false
+    },
+    "after": {
+      "sentinel": true,
+      "shell": true,
+      "rootChildren": 1,
+      "fallbackPresent": true,
+      "environmentMounted": true,
+      "bodyText": "PRODUCTIVITY-APP-SENTINEL (stands in for Sidebar, Today, Planner...)",
+      "canvas": false,
+      "riskErrors": [
+        "window.error: Uncaught Error: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined",
+        "React onCaughtError: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+      ]
+    },
+    "requests": [
+      "404 text/plain /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png",
+      "404 text/plain /assets/environment/terrain/grass-base/Grass006_2K-PNG_NormalGL.png",
+      "404 text/plain /assets/environment/terrain/grass-base/Grass006_2K-PNG_Roughness.png",
+      "404 text/plain /assets/environment/terrain/grass-base/Grass006_2K-PNG_AmbientOcclusion.png",
+      "404 text/plain /assets/environment/terrain/grass-variation/Grass007_2K-PNG_Color.png",
+      "404 text/plain /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Color.png",
+      "404 text/plain /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Opacity.png",
+      "404 text/plain /assets/environment/foliage/grass-low/Foliage007_2K-PNG_NormalGL.png",
+      "404 text/plain /assets/environment/foliage/grass-low/Foliage007_2K-PNG_Roughness.png"
+    ],
+    "requestFailed": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "pageerror: Could not load /assets/environment/terrain/grass-base/Grass006_2K-PNG_Color.png: undefined"
+    ]
+  }
+}

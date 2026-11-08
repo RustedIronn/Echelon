@@ -1,0 +1,38 @@
+{
+  "r-reflection-640-grass01": {
+    "width": 640,
+    "height": 360,
+    "grassLayers": [
+      0,
+      1
+    ],
+    "gpuMsMedian": 1.087968,
+    "draws": 44,
+    "triangles": 3529058,
+    "memoryMB": 2.3
+  },
+  "r-reflection-1280": {
+    "width": 1280,
+    "height": 720,
+    "grassLayers": [],
+    "gpuMsMedian": 0.430656,
+    "draws": 20,
+    "triangles": 609978,
+    "memoryMB": 9.4
+  },
+  "r-reflection-1280-grass01": {
+    "width": 1280,
+    "height": 720,
+    "grassLayers": [
+      0,
+      1
+    ],
+    "gpuMsMedian": 1.306848,
+    "draws": 44,
+    "triangles": 3529058,
+    "memoryMB": 9.4
+  },
+  "g-restore-thinned-roots": {
+    "restored": 18395
+  }
+}

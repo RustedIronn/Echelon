@@ -1,0 +1,133 @@
+{
+  "sourceSha256": "0abcb3c95ae349e9c7831d0e8913c3d40016fc049675aa738df773b1aae25506",
+  "grass": [
+    {
+      "file": "grass-parity-0.bin",
+      "layer": 0,
+      "count": 143829,
+      "stride": 9,
+      "source": "Foreground arching grass",
+      "samplingFraction": 0.88
+    },
+    {
+      "file": "grass-parity-1.bin",
+      "layer": 1,
+      "count": 20520,
+      "stride": 9,
+      "source": "Low basal meadow foliage",
+      "samplingFraction": 0.85
+    },
+    {
+      "file": "grass-parity-2.bin",
+      "layer": 2,
+      "count": 65167,
+      "stride": 9,
+      "source": "Midground meadow continuation",
+      "samplingFraction": 0.35
+    },
+    {
+      "file": "grass-parity-3.bin",
+      "layer": 3,
+      "count": 39348,
+      "stride": 9,
+      "source": "Meadow to foothill transition",
+      "samplingFraction": 0.09
+    }
+  ],
+  "files": {
+    "afternoon-sky.exr": 807209,
+    "blender-display-lut.bin": 2197000,
+    "flowers-lod.glb": 24018784,
+    "grass-parity-0.bin": 5177844,
+    "grass-parity-1.bin": 738720,
+    "grass-parity-2.bin": 2346012,
+    "grass-parity-3.bin": 1416528,
+    "water-depth.bin": 155924
+  },
+  "lods": [
+    {
+      "species": "Carthusian Pink",
+      "lod": 1,
+      "triangles": 701
+    },
+    {
+      "species": "Carthusian Pink",
+      "lod": 2,
+      "triangles": 240
+    },
+    {
+      "species": "Dandelion",
+      "lod": 1,
+      "triangles": 2471
+    },
+    {
+      "species": "Dandelion",
+      "lod": 2,
+      "triangles": 847
+    },
+    {
+      "species": "Marguerite",
+      "lod": 1,
+      "triangles": 1632
+    },
+    {
+      "species": "Marguerite",
+      "lod": 2,
+      "triangles": 630
+    },
+    {
+      "species": "Red Clover",
+      "lod": 1,
+      "triangles": 2624
+    },
+    {
+      "species": "Red Clover",
+      "lod": 2,
+      "triangles": 899
+    }
+  ],
+  "display": {
+    "size": 65,
+    "logMin": -12.0,
+    "logMax": 8.0,
+    "file": "blender-display-lut.bin",
+    "look": "AgX - Medium High Contrast",
+    "view": "AgX",
+    "exposure": 1.0717734636432956,
+    "encoding": "RGBA16F; x=R,y=G,z=B; linear display RGB"
+  },
+  "coverage": {
+    "file": "meadow-coverage.bin",
+    "size": 1024,
+    "bounds": [
+      -200.0,
+      -38.0,
+      150.0,
+      280.0
+    ],
+    "color": [
+      0.1776199963390827,
+      0.2622799972295761,
+      0.07054999950528144
+    ],
+    "method": "Gaussian-filtered full authored blade-root density; no new vegetation placement"
+  },
+  "water": {
+    "depthFile": "water-depth.bin",
+    "count": 38981,
+    "depthRange": [
+      0,
+      0.6630153656005859
+    ],
+    "method": "actual delivered vertex ordering; raycast to evaluated approved terrain",
+    "sedimentWetnessFile": "sediment-wetness.bin",
+    "sedimentVertices": 238560
+  },
+  "sky": {
+    "sunElevation": 0.5104883313179016,
+    "sunRotation": -2.498091459274292,
+    "sunDiscInEnvironment": false,
+    "file": "afternoon-sky.exr"
+  },
+  "masterUnchanged": true
+}

@@ -1,0 +1,47 @@
+{
+  "c-bed-1280-recapture": {
+    "width": 1280,
+    "height": 720,
+    "samples": 0,
+    "gpuMsMedian": 3.524,
+    "colorPlusMipsMB": 9.4,
+    "depthMB": 3.5,
+    "totalMB": 12.9
+  },
+  "c-bed-1920": {
+    "width": 1920,
+    "height": 1080,
+    "samples": 0,
+    "gpuMsMedian": 3.855616,
+    "colorPlusMipsMB": 21.1,
+    "depthMB": 7.9,
+    "totalMB": 29
+  },
+  "c-bed-2560": {
+    "width": 2560,
+    "height": 1440,
+    "samples": 0,
+    "gpuMsMedian": 4.15744,
+    "colorPlusMipsMB": 37.5,
+    "depthMB": 14.1,
+    "totalMB": 51.6
+  },
+  "c-bed-2560-sharp": {
+    "width": 2560,
+    "height": 1440,
+    "samples": 0,
+    "gpuMsMedian": 5.042112,
+    "colorPlusMipsMB": 37.5,
+    "depthMB": 14.1,
+    "totalMB": 51.6
+  },
+  "c-bed-1920-sharp": {
+    "width": 1920,
+    "height": 1080,
+    "samples": 0,
+    "gpuMsMedian": 3.734432,
+    "colorPlusMipsMB": 21.1,
+    "depthMB": 7.9,
+    "totalMB": 29
+  }
+}

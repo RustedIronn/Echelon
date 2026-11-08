@@ -1,0 +1,6 @@
+{
+  "before": 3,
+  "after": 3,
+  "observationMilliseconds": 1500,
+  "stoppedRenderingWhenStatic": true
+}

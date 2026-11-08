@@ -1,0 +1,45 @@
+{
+  "sourceSha256": "0abcb3c95ae349e9c7831d0e8913c3d40016fc049675aa738df773b1aae25506",
+  "bounds": [
+    -200.0,
+    -38.0,
+    150.0,
+    280.0
+  ],
+  "resolution": [
+    3072,
+    2791
+  ],
+  "color": "meadow-canopy-color.png",
+  "normal": "meadow-canopy-normal.png",
+  "normalSpace": "Blender world XYZ encoded 0..1; convert (x,z,-y) in shader",
+  "sources": [
+    "Foreground arching grass",
+    "Low basal meadow foliage",
+    "Midground meadow continuation",
+    "Meadow to foothill transition"
+  ],
+  "method": "Orthographic unlit source blade color/coverage and world normals; no new scatter, sunlight, flowers or terrain changes",
+  "seconds": 21.80913019180298,
+  "masterUnchanged": true,
+  "grass": [
+    {
+      "layer": 2,
+      "source": "Midground meadow continuation",
+      "file": "grass-canopy-2.bin",
+      "stride": 9,
+      "count": 185941,
+      "samplingFraction": 1,
+      "representation": "Authored full middle/foothill roots; narrow three-triangle curved strips; camera-frustum culling with 20% NDC margin"
+    },
+    {
+      "layer": 3,
+      "source": "Meadow to foothill transition",
+      "file": "grass-canopy-3.bin",
+      "stride": 9,
+      "count": 441263,
+      "samplingFraction": 1,
+      "representation": "Authored full middle/foothill roots; narrow three-triangle curved strips; camera-frustum culling with 20% NDC margin"
+    }
+  ]
+}

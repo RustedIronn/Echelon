@@ -1,0 +1,2180 @@
+{
+  "blender": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.7,
+          123.7,
+          80.1
+        ],
+        "linearLuma": 0.1803,
+        "meanSat": 0.349,
+        "localContrast": 2.46,
+        "blockStd": 7.41,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          85.2,
+          110.7,
+          62.3
+        ],
+        "linearLuma": 0.1368,
+        "meanSat": 0.438,
+        "localContrast": 4.27,
+        "blockStd": 1.43,
+        "per1000": {
+          "white": 0.09,
+          "pink": 0.3,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84.3,
+          107.4,
+          64.9
+        ],
+        "linearLuma": 0.1323,
+        "meanSat": 0.409,
+        "localContrast": 8.13,
+        "blockStd": 2.77,
+        "per1000": {
+          "white": 7.61,
+          "pink": 10.98,
+          "yellow": 0,
+          "blueGreySuspect": 1.79,
+          "dark": 0.2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          88.8,
+          113.7,
+          68.4
+        ],
+        "linearLuma": 0.1456,
+        "meanSat": 0.399,
+        "localContrast": 2.07,
+        "blockStd": 2.14,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          85.1,
+          105.1,
+          65.9
+        ],
+        "linearLuma": 0.1321,
+        "meanSat": 0.403,
+        "localContrast": 11.43,
+        "blockStd": 7.09,
+        "per1000": {
+          "white": 23.37,
+          "pink": 15.18,
+          "yellow": 0,
+          "blueGreySuspect": 9.9,
+          "dark": 1.7
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          67.6,
+          87.2,
+          54
+        ],
+        "linearLuma": 0.095,
+        "meanSat": 0.442,
+        "localContrast": 13.92,
+        "blockStd": 11.51,
+        "per1000": {
+          "white": 13.93,
+          "pink": 12.55,
+          "yellow": 0.29,
+          "blueGreySuspect": 54.46,
+          "dark": 60.4
+        }
+      }
+    }
+  },
+  "default": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          100.3,
+          121.3,
+          74.7
+        ],
+        "linearLuma": 0.1745,
+        "meanSat": 0.384,
+        "localContrast": 5.78,
+        "blockStd": 7.48,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 1.5
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          75.4,
+          98.3,
+          57.9
+        ],
+        "linearLuma": 0.1131,
+        "meanSat": 0.417,
+        "localContrast": 15.67,
+        "blockStd": 3.38,
+        "per1000": {
+          "white": 0,
+          "pink": 0.64,
+          "yellow": 0,
+          "blueGreySuspect": 1.58,
+          "dark": 15
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          79.9,
+          101.6,
+          65.5
+        ],
+        "linearLuma": 0.1224,
+        "meanSat": 0.373,
+        "localContrast": 14.34,
+        "blockStd": 2.76,
+        "per1000": {
+          "white": 1.71,
+          "pink": 7.99,
+          "yellow": 0.26,
+          "blueGreySuspect": 27.69,
+          "dark": 11.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          88.2,
+          111.5,
+          68.8
+        ],
+        "linearLuma": 0.1443,
+        "meanSat": 0.388,
+        "localContrast": 6.77,
+        "blockStd": 9.29,
+        "per1000": {
+          "white": 0,
+          "pink": 0.14,
+          "yellow": 0,
+          "blueGreySuspect": 0.38,
+          "dark": 4
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          80.9,
+          101,
+          69.6
+        ],
+        "linearLuma": 0.1265,
+        "meanSat": 0.354,
+        "localContrast": 17.79,
+        "blockStd": 6.33,
+        "per1000": {
+          "white": 9.55,
+          "pink": 8.77,
+          "yellow": 0.68,
+          "blueGreySuspect": 97.47,
+          "dark": 21.6
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.80-g0.580": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.3,
+          122.3,
+          76.4
+        ],
+        "linearLuma": 0.1759,
+        "meanSat": 0.373,
+        "localContrast": 3.9,
+        "blockStd": 6.55,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          82.7,
+          106,
+          67.6
+        ],
+        "linearLuma": 0.1264,
+        "meanSat": 0.362,
+        "localContrast": 4.4,
+        "blockStd": 2.07,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.07,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          82.1,
+          104.2,
+          68.6
+        ],
+        "linearLuma": 0.1254,
+        "meanSat": 0.352,
+        "localContrast": 8.65,
+        "blockStd": 2.49,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 27.31,
+          "dark": 2.6
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90.6,
+          113.9,
+          72.8
+        ],
+        "linearLuma": 0.1482,
+        "meanSat": 0.361,
+        "localContrast": 2.47,
+        "blockStd": 6.82,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.33,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.1,
+          101.3,
+          69.9
+        ],
+        "linearLuma": 0.1267,
+        "meanSat": 0.351,
+        "localContrast": 17.24,
+        "blockStd": 6.18,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.97,
+          "dark": 19.8
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.80-g0.620": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.6,
+          122.6,
+          76.6
+        ],
+        "linearLuma": 0.1768,
+        "meanSat": 0.374,
+        "localContrast": 3.78,
+        "blockStd": 6.45,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          84.3,
+          108,
+          68.4
+        ],
+        "linearLuma": 0.1313,
+        "meanSat": 0.367,
+        "localContrast": 4.2,
+        "blockStd": 1.85,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.94,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          82.8,
+          105.1,
+          69
+        ],
+        "linearLuma": 0.1277,
+        "meanSat": 0.354,
+        "localContrast": 8.59,
+        "blockStd": 2.51,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 26.97,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.2,
+          114.7,
+          73.1
+        ],
+        "linearLuma": 0.1502,
+        "meanSat": 0.363,
+        "localContrast": 2.34,
+        "blockStd": 6.08,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.29,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.2,
+          101.4,
+          69.9
+        ],
+        "linearLuma": 0.127,
+        "meanSat": 0.352,
+        "localContrast": 17.23,
+        "blockStd": 6.12,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.63,
+          "dark": 19.8
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.80-g0.660": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.9,
+          122.9,
+          76.7
+        ],
+        "linearLuma": 0.1777,
+        "meanSat": 0.374,
+        "localContrast": 3.67,
+        "blockStd": 6.36,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          85.9,
+          110,
+          69.2
+        ],
+        "linearLuma": 0.1362,
+        "meanSat": 0.371,
+        "localContrast": 4.07,
+        "blockStd": 1.67,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.85,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          83.6,
+          106,
+          69.4
+        ],
+        "linearLuma": 0.1299,
+        "meanSat": 0.356,
+        "localContrast": 8.57,
+        "blockStd": 2.58,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 26.71,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.9,
+          115.5,
+          73.4
+        ],
+        "linearLuma": 0.1523,
+        "meanSat": 0.365,
+        "localContrast": 2.24,
+        "blockStd": 5.37,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.24,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.3,
+          101.5,
+          70
+        ],
+        "linearLuma": 0.1273,
+        "meanSat": 0.352,
+        "localContrast": 17.23,
+        "blockStd": 6.08,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.25,
+          "dark": 19.7
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.80-g0.700": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          102.1,
+          123.3,
+          76.8
+        ],
+        "linearLuma": 0.1785,
+        "meanSat": 0.375,
+        "localContrast": 3.58,
+        "blockStd": 6.27,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          87.4,
+          111.8,
+          70
+        ],
+        "linearLuma": 0.1411,
+        "meanSat": 0.374,
+        "localContrast": 4,
+        "blockStd": 1.54,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.81,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84.3,
+          106.9,
+          69.8
+        ],
+        "linearLuma": 0.1321,
+        "meanSat": 0.357,
+        "localContrast": 8.6,
+        "blockStd": 2.7,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 26.28,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          92.5,
+          116.3,
+          73.7
+        ],
+        "linearLuma": 0.1543,
+        "meanSat": 0.367,
+        "localContrast": 2.17,
+        "blockStd": 4.68,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.29,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.4,
+          101.6,
+          70
+        ],
+        "linearLuma": 0.1275,
+        "meanSat": 0.352,
+        "localContrast": 17.23,
+        "blockStd": 6.05,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.02,
+          "dark": 19.7
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.90-g0.580": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.3,
+          122.3,
+          76.5
+        ],
+        "linearLuma": 0.1759,
+        "meanSat": 0.372,
+        "localContrast": 3.88,
+        "blockStd": 6.55,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          82.5,
+          105.7,
+          68.2
+        ],
+        "linearLuma": 0.1258,
+        "meanSat": 0.355,
+        "localContrast": 4.39,
+        "blockStd": 2.1,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.15,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          81.9,
+          104,
+          69.1
+        ],
+        "linearLuma": 0.125,
+        "meanSat": 0.347,
+        "localContrast": 8.65,
+        "blockStd": 2.51,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 27.82,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90.6,
+          113.9,
+          73
+        ],
+        "linearLuma": 0.1484,
+        "meanSat": 0.36,
+        "localContrast": 2.4,
+        "blockStd": 6.74,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.33,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.1,
+          101.3,
+          69.9
+        ],
+        "linearLuma": 0.1267,
+        "meanSat": 0.351,
+        "localContrast": 17.24,
+        "blockStd": 6.18,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 98.28,
+          "dark": 19.8
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.90-g0.620": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.6,
+          122.6,
+          76.6
+        ],
+        "linearLuma": 0.1768,
+        "meanSat": 0.373,
+        "localContrast": 3.75,
+        "blockStd": 6.45,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          84.1,
+          107.7,
+          68.9
+        ],
+        "linearLuma": 0.1306,
+        "meanSat": 0.36,
+        "localContrast": 4.19,
+        "blockStd": 1.87,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.94,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          82.6,
+          104.9,
+          69.4
+        ],
+        "linearLuma": 0.1272,
+        "meanSat": 0.349,
+        "localContrast": 8.58,
+        "blockStd": 2.52,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 27.31,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.3,
+          114.8,
+          73.3
+        ],
+        "linearLuma": 0.1504,
+        "meanSat": 0.362,
+        "localContrast": 2.27,
+        "blockStd": 6.01,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.29,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.2,
+          101.4,
+          70
+        ],
+        "linearLuma": 0.127,
+        "meanSat": 0.351,
+        "localContrast": 17.23,
+        "blockStd": 6.13,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.97,
+          "dark": 19.8
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.90-g0.660": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          101.9,
+          122.9,
+          76.8
+        ],
+        "linearLuma": 0.1777,
+        "meanSat": 0.374,
+        "localContrast": 3.64,
+        "blockStd": 6.36,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          85.6,
+          109.6,
+          69.7
+        ],
+        "linearLuma": 0.1354,
+        "meanSat": 0.364,
+        "localContrast": 4.06,
+        "blockStd": 1.69,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.94,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          83.4,
+          105.8,
+          69.8
+        ],
+        "linearLuma": 0.1294,
+        "meanSat": 0.351,
+        "localContrast": 8.56,
+        "blockStd": 2.58,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 27.05,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          92,
+          115.6,
+          73.6
+        ],
+        "linearLuma": 0.1525,
+        "meanSat": 0.364,
+        "localContrast": 2.17,
+        "blockStd": 5.3,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.24,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.3,
+          101.5,
+          70
+        ],
+        "linearLuma": 0.1272,
+        "meanSat": 0.351,
+        "localContrast": 17.23,
+        "blockStd": 6.08,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.63,
+          "dark": 19.7
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-display-k0.90-g0.700": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          102.1,
+          123.2,
+          76.9
+        ],
+        "linearLuma": 0.1785,
+        "meanSat": 0.374,
+        "localContrast": 3.55,
+        "blockStd": 6.28,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          87.1,
+          111.4,
+          70.5
+        ],
+        "linearLuma": 0.1401,
+        "meanSat": 0.368,
+        "localContrast": 3.97,
+        "blockStd": 1.55,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 0.9,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84,
+          106.6,
+          70.2
+        ],
+        "linearLuma": 0.1315,
+        "meanSat": 0.353,
+        "localContrast": 8.58,
+        "blockStd": 2.69,
+        "per1000": {
+          "white": 1.79,
+          "pink": 4.49,
+          "yellow": 0.17,
+          "blueGreySuspect": 26.75,
+          "dark": 2.5
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          92.6,
+          116.4,
+          73.9
+        ],
+        "linearLuma": 0.1545,
+        "meanSat": 0.365,
+        "localContrast": 2.1,
+        "blockStd": 4.62,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.29,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          81.4,
+          101.6,
+          70.1
+        ],
+        "linearLuma": 0.1275,
+        "meanSat": 0.351,
+        "localContrast": 17.23,
+        "blockStd": 6.05,
+        "per1000": {
+          "white": 9.53,
+          "pink": 7.53,
+          "yellow": 0.67,
+          "blueGreySuspect": 97.32,
+          "dark": 19.7
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          69.9,
+          92.7,
+          62.1
+        ],
+        "linearLuma": 0.1075,
+        "meanSat": 0.397,
+        "localContrast": 18.22,
+        "blockStd": 7.4,
+        "per1000": {
+          "white": 13,
+          "pink": 7.07,
+          "yellow": 0.5,
+          "blueGreySuspect": 104.81,
+          "dark": 49.6
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.80-g0.500": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.4,
+          123.9,
+          82.4
+        ],
+        "linearLuma": 0.1822,
+        "meanSat": 0.333,
+        "localContrast": 3.88,
+        "blockStd": 6.45,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          80.3,
+          102.7,
+          67
+        ],
+        "linearLuma": 0.1187,
+        "meanSat": 0.347,
+        "localContrast": 4.82,
+        "blockStd": 2.53,
+        "per1000": {
+          "white": 0,
+          "pink": 0.13,
+          "yellow": 0,
+          "blueGreySuspect": 1.5,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          82.8,
+          104.8,
+          68.9
+        ],
+        "linearLuma": 0.1275,
+        "meanSat": 0.353,
+        "localContrast": 8.72,
+        "blockStd": 2.37,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.85,
+          "yellow": 1.03,
+          "blueGreySuspect": 28.85,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90,
+          112.8,
+          73.3
+        ],
+        "linearLuma": 0.1461,
+        "meanSat": 0.35,
+        "localContrast": 2.73,
+        "blockStd": 7.9,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.53,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.5,
+          107.5,
+          72.1
+        ],
+        "linearLuma": 0.1431,
+        "meanSat": 0.366,
+        "localContrast": 17.66,
+        "blockStd": 6.6,
+        "per1000": {
+          "white": 16.5,
+          "pink": 9.02,
+          "yellow": 2.25,
+          "blueGreySuspect": 91.48,
+          "dark": 16.2
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.80-g0.540": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.7,
+          124.2,
+          82.5
+        ],
+        "linearLuma": 0.183,
+        "meanSat": 0.334,
+        "localContrast": 3.74,
+        "blockStd": 6.34,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          81.9,
+          104.8,
+          67.8
+        ],
+        "linearLuma": 0.1235,
+        "meanSat": 0.353,
+        "localContrast": 4.46,
+        "blockStd": 2.24,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.45,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          83.5,
+          105.7,
+          69.3
+        ],
+        "linearLuma": 0.1297,
+        "meanSat": 0.355,
+        "localContrast": 8.52,
+        "blockStd": 2.19,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.77,
+          "yellow": 1.03,
+          "blueGreySuspect": 28.42,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90.6,
+          113.7,
+          73.6
+        ],
+        "linearLuma": 0.1481,
+        "meanSat": 0.352,
+        "localContrast": 2.53,
+        "blockStd": 7.15,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.38,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.6,
+          107.6,
+          72.1
+        ],
+        "linearLuma": 0.1434,
+        "meanSat": 0.366,
+        "localContrast": 17.63,
+        "blockStd": 6.47,
+        "per1000": {
+          "white": 16.5,
+          "pink": 9,
+          "yellow": 2.25,
+          "blueGreySuspect": 91.33,
+          "dark": 16.2
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.80-g0.580": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.9,
+          124.5,
+          82.6
+        ],
+        "linearLuma": 0.1838,
+        "meanSat": 0.335,
+        "localContrast": 3.61,
+        "blockStd": 6.23,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          83.5,
+          106.8,
+          68.6
+        ],
+        "linearLuma": 0.1284,
+        "meanSat": 0.358,
+        "localContrast": 4.19,
+        "blockStd": 1.99,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.15,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84.3,
+          106.7,
+          69.7
+        ],
+        "linearLuma": 0.132,
+        "meanSat": 0.357,
+        "localContrast": 8.38,
+        "blockStd": 2.07,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.64,
+          "yellow": 1.03,
+          "blueGreySuspect": 27.95,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.3,
+          114.5,
+          73.9
+        ],
+        "linearLuma": 0.1501,
+        "meanSat": 0.355,
+        "localContrast": 2.36,
+        "blockStd": 6.42,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.24,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.7,
+          107.8,
+          72.2
+        ],
+        "linearLuma": 0.1436,
+        "meanSat": 0.366,
+        "localContrast": 17.61,
+        "blockStd": 6.36,
+        "per1000": {
+          "white": 16.5,
+          "pink": 8.97,
+          "yellow": 2.25,
+          "blueGreySuspect": 90.98,
+          "dark": 16.2
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.80-g0.620": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          104.2,
+          124.8,
+          82.7
+        ],
+        "linearLuma": 0.1847,
+        "meanSat": 0.336,
+        "localContrast": 3.5,
+        "blockStd": 6.12,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          85.1,
+          108.8,
+          69.3
+        ],
+        "linearLuma": 0.1333,
+        "meanSat": 0.363,
+        "localContrast": 4,
+        "blockStd": 1.78,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.03,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          85,
+          107.6,
+          70.1
+        ],
+        "linearLuma": 0.1343,
+        "meanSat": 0.359,
+        "localContrast": 8.32,
+        "blockStd": 2.03,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.64,
+          "yellow": 1.03,
+          "blueGreySuspect": 27.14,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.9,
+          115.4,
+          74.2
+        ],
+        "linearLuma": 0.1522,
+        "meanSat": 0.357,
+        "localContrast": 2.24,
+        "blockStd": 5.71,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.1,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.8,
+          107.9,
+          72.2
+        ],
+        "linearLuma": 0.1439,
+        "meanSat": 0.366,
+        "localContrast": 17.6,
+        "blockStd": 6.26,
+        "per1000": {
+          "white": 16.5,
+          "pink": 8.97,
+          "yellow": 2.25,
+          "blueGreySuspect": 90.67,
+          "dark": 16.1
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.90-g0.500": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.4,
+          123.9,
+          82.5
+        ],
+        "linearLuma": 0.1822,
+        "meanSat": 0.332,
+        "localContrast": 3.87,
+        "blockStd": 6.46,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          80.1,
+          102.5,
+          67.6
+        ],
+        "linearLuma": 0.1183,
+        "meanSat": 0.34,
+        "localContrast": 4.82,
+        "blockStd": 2.55,
+        "per1000": {
+          "white": 0,
+          "pink": 0.13,
+          "yellow": 0,
+          "blueGreySuspect": 1.71,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          82.7,
+          104.6,
+          69.3
+        ],
+        "linearLuma": 0.1272,
+        "meanSat": 0.348,
+        "localContrast": 8.73,
+        "blockStd": 2.42,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.85,
+          "yellow": 1.03,
+          "blueGreySuspect": 29.74,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90.1,
+          112.9,
+          73.5
+        ],
+        "linearLuma": 0.1463,
+        "meanSat": 0.348,
+        "localContrast": 2.67,
+        "blockStd": 7.83,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.53,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.5,
+          107.5,
+          72.1
+        ],
+        "linearLuma": 0.1431,
+        "meanSat": 0.365,
+        "localContrast": 17.65,
+        "blockStd": 6.6,
+        "per1000": {
+          "white": 16.5,
+          "pink": 9.02,
+          "yellow": 2.25,
+          "blueGreySuspect": 91.85,
+          "dark": 16.2
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.90-g0.540": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.7,
+          124.2,
+          82.6
+        ],
+        "linearLuma": 0.183,
+        "meanSat": 0.333,
+        "localContrast": 3.72,
+        "blockStd": 6.34,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          81.7,
+          104.5,
+          68.3
+        ],
+        "linearLuma": 0.123,
+        "meanSat": 0.346,
+        "localContrast": 4.45,
+        "blockStd": 2.27,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.41,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          83.4,
+          105.6,
+          69.7
+        ],
+        "linearLuma": 0.1294,
+        "meanSat": 0.35,
+        "localContrast": 8.52,
+        "blockStd": 2.23,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.77,
+          "yellow": 1.03,
+          "blueGreySuspect": 28.72,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          90.7,
+          113.8,
+          73.8
+        ],
+        "linearLuma": 0.1483,
+        "meanSat": 0.351,
+        "localContrast": 2.47,
+        "blockStd": 7.08,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.33,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.6,
+          107.6,
+          72.2
+        ],
+        "linearLuma": 0.1434,
+        "meanSat": 0.366,
+        "localContrast": 17.63,
+        "blockStd": 6.48,
+        "per1000": {
+          "white": 16.5,
+          "pink": 9,
+          "yellow": 2.25,
+          "blueGreySuspect": 91.43,
+          "dark": 16.2
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.90-g0.580": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          103.9,
+          124.5,
+          82.7
+        ],
+        "linearLuma": 0.1838,
+        "meanSat": 0.334,
+        "localContrast": 3.59,
+        "blockStd": 6.23,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          83.3,
+          106.5,
+          69.1
+        ],
+        "linearLuma": 0.1278,
+        "meanSat": 0.351,
+        "localContrast": 4.18,
+        "blockStd": 2.02,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.24,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84.1,
+          106.5,
+          70.1
+        ],
+        "linearLuma": 0.1316,
+        "meanSat": 0.352,
+        "localContrast": 8.38,
+        "blockStd": 2.11,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.68,
+          "yellow": 1.03,
+          "blueGreySuspect": 28.33,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          91.4,
+          114.6,
+          74.1
+        ],
+        "linearLuma": 0.1503,
+        "meanSat": 0.353,
+        "localContrast": 2.3,
+        "blockStd": 6.36,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.33,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.7,
+          107.8,
+          72.2
+        ],
+        "linearLuma": 0.1436,
+        "meanSat": 0.366,
+        "localContrast": 17.61,
+        "blockStd": 6.37,
+        "per1000": {
+          "white": 16.5,
+          "pink": 8.97,
+          "yellow": 2.25,
+          "blueGreySuspect": 91.2,
+          "dark": 16.1
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  },
+  "cal2-linear-k0.90-g0.620": {
+    "width": 2560,
+    "height": 1440,
+    "factor": 1,
+    "regionStats": {
+      "grassHorizon": {
+        "px": 8000,
+        "meanRGB": [
+          104.2,
+          124.8,
+          82.8
+        ],
+        "linearLuma": 0.1846,
+        "meanSat": 0.335,
+        "localContrast": 3.48,
+        "blockStd": 6.13,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0,
+          "dark": 0
+        }
+      },
+      "grassFar": {
+        "px": 23400,
+        "meanRGB": [
+          84.8,
+          108.5,
+          69.8
+        ],
+        "linearLuma": 0.1326,
+        "meanSat": 0.356,
+        "localContrast": 3.98,
+        "blockStd": 1.8,
+        "per1000": {
+          "white": 0,
+          "pink": 0.09,
+          "yellow": 0,
+          "blueGreySuspect": 1.2,
+          "dark": 0
+        }
+      },
+      "grassMid": {
+        "px": 23400,
+        "meanRGB": [
+          84.8,
+          107.4,
+          70.4
+        ],
+        "linearLuma": 0.1338,
+        "meanSat": 0.354,
+        "localContrast": 8.31,
+        "blockStd": 2.06,
+        "per1000": {
+          "white": 3.46,
+          "pink": 5.73,
+          "yellow": 1.03,
+          "blueGreySuspect": 27.65,
+          "dark": 2
+        }
+      },
+      "grassLeftMid": {
+        "px": 20900,
+        "meanRGB": [
+          92,
+          115.4,
+          74.4
+        ],
+        "linearLuma": 0.1523,
+        "meanSat": 0.355,
+        "localContrast": 2.17,
+        "blockStd": 5.65,
+        "per1000": {
+          "white": 0,
+          "pink": 0,
+          "yellow": 0,
+          "blueGreySuspect": 0.1,
+          "dark": 0
+        }
+      },
+      "flowerBandMid": {
+        "px": 60000,
+        "meanRGB": [
+          86.8,
+          107.9,
+          72.3
+        ],
+        "linearLuma": 0.1439,
+        "meanSat": 0.366,
+        "localContrast": 17.6,
+        "blockStd": 6.27,
+        "per1000": {
+          "white": 16.5,
+          "pink": 8.95,
+          "yellow": 2.27,
+          "blueGreySuspect": 90.88,
+          "dark": 16.1
+        }
+      },
+      "flowerNearLeft": {
+        "px": 84000,
+        "meanRGB": [
+          73.9,
+          97.4,
+          63.9
+        ],
+        "linearLuma": 0.1189,
+        "meanSat": 0.405,
+        "localContrast": 18.95,
+        "blockStd": 7.66,
+        "per1000": {
+          "white": 18.07,
+          "pink": 7.77,
+          "yellow": 1.48,
+          "blueGreySuspect": 103.05,
+          "dark": 44.4
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "sourceSha256": "0abcb3c95ae349e9c7831d0e8913c3d40016fc049675aa738df773b1aae25506",
+  "masterUnchanged": true,
+  "terrainBefore": {
+    "vertices": 1817531,
+    "triangles": 3629860
+  },
+  "terrainAfter": {
+    "vertices": 290872,
+    "triangles": 580777
+  }
+}

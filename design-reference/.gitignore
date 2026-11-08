@@ -1,0 +1,34 @@
+# Only maintainable environment source and documentation belong in Git.
+# Downloaded/licensed assets, Blender masters, renders, caches and auditions stay local.
+*
+!.gitignore
+!environment/
+environment/*
+!environment/CLAUDE_HANDOFF.md
+!environment/alpine-composition-01/
+!environment/webgl-feasibility-audit/
+!environment/webgl-prototype/
+environment/alpine-composition-01/*
+!environment/alpine-composition-01/*.py
+!environment/alpine-composition-01/*.md
+environment/webgl-feasibility-audit/*
+!environment/webgl-feasibility-audit/*.py
+!environment/webgl-feasibility-audit/*.md
+!environment/webgl-feasibility-audit/*.json
+# Existing per-directory ignores also exclude browser-tools, caches and builds.
+environment/webgl-prototype/*
+!environment/webgl-prototype/.gitignore
+!environment/webgl-prototype/*.py
+!environment/webgl-prototype/*.mjs
+!environment/webgl-prototype/*.md
+!environment/webgl-prototype/*.json
+!environment/webgl-prototype/shared-habitat/
+!environment/webgl-prototype/meadow-clarity/
+environment/webgl-prototype/shared-habitat/*
+!environment/webgl-prototype/shared-habitat/*.mjs
+!environment/webgl-prototype/shared-habitat/*.md
+!environment/webgl-prototype/shared-habitat/*.json
+environment/webgl-prototype/meadow-clarity/*
+!environment/webgl-prototype/meadow-clarity/*.mjs
+!environment/webgl-prototype/meadow-clarity/*.md
+!environment/webgl-prototype/meadow-clarity/*.json

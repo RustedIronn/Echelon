@@ -1,0 +1,470 @@
+{
+  "v2-previous": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -26.1,
+      "cRatio": 1.34,
+      "blurMAE": 20.07
+    },
+    "spruce": {
+      "dL": 0.2,
+      "cRatio": 1.12,
+      "blurMAE": 9.7
+    },
+    "waterMid": {
+      "dL": 11.8,
+      "cRatio": 1.42,
+      "blurMAE": 8.27
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.29
+    },
+    "grassHorizon": {
+      "dL": -3.2,
+      "cRatio": 2.35,
+      "blurMAE": 4.59
+    },
+    "grassFar": {
+      "dL": -17.3,
+      "cRatio": 3.66,
+      "blurMAE": 8.87
+    },
+    "grassMid": {
+      "dL": -7.5,
+      "cRatio": 1.76,
+      "blurMAE": 5.42
+    },
+    "grassLeftMid": {
+      "dL": -0.9,
+      "cRatio": 3.27,
+      "blurMAE": 6.85
+    },
+    "grassNear": {
+      "dL": 27.7,
+      "cRatio": 1.04,
+      "blurMAE": 12.98
+    },
+    "flowerBandMid": {
+      "dL": -4.2,
+      "cRatio": 1.56,
+      "blurMAE": 8
+    },
+    "flowerNearLeft": {
+      "dL": 13.1,
+      "cRatio": 1.31,
+      "blurMAE": 8.71
+    },
+    "_meanBlurMAE": 7.887
+  },
+  "v2-new": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -25.7,
+      "cRatio": 1.3,
+      "blurMAE": 20.09
+    },
+    "spruce": {
+      "dL": 0.7,
+      "cRatio": 1.11,
+      "blurMAE": 9.54
+    },
+    "waterMid": {
+      "dL": 13,
+      "cRatio": 1.42,
+      "blurMAE": 7.97
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "grassHorizon": {
+      "dL": -1.2,
+      "cRatio": 1.47,
+      "blurMAE": 3.96
+    },
+    "grassFar": {
+      "dL": 1.4,
+      "cRatio": 0.95,
+      "blurMAE": 3.87
+    },
+    "grassMid": {
+      "dL": 0.4,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassLeftMid": {
+      "dL": 5.3,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassNear": {
+      "dL": 28.9,
+      "cRatio": 1.04,
+      "blurMAE": 13.18
+    },
+    "flowerBandMid": {
+      "dL": 0.3,
+      "cRatio": 1.52,
+      "blurMAE": 6.74
+    },
+    "flowerNearLeft": {
+      "dL": 16.3,
+      "cRatio": 1.32,
+      "blurMAE": 8.7
+    },
+    "_meanBlurMAE": 7.264
+  },
+  "v2-new-linear": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 6.3,
+      "cRatio": 1.01,
+      "blurMAE": 3.84
+    },
+    "mountainCenter": {
+      "dL": 9.1,
+      "cRatio": 0.97,
+      "blurMAE": 7.62
+    },
+    "mountainRight": {
+      "dL": 8.9,
+      "cRatio": 0.95,
+      "blurMAE": 5.77
+    },
+    "hamlet": {
+      "dL": -23.8,
+      "cRatio": 1.27,
+      "blurMAE": 18.63
+    },
+    "spruce": {
+      "dL": 1.6,
+      "cRatio": 1.11,
+      "blurMAE": 9.37
+    },
+    "waterMid": {
+      "dL": 20.7,
+      "cRatio": 1.46,
+      "blurMAE": 9.28
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "grassHorizon": {
+      "dL": 2.4,
+      "cRatio": 1.42,
+      "blurMAE": 3.82
+    },
+    "grassFar": {
+      "dL": -2.5,
+      "cRatio": 0.94,
+      "blurMAE": 3.76
+    },
+    "grassMid": {
+      "dL": 3.2,
+      "cRatio": 1.05,
+      "blurMAE": 4.7
+    },
+    "grassLeftMid": {
+      "dL": 4.5,
+      "cRatio": 1.08,
+      "blurMAE": 5.61
+    },
+    "grassNear": {
+      "dL": 37.5,
+      "cRatio": 1.08,
+      "blurMAE": 14.93
+    },
+    "flowerBandMid": {
+      "dL": 13.4,
+      "cRatio": 1.55,
+      "blurMAE": 7.26
+    },
+    "flowerNearLeft": {
+      "dL": 28.9,
+      "cRatio": 1.38,
+      "blurMAE": 11
+    },
+    "_meanBlurMAE": 7.843
+  },
+  "v2-linear-only": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 6.3,
+      "cRatio": 1.01,
+      "blurMAE": 3.84
+    },
+    "mountainCenter": {
+      "dL": 9.1,
+      "cRatio": 0.97,
+      "blurMAE": 7.62
+    },
+    "mountainRight": {
+      "dL": 8.9,
+      "cRatio": 0.95,
+      "blurMAE": 5.77
+    },
+    "hamlet": {
+      "dL": -23.9,
+      "cRatio": 1.31,
+      "blurMAE": 18.57
+    },
+    "spruce": {
+      "dL": 1.4,
+      "cRatio": 1.13,
+      "blurMAE": 9.41
+    },
+    "waterMid": {
+      "dL": 19.3,
+      "cRatio": 1.45,
+      "blurMAE": 9.25
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "grassHorizon": {
+      "dL": 2.2,
+      "cRatio": 2.03,
+      "blurMAE": 3.83
+    },
+    "grassFar": {
+      "dL": -7.4,
+      "cRatio": 3.31,
+      "blurMAE": 4.49
+    },
+    "grassMid": {
+      "dL": 1.4,
+      "cRatio": 1.66,
+      "blurMAE": 4.27
+    },
+    "grassLeftMid": {
+      "dL": 3.6,
+      "cRatio": 2.9,
+      "blurMAE": 5.66
+    },
+    "grassNear": {
+      "dL": 36,
+      "cRatio": 1.07,
+      "blurMAE": 14.65
+    },
+    "flowerBandMid": {
+      "dL": 9,
+      "cRatio": 1.58,
+      "blurMAE": 7.45
+    },
+    "flowerNearLeft": {
+      "dL": 25.1,
+      "cRatio": 1.36,
+      "blurMAE": 10.4
+    },
+    "_meanBlurMAE": 7.819
+  },
+  "v2-strips-only": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -25.7,
+      "cRatio": 1.3,
+      "blurMAE": 20.09
+    },
+    "spruce": {
+      "dL": 0.7,
+      "cRatio": 1.11,
+      "blurMAE": 9.54
+    },
+    "waterMid": {
+      "dL": 11.8,
+      "cRatio": 1.42,
+      "blurMAE": 8.27
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.29
+    },
+    "grassHorizon": {
+      "dL": -1.2,
+      "cRatio": 1.47,
+      "blurMAE": 3.96
+    },
+    "grassFar": {
+      "dL": 1.3,
+      "cRatio": 0.95,
+      "blurMAE": 3.88
+    },
+    "grassMid": {
+      "dL": -1,
+      "cRatio": 1.07,
+      "blurMAE": 5.42
+    },
+    "grassLeftMid": {
+      "dL": 5.3,
+      "cRatio": 1.06,
+      "blurMAE": 5.03
+    },
+    "grassNear": {
+      "dL": 27.7,
+      "cRatio": 1.04,
+      "blurMAE": 12.98
+    },
+    "flowerBandMid": {
+      "dL": -3.6,
+      "cRatio": 1.51,
+      "blurMAE": 7.84
+    },
+    "flowerNearLeft": {
+      "dL": 13.1,
+      "cRatio": 1.31,
+      "blurMAE": 8.71
+    },
+    "_meanBlurMAE": 7.372
+  },
+  "v2-flowers-only": {
+    "sky": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "mountainLeft": {
+      "dL": 1.6,
+      "cRatio": 1.15,
+      "blurMAE": 3.21
+    },
+    "mountainCenter": {
+      "dL": 6.4,
+      "cRatio": 1.13,
+      "blurMAE": 5.6
+    },
+    "mountainRight": {
+      "dL": 6.2,
+      "cRatio": 1.06,
+      "blurMAE": 3.95
+    },
+    "hamlet": {
+      "dL": -26.1,
+      "cRatio": 1.34,
+      "blurMAE": 20.07
+    },
+    "spruce": {
+      "dL": 0.2,
+      "cRatio": 1.12,
+      "blurMAE": 9.69
+    },
+    "waterMid": {
+      "dL": 13,
+      "cRatio": 1.42,
+      "blurMAE": 7.97
+    },
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "grassHorizon": {
+      "dL": -3.2,
+      "cRatio": 2.35,
+      "blurMAE": 4.59
+    },
+    "grassFar": {
+      "dL": -17.2,
+      "cRatio": 3.67,
+      "blurMAE": 8.84
+    },
+    "grassMid": {
+      "dL": -6.1,
+      "cRatio": 1.76,
+      "blurMAE": 4.9
+    },
+    "grassLeftMid": {
+      "dL": -0.9,
+      "cRatio": 3.27,
+      "blurMAE": 6.86
+    },
+    "grassNear": {
+      "dL": 28.9,
+      "cRatio": 1.04,
+      "blurMAE": 13.18
+    },
+    "flowerBandMid": {
+      "dL": -0.4,
+      "cRatio": 1.56,
+      "blurMAE": 6.88
+    },
+    "flowerNearLeft": {
+      "dL": 16.3,
+      "cRatio": 1.32,
+      "blurMAE": 8.7
+    },
+    "_meanBlurMAE": 7.769
+  }
+}

@@ -1,0 +1,711 @@
+{
+  "projection_matrix": [
+    [
+      1.5555554628372192,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      2.7654318809509277,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      -1.0001332759857178,
+      -0.20001332461833954
+    ],
+    [
+      0.0,
+      0.0,
+      -1.0,
+      0.0
+    ]
+  ],
+  "render_vertical_fov_degrees": 39.76070761559628,
+  "render_horizontal_fov_degrees": 65.47045565108839,
+  "grass_roots": [
+    {
+      "name": "Foreground arching grass",
+      "raw_blades": 179339,
+      "roots_inside_nominal_hero_frustum": 165226,
+      "inside_fraction": 0.921305460608122,
+      "method": "Original mesh blade root vertex 1 per authored 18/12-vertex block, all clip planes; excludes neither occlusion nor modifier deletions; not a triangle or pixel cost estimate."
+    },
+    {
+      "name": "Low basal meadow foliage",
+      "raw_blades": 25499,
+      "roots_inside_nominal_hero_frustum": 24533,
+      "inside_fraction": 0.9621161614180949,
+      "method": "Original mesh blade root vertex 1 per authored 18/12-vertex block, all clip planes; excludes neither occlusion nor modifier deletions; not a triangle or pixel cost estimate."
+    },
+    {
+      "name": "Midground meadow continuation",
+      "raw_blades": 199847,
+      "roots_inside_nominal_hero_frustum": 186731,
+      "inside_fraction": 0.9343697928915621,
+      "method": "Original mesh blade root vertex 1 per authored 18/12-vertex block, all clip planes; excludes neither occlusion nor modifier deletions; not a triangle or pixel cost estimate."
+    },
+    {
+      "name": "Meadow to foothill transition",
+      "raw_blades": 451578,
+      "roots_inside_nominal_hero_frustum": 443839,
+      "inside_fraction": 0.982862318359176,
+      "method": "Original mesh blade root vertex 1 per authored 18/12-vertex block, all clip planes; excludes neither occlusion nor modifier deletions; not a triangle or pixel cost estimate."
+    }
+  ],
+  "modifier_visibility_mismatches": [],
+  "node_attributes": {
+    "Echelon flowers - Carthusian Pink.001": {
+      "types": [
+        "FunctionNodeBooleanMath",
+        "FunctionNodeRandomValue",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeInstanceOnPoints",
+        "GeometryNodeMeshToPoints",
+        "GeometryNodeObjectInfo",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeMath",
+        "ShaderNodeVectorMath"
+      ],
+      "attributes": [
+        "plant_rotation",
+        "plant_scale",
+        "tree_habitat_core"
+      ]
+    },
+    "Echelon flowers - Dandelion.001": {
+      "types": [
+        "FunctionNodeBooleanMath",
+        "FunctionNodeRandomValue",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeInstanceOnPoints",
+        "GeometryNodeMeshToPoints",
+        "GeometryNodeObjectInfo",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeMath",
+        "ShaderNodeVectorMath"
+      ],
+      "attributes": [
+        "plant_rotation",
+        "plant_scale",
+        "tree_habitat_core"
+      ]
+    },
+    "Echelon flowers - Marguerite.001": {
+      "types": [
+        "FunctionNodeBooleanMath",
+        "FunctionNodeRandomValue",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeInstanceOnPoints",
+        "GeometryNodeMeshToPoints",
+        "GeometryNodeObjectInfo",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeMath",
+        "ShaderNodeVectorMath"
+      ],
+      "attributes": [
+        "plant_rotation",
+        "plant_scale",
+        "tree_habitat_core"
+      ]
+    },
+    "Echelon flowers - Red Clover.001": {
+      "types": [
+        "FunctionNodeBooleanMath",
+        "FunctionNodeRandomValue",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeInstanceOnPoints",
+        "GeometryNodeMeshToPoints",
+        "GeometryNodeObjectInfo",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeMath",
+        "ShaderNodeVectorMath"
+      ],
+      "attributes": [
+        "plant_rotation",
+        "plant_scale",
+        "tree_habitat_core"
+      ]
+    },
+    "Habitat limestone point instances": {
+      "types": [
+        "FunctionNodeRandomValue",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeInstanceOnPoints",
+        "GeometryNodeJoinGeometry",
+        "GeometryNodeMeshToPoints",
+        "GeometryNodeObjectInfo",
+        "NodeGroupInput",
+        "NodeGroupOutput"
+      ],
+      "attributes": [
+        "stone_rotation",
+        "stone_scale"
+      ]
+    },
+    "Tree habitat - rooted grass height and thinning": {
+      "types": [
+        "GeometryNodeDeleteGeometry",
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeSetPosition",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeCombineXYZ"
+      ],
+      "attributes": [
+        "tree_habitat_z",
+        "tree_habitat_thin"
+      ]
+    },
+    "Tree habitat - subtle root microrelief": {
+      "types": [
+        "GeometryNodeInputNamedAttribute",
+        "GeometryNodeSetPosition",
+        "NodeGroupInput",
+        "NodeGroupOutput",
+        "ShaderNodeCombineXYZ"
+      ],
+      "attributes": [
+        "tree_habitat_z"
+      ]
+    }
+  },
+  "shader_specials": {
+    "aerial_rocks_04": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.4500000476837158,
+        "roughness": 0.5
+      }
+    ],
+    "Country aged door timber": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country clay chimney pots": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country coursed local stone": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country dark recessed windows": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.23999999463558197
+      }
+    ],
+    "Country dressed stone details": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country painted wood joinery": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country pale gray limewash": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country slate variation 0": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country slate variation 1": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country slate variation 2": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country slate variation 3": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country slate variation 4": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Country warm roughcast limewash": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "fern_02.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.4500000476837158,
+        "roughness": 0.5
+      }
+    ],
+    "fir_sapling_branches.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.4500000476837158,
+        "roughness": 0.5
+      }
+    ],
+    "fir_sapling_twigs.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.4500000476837158,
+        "roughness": 0.922885537147522
+      }
+    ],
+    "FLOWER.002": [
+      {
+        "node": "Principled",
+        "transmission": 0.260869562625885,
+        "IOR": 1.399999976158142,
+        "roughness": 0.5
+      }
+    ],
+    "Grass Ground Meadow PBR Scan": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.4500000476837158,
+        "roughness": 0.5
+      }
+    ],
+    "Gravel Rocks Rough PBR Scan B": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.5
+      }
+    ],
+    "Grounded cottage olive timber": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet slate 1": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet slate 2": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet slate 3": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet slate 4": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet slate 5": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet wall 1": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet wall 2": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet wall 3": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet wall 4": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Grounded hamlet wall 5": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Habitat weathered limestone - existing maps": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Hamlet aged timber": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Hamlet pale window trim": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8199999928474426
+      }
+    ],
+    "Hamlet unlit window recess": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.3199999928474426
+      }
+    ],
+    "Hamlet warm brown shingles": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Hamlet warm limewash": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Hamlet weathered foundation stone": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Hamlet weathered slate": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "LEAF.002": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.399999976158142,
+        "roughness": 0.5
+      }
+    ],
+    "lodyga.002": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.399999976158142,
+        "roughness": 0.5
+      }
+    ],
+    "M_Bark.002": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 1.0
+      }
+    ],
+    "M_Bark.003": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 1.0
+      }
+    ],
+    "M_Branch.002": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 1.0
+      }
+    ],
+    "M_Branch.003": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 1.0
+      }
+    ],
+    "Material | alpine daylight.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Material.003 | alpine daylight.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "material_0 | alpine daylight.001": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Meadow leaf - 0": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Meadow leaf - 1": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Meadow leaf - 2": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Meadow leaf - 3": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Meadow leaf - 4": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.7799999713897705
+      }
+    ],
+    "Muted clay roofs": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ],
+    "Simple water - geometry validation": [
+      {
+        "node": "Principled",
+        "transmission": 1.0,
+        "IOR": 1.3329999446868896,
+        "roughness": 0.06499999761581421
+      },
+      {
+        "node": "VOLUME_ABSORPTION",
+        "density": 0.1599999964237213
+      }
+    ],
+    "Subtle bounded alpine aerial perspective": [
+      {
+        "node": "VOLUME_SCATTER",
+        "density": 1.0
+      }
+    ],
+    "Warm village plaster": [
+      {
+        "node": "Principled",
+        "transmission": 0.0,
+        "IOR": 1.5,
+        "roughness": 0.8799999952316284
+      }
+    ]
+  },
+  "animation_datablocks": 0,
+  "camera_shift": [
+    0.0,
+    0.0
+  ],
+  "water_visibility": {
+    "visible_shadow": false,
+    "visible_camera": true,
+    "visible_glossy": true,
+    "visible_transmission": true
+  },
+  "world_nodes": [
+    {
+      "type": "OUTPUT_WORLD",
+      "sky_type": null
+    },
+    {
+      "type": "BACKGROUND",
+      "sky_type": null
+    },
+    {
+      "type": "TEX_SKY",
+      "sky_type": "MULTIPLE_SCATTERING"
+    }
+  ],
+  "compositor_group_property": [
+    "compositing_node_group"
+  ],
+  "startup_views": [
+    {
+      "screen": "Animation",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Animation",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Geometry Nodes",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Layout",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Modeling",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Scripting",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Sculpting",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Shading",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "Texture Paint",
+      "view_perspective": "CAMERA"
+    },
+    {
+      "screen": "UV Editing",
+      "view_perspective": "CAMERA"
+    }
+  ]
+}

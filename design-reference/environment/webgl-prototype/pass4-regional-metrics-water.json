@@ -1,0 +1,191 @@
+{
+  "v4-approved": {
+    "waterNear": {
+      "dL": 13.9,
+      "cRatio": 0.33,
+      "blurMAE": 9.28
+    },
+    "waterMid": {
+      "dL": 13,
+      "cRatio": 1.42,
+      "blurMAE": 7.97
+    },
+    "waterLeft": {
+      "dL": 2.7,
+      "cRatio": 1.41,
+      "blurMAE": 15.51
+    },
+    "tributary": {
+      "dL": 17.8,
+      "cRatio": 1.68,
+      "blurMAE": 10.99
+    },
+    "bankFar": {
+      "dL": 27.9,
+      "cRatio": 1.04,
+      "blurMAE": 14.52
+    },
+    "skyControl": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "seam": {
+      "dL": 14.5,
+      "cRatio": 1.18,
+      "blurMAE": 9.32
+    },
+    "seamLeft": {
+      "dL": -3.1,
+      "cRatio": 1.24,
+      "blurMAE": 10.51
+    },
+    "seamRight": {
+      "dL": 15.3,
+      "cRatio": 0.78,
+      "blurMAE": 9.6
+    },
+    "bankA": {
+      "dL": 13.4,
+      "cRatio": 1.1,
+      "blurMAE": 7.12
+    },
+    "bankB": {
+      "dL": 11.9,
+      "cRatio": 0.96,
+      "blurMAE": 6.49
+    },
+    "bankC": {
+      "dL": 24.2,
+      "cRatio": 0.85,
+      "blurMAE": 11.37
+    },
+    "_meanBlurMAE": 9.624
+  },
+  "v4-new": {
+    "waterNear": {
+      "dL": 0.8,
+      "cRatio": 0.36,
+      "blurMAE": 5.08
+    },
+    "waterMid": {
+      "dL": 3.1,
+      "cRatio": 1.41,
+      "blurMAE": 5.33
+    },
+    "waterLeft": {
+      "dL": 7,
+      "cRatio": 1.51,
+      "blurMAE": 10.85
+    },
+    "tributary": {
+      "dL": 11.9,
+      "cRatio": 1.4,
+      "blurMAE": 10.14
+    },
+    "bankFar": {
+      "dL": 3.2,
+      "cRatio": 1.23,
+      "blurMAE": 5.98
+    },
+    "skyControl": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "seam": {
+      "dL": 6.8,
+      "cRatio": 1.19,
+      "blurMAE": 6.4
+    },
+    "seamLeft": {
+      "dL": -2.9,
+      "cRatio": 1.27,
+      "blurMAE": 9.66
+    },
+    "seamRight": {
+      "dL": 3.5,
+      "cRatio": 0.64,
+      "blurMAE": 3.76
+    },
+    "bankA": {
+      "dL": 0.2,
+      "cRatio": 1.09,
+      "blurMAE": 4.19
+    },
+    "bankB": {
+      "dL": -5.6,
+      "cRatio": 0.86,
+      "blurMAE": 5.75
+    },
+    "bankC": {
+      "dL": 11.3,
+      "cRatio": 0.87,
+      "blurMAE": 6.04
+    },
+    "_meanBlurMAE": 6.333
+  },
+  "v4-new-linear": {
+    "waterNear": {
+      "dL": 0.8,
+      "cRatio": 0.37,
+      "blurMAE": 5.08
+    },
+    "waterMid": {
+      "dL": 10.8,
+      "cRatio": 1.45,
+      "blurMAE": 6.5
+    },
+    "waterLeft": {
+      "dL": 11.7,
+      "cRatio": 1.44,
+      "blurMAE": 10.3
+    },
+    "tributary": {
+      "dL": 11.9,
+      "cRatio": 1.4,
+      "blurMAE": 10.51
+    },
+    "bankFar": {
+      "dL": 3.8,
+      "cRatio": 1.24,
+      "blurMAE": 6.15
+    },
+    "skyControl": {
+      "dL": -4,
+      "cRatio": 0.29,
+      "blurMAE": 2.8
+    },
+    "seam": {
+      "dL": 8.8,
+      "cRatio": 1.17,
+      "blurMAE": 7.19
+    },
+    "seamLeft": {
+      "dL": 3.9,
+      "cRatio": 1.28,
+      "blurMAE": 10.95
+    },
+    "seamRight": {
+      "dL": 3.7,
+      "cRatio": 0.61,
+      "blurMAE": 3.89
+    },
+    "bankA": {
+      "dL": 3.4,
+      "cRatio": 1.15,
+      "blurMAE": 4.78
+    },
+    "bankB": {
+      "dL": -5.6,
+      "cRatio": 0.86,
+      "blurMAE": 5.75
+    },
+    "bankC": {
+      "dL": 12.6,
+      "cRatio": 0.88,
+      "blurMAE": 6.41
+    },
+    "_meanBlurMAE": 6.691
+  }
+}
