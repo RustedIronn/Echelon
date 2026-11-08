@@ -26,6 +26,7 @@ import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
 import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import Wind from './Wind.jsx';
+import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
 import { createHamletClearing } from './hamletLayout.js';
 import { createLinearResolve } from './linearResolve.js';
@@ -427,7 +428,8 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       const mesh = new THREE.InstancedMesh(geometry, Array.isArray(source.material) ? materials : materials[0], records.length);
       mesh.name = `${species} LOD ${lod}`; const matrix = new THREE.Matrix4();
       records.forEach((record, index) => { matrix.fromArray(record); if (bankLowering.current) matrix.elements[13] += bankLowering.current.offsetAt(record[12], record[14], record[13]); mesh.setMatrixAt(index, matrix); });
-      mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.castShadow = baseline || lod < (new URLSearchParams(window.location.search).get('flowershadow') === 'all' ? 2 : 1); // only the nearest flowers cast shadows; beyond ~26 m their shadows are sub-pixel (?flowershadow=all restores) mesh.receiveShadow = true;
+      mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.castShadow = baseline || lod < (new URLSearchParams(window.location.search).get('flowershadow') === 'all' ? 2 : 1); // only the nearest flowers cast shadows; beyond ~26 m their shadows are sub-pixel (?flowershadow=all restores)
+      mesh.receiveShadow = true;
       group.add(mesh); owned.push({ mesh, geometry, materials });
     });
     return { group, dispose: () => owned.forEach(({ mesh, geometry, materials }) => { mesh.dispose(); geometry.dispose(); materials.forEach((m) => m.dispose()); }) };
@@ -647,6 +649,7 @@ function LookDevBridge({ baseline, resources, manifest }) {
     const base = { exposure: baseline ? .7 : resources.metadata.display.exposure, environmentIntensity: scene.environmentIntensity, fogDensity: scene.fog?.density ?? 0 };
     let timer = 0,lastOptics=performance.now(); const sampleLive=createLiveMoodSampler(); const ref = { sunDir: manifest.sun.direction, sunColor: manifest.sun.color, sunEnergy: manifest.sun.sourceEnergy, fogColor: '#bacad8' };
     const apply = (refreshOptics) => {
+      if(!isWorldVisible())return;
       const moment = baseline || isApprovedHeld() ? null : currentMoment();
       applyLook({ scene, gl }, getLook(), applyTimeOfDay(scene, ref, moment, base, {state:moment&&getTod().mode==='live'?sampleLive(moment):null,refreshEnvironment:refreshOptics||getTod().mode!=='live'})); invalidate();
       // The cached reflection and bed capture contain terrain, hamlet and light, so refresh them shortly after a change settles.
@@ -656,10 +659,13 @@ function LookDevBridge({ baseline, resources, manifest }) {
     // Interpolate the 30-second lighting samples at 4 Hz. The sun's movement
     // per tick is subpixel; expensive sky/reflection caches stay at 30 seconds.
     const tick=window.setInterval(()=>{
-      if(getTod().mode!=='live')return;
+      if(getTod().mode!=='live'||!isWorldVisible())return;
       const refresh=performance.now()-lastOptics>=30000;if(refresh)lastOptics=performance.now();apply(refresh);
     },250);
-    return () => { unsubscribe(); unsubscribeTod(); window.clearInterval(tick); clearTimeout(timer); };
+    const onVisibility=()=>{clearTimeout(timer);if(isWorldVisible()){lastOptics=performance.now();apply(true);}};
+    const unsubscribeActivity=subscribeWorldActivity(onVisibility);
+    document.addEventListener('visibilitychange',onVisibility);
+    return () => { unsubscribe(); unsubscribeTod(); unsubscribeActivity();document.removeEventListener('visibilitychange',onVisibility);window.clearInterval(tick); clearTimeout(timer); };
   }, [gl, scene, invalidate, baseline, resources, manifest]);
   return null;
 }

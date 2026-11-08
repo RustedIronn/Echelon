@@ -16,7 +16,7 @@ test('live samples follow subsecond time continuously through sample boundaries 
   for(let ms=0;ms<45000;ms+=250){
    const date=new Date(+base+ms),s=sample(date),exact=moodState(date);
    near(s.sun.elevation,exact.sun.elevation,.001);near(Math.hypot(...s.sun.dir),1);near(Math.hypot(...s.moon.dir),1);
-   near(s.sunK,exact.sunK,.001);near(s.hor.r,exact.hor.r,.001);
+   near(s.sunK,exact.sunK,.001);near(s.hor.r,exact.hor.r,.001);near(s.haze,exact.haze,.001);near(s.toe,exact.toe,.001);
    if(prior){assert.ok(Math.abs(s.cloudShift-prior.cloudShift)<.00001);assert.ok(Math.abs(s.sun.elevation-prior.sun.elevation)<.01);}
    prior=s;
   }
@@ -43,7 +43,8 @@ test('the approved look restores lighting, grade, mist and window emission after
  scene.userData.todRig={setActive:value=>{active=value;},update:(_s,value)=>{refresh=value;}};
  const layer=new THREE.Group();layer.name='valley-mist';layer.userData.update=s=>{mist=s;};scene.add(layer);
  const base={exposure:.7,environmentIntensity:1,fogDensity:.00042},ref={sunDir:[-.7,.49,.52],sunColor:[1,.975,.935],sunEnergy:3.25,fogColor:'#bacad8'};
- const date=new Date(2026,5,21,21,30);applyTimeOfDay(scene,ref,date,base,{state:moodState(date),refreshEnvironment:false});
+ const date=new Date(2026,5,21,21,30);const applied=applyTimeOfDay(scene,ref,date,base,{state:createLiveMoodSampler()(date),refreshEnvironment:false});
+ assert.ok(Number.isFinite(applied.fogDensity));assert.ok(Number.isFinite(GRADE.toe.value));
  assert.ok(active);assert.equal(refresh,false);assert.ok(material.emissiveIntensity>0);
  const restored=applyTimeOfDay(scene,ref,null,base);
  assert.equal(restored,base);assert.equal(active,false);assert.equal(mist,null);assert.equal(material.emissiveIntensity,0);assert.equal(moon.intensity,0);assert.equal(hemi.intensity,0);assert.equal(GRADE.sat.value,1);assert.equal(GRADE.contrast.value,1);assert.equal(scene.fog.color.getHexString(),'bacad8');assert.deepEqual(sun.color.toArray(),ref.sunColor);

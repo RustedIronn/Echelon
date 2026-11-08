@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { createSkyUniforms, makeGeneratedSky, makeRawSky, writeSkyUniforms } from './generatedSky.js';
+import {isWorldVisible} from './worldActivity.js';
 import { SKY_ACTIVE } from './skyShader.js';
 
 // Keep scene attachment and the expensive environment capture lifecycle in one
@@ -9,12 +10,12 @@ import { SKY_ACTIVE } from './skyShader.js';
 function installSkyRig(scene,gl,invalidate,rig){
   let reflectionTimer=0,captures=0;
   const regenerate=()=>{
-    rig.timer=0;if(!rig.active)return;rig.lastEnv=performance.now();
+    rig.timer=0;if(!rig.active||!isWorldVisible())return;rig.lastEnv=performance.now();
     const generator=new THREE.PMREMGenerator(gl);
     const target=generator.fromScene(rig.envScene,0,.1,1000,{size:256});generator.dispose();
     rig.target?.dispose();rig.target=target;scene.environment=target.texture;captures++;invalidate();
     if(window.__echelonPrototype)window.__echelonPrototype.skyEnvironment={captures};
-    clearTimeout(reflectionTimer);reflectionTimer=setTimeout(()=>window.__echelonPrototype?.refreshWaterOptics?.(),60);
+    clearTimeout(reflectionTimer);reflectionTimer=setTimeout(()=>{if(isWorldVisible())window.__echelonPrototype?.refreshWaterOptics?.();},60);
   };
   const api={
     setActive(on){

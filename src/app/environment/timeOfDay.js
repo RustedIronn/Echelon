@@ -94,7 +94,7 @@ export function moodState(date) {
 // uniforms advance at display cadence without rebuilding environment maps.
 export function interpolateMood(a,b,t) {
   t=clamp01(t);const out=mixStops(a,b,t),lerp=(x,y)=>x+(y-x)*t;
-  for(const k of ['gain','mist','sat','contrast','moonVisible','moonLight','cloudShift'])out[k]=lerp(a[k],b[k]);
+  for(const k of ['gain','mist','haze','sat','contrast','toe','moonVisible','moonLight','cloudShift'])out[k]=lerp(a[k],b[k]);
   out.mistColor=a.mistColor.clone().lerp(b.mistColor,t);
   for(const key of ['sun','moon']){
     const av=a[key],bv=b[key],dir=av.dir.map((v,i)=>lerp(v,bv.dir[i])),length=Math.hypot(...dir)||1;
