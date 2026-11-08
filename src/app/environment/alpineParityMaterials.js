@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addWind, WIND_KINDS } from './wind.js';
+import { addWind, addWindSheen, WIND_KINDS } from './wind.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -45,7 +45,7 @@ export function applyGrassHabitat(material, refinement = true, corridor = false,
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous.call(material, shader, renderer);
-    shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader; addWind(shader, 'position.y');
+    shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader; addWind(shader, 'position.y'); addWindSheen(shader);
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLeafHeight = clamp(position.y, 0.0, 1.0);');
     shader.fragmentShader = 'varying float vLeafHeight;\n' + shader.fragmentShader;
     // Canopy occlusion: inside a real meadow the light falls off steeply toward the ground between the blades, which is where a photograph's darks come from.

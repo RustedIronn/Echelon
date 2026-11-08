@@ -22,14 +22,16 @@ export function growHabitatGrass(templates,field,habitat,{bank=null,from=32,to=2
       continue;
     }
     const h=habitat.sample(x,z);if(h.density<.04)continue;
-    const begin=smooth(from,from+15,distance),end=1-smooth(Math.min(170,to-20),to,distance);
+    const sideOut=smooth(AUTHORED_HALF_ANGLE-.02,AUTHORED_HALF_ANGLE+.02,angle); // outside the authored corridor nothing overlaps this band, so no fade-in there
+    const begin=Math.max(smooth(from,from+15,distance),sideOut),end=1-smooth(Math.min(170,to-20),to,distance);
     // Wider, readable leaf silhouettes need less overlapping subpixel geometry.
-    const density=(34+24*h.density)*(0.4+1.05*h.density)*(1-.93*h.presence)*begin*end*(1-.48*smooth(85,175,distance));
+    const baseDensity=(34+24*h.density)*(0.4+1.05*h.density)*(1-.93*h.presence)*begin*end*(1-.48*smooth(85,175,distance));
+    const density=Math.max(baseDensity,72*sideOut*(1-smooth(from,from+18,distance))*end); // continue the near band's density on the sides, easing into the middle ground
     if(habitatHash(i,j,3)>density*cell*cell)continue;
     const t=Math.floor(habitatHash(i,j,4)*count)*9,jitter=.88+.24*habitatHash(i,j,5);
     const height=(.45+1.10*h.height)*jitter*(habitatHash(i,j,8)>.975?1.18:1);
     const width=.92+.14*h.density;let y=field.at(x,z);if(bank)y+=bank.offsetAt(x,z,y);
-    if(h.waterDistance<3 && y<h.waterLevel+.025)continue;
+    if(h.waterDistance<3 && y<h.waterLevel+.01)continue; // height test only (the water map also covers dry banks; lowered banks sit 5 cm above the water)
     const out=distance<105?near:far;
     out.push(x,-z,y,templates[t+3]+habitatHash(i,j,6)*Math.PI*2,templates[t+4]*jitter,templates[t+5]*height,templates[t+6],templates[t+7],templates[t+8]*width);
   }

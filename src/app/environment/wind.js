@@ -45,9 +45,15 @@ export const windVertex = (heightExpr, kind = WIND_KINDS.grass) => `
   float fade = (1.0 - smoothstep(12.0, 34.0, dist)) * smoothstep(0.006, 0.016, onScreen);
   float bendAmount = uWindK * fade * ${kind.amount.toFixed(3)} * windH * windH * windSize / stiff;
   vec2 offset = windDir * bendAmount * (0.04 + 0.15 * gust + 0.05 * gust * sway) + across * bendAmount * 0.03 * sway * (0.4 + gust);
+  // Middle ground: no per-plant flutter there (sub-pixel blades fluttering only shimmer), but the gusts still visibly sweep across the meadow:
+  // whole patches lean together downwind (about a pixel, slowly), and bent grass turns its paler side up (the sheen of wind on a field).
+  float midK = uWindK * smoothstep(10.0, 34.0, dist) * (1.0 - smoothstep(110.0, 180.0, dist));
+  offset += windDir * midK * 0.075 * windH * windH * windSize * gust / stiff;
+  vWindSheen = uWindK * smoothstep(0.45, 0.95, gust) * windH * (0.35 + 0.65 * smoothstep(8.0, 30.0, dist));
   windWorld.xz += offset; windWorld.y -= dot(offset, offset) / max(windSize, 0.05) * 0.5 * windH;
   vec4 mvPosition = viewMatrix * windWorld;
 #else
+  vWindSheen = 0.0;
   vec4 mvPosition = vec4( transformed, 1.0 );
   #ifdef USE_BATCHING
     mvPosition = batchingMatrix * mvPosition;
@@ -59,7 +65,12 @@ export const windVertex = (heightExpr, kind = WIND_KINDS.grass) => `
 const NOISE = `float windHash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float windValueNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(windHash(i),windHash(i+vec2(1,0)),f.x),mix(windHash(i+vec2(0,1)),windHash(i+vec2(1,1)),f.x),f.y); }`;
 
+// Fragment side of the wind sheen, for grass: a bent blade shows its paler, sky-lit side.
+export function addWindSheen(shader) {
+  shader.fragmentShader = 'varying float vWindSheen;\n' + shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.16, 1.14, 1.02) + vec3(0.012, 0.016, 0.006), clamp(vWindSheen, 0.0, 1.0) * 0.75);');
+}
+
 export function addWind(shader, heightExpr, kind = WIND_KINDS.grass) {
   shader.uniforms.uWindTime = WIND.time; shader.uniforms.uWindK = WIND.strength;
-  shader.vertexShader = `uniform float uWindTime; uniform float uWindK;\n${NOISE}\n` + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr, kind));
+  shader.vertexShader = `uniform float uWindTime; uniform float uWindK; varying float vWindSheen;\n${NOISE}\n` + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr, kind));
 }
