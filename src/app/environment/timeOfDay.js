@@ -28,8 +28,8 @@ export const moonIllumination = (phase) => (1 - Math.cos(2 * Math.PI * phase)) /
 // The moon crosses the open western sky in front of the camera (low enough to be seen) and keeps to the calendar phase: a full moon rises near sunset.
 export function moonPose(date, sun) {
   const phase = moonPhase(date); const rise = (sun.solar.sunrise + phase * 24.84) % 24; const into = (((sun.hour - rise) % 24) + 24) % 24; const arc = 12.4; let elevation, azimuth;
-  if (into <= arc) { const f = into / arc; elevation = 26 * Math.sin(Math.PI * f); azimuth = (-150 + 120 * f) * DEG; }
-  else { const g = (into - arc) / (24 - arc); elevation = -30 * Math.sin(Math.PI * g); azimuth = (-30 - 120 * g) * DEG; }
+  if (into <= arc) { const f = into / arc; elevation = 18 * Math.sin(Math.PI * f); azimuth = (-122 + 64 * f) * DEG; }
+  else { const g = (into - arc) / (24 - arc); elevation = -30 * Math.sin(Math.PI * g); azimuth = (-58 - 64 * g) * DEG; }
   const e = elevation * DEG; return { phase, illumination: moonIllumination(phase), elevation, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
 }
 
@@ -54,8 +54,8 @@ const EVENING = [
 const MORNING = [
   stop(-18, NIGHT),
   stop(-8, { zen: '#3d4f88', hor: '#9ca2c2', belt: '#c6a9bb', sunC: '#c9a0b0', hemiSky: '#7f8cb6', ground: '#68826a', fog: '#7c86ac', cloud: '#8b93bb', sunK: 0, glowK: 0.1, beltK: 0.4, hemiK: 0.42, env: 0.3, exp: 1.3, fogK: 1.4, cover: 0.35, stars: 0.5, glow: 0.9, moon: 0.5 }),
-  stop(1, { zen: '#7d9ccf', hor: '#f6cdb4', belt: '#f1c5be', sunC: '#ffd6c0', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dccdd0', cloud: '#fbd2c4', sunK: 0.2, glowK: 0.7, beltK: 0.85, hemiK: 0.3, env: 0.3, exp: 1.16, fogK: 1.5, cover: 0.5, stars: 0.08, glow: 0.6, moon: 0.15 }),
-  stop(7, { zen: '#5f98e2', hor: '#e6d6ca', belt: '#f6bfb0', sunC: '#fff0de', hemiSky: '#d2e1ee', ground: '#8da676', fog: '#dde8ef', cloud: '#fff1e4', sunK: 0.7, glowK: 0.8, beltK: 0.7, hemiK: 0.3, env: 0.55, exp: 1.06, fogK: 1.35, cover: 0.5, stars: 0, glow: 0.3, moon: 0 }),
+  stop(1, { zen: '#7d9ccf', hor: '#f6cdb4', belt: '#f5b4a6', sunC: '#ffd6c0', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dccdd0', cloud: '#fbd2c4', sunK: 0.2, glowK: 0.7, beltK: 0.85, hemiK: 0.3, env: 0.3, exp: 1.16, fogK: 1.5, cover: 0.5, stars: 0.08, glow: 0.6, moon: 0.15 }),
+  stop(7, { zen: '#5f98e2', hor: '#e6d6ca', belt: '#f4b4a6', sunC: '#fff0de', hemiSky: '#d2e1ee', ground: '#8da676', fog: '#dde8ef', cloud: '#fff1e4', sunK: 0.7, glowK: 0.8, beltK: 0.7, hemiK: 0.3, env: 0.55, exp: 1.06, fogK: 1.35, cover: 0.5, stars: 0, glow: 0.3, moon: 0 }),
   stop(14, { zen: '#4a8fe0', hor: '#c2dcf0', belt: '#c2dcf0', sunC: '#fff3e2', hemiSky: '#cbdcec', ground: '#8ea36f', fog: '#d6e5ee', cloud: '#ffffff', sunK: 0.9, glowK: 0.45, beltK: 0.1, hemiK: 0.28, env: 0.75, exp: 1.02, fogK: 1.1, cover: 0.5, stars: 0, glow: 0, moon: 0 }),
   stop(26, { zen: '#3a85dc', hor: '#b4d2ee', belt: '#b4d2ee', sunC: '#fff0d6', hemiSky: '#cddbe8', ground: '#8e9b68', fog: '#d6e0e6', cloud: '#fff6ec', sunK: 0.98, glowK: 0.5, beltK: 0, hemiK: 0.27, env: 0.82, exp: 1, fogK: 1, cover: 0.5, stars: 0, glow: 0, moon: 0 }),
   stop(40, DAY),
@@ -74,7 +74,7 @@ export function moodState(date) {
   const moonVisible = smooth(-1, 6, moon.elevation) * clamp01(m.moon);
   const e = sun.elevation; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
   // valley mist: thickest just after sunrise, gone by mid-morning; only a trace at dusk
-  const morningMist = smooth(-6, 0, e) * (1 - smooth(5, 22, e)), duskMist = 0.14 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
+  const morningMist = smooth(-6, 0, e) * (1 - smooth(5, 22, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
   const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
   return { ...m, gain, mist, mistColor, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
 }
@@ -112,7 +112,7 @@ export function applyTimeOfDay(scene, ref, date, base) {
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
   const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
-    mistLayer?.userData.update?.(0, new THREE.Color(1, 1, 1));
+    mistLayer?.userData.update?.(null);
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
@@ -121,7 +121,7 @@ export function applyTimeOfDay(scene, ref, date, base) {
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
-  rig?.setActive(true); rig?.update(s); mistLayer?.userData.update?.(s.mist, s.mistColor);
+  rig?.setActive(true); rig?.update(s); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK };
 }
