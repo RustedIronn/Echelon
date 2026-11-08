@@ -14,7 +14,7 @@ import Hamlet from './Hamlet.jsx';
 import { applyTimeOfDay, currentMoment, subscribeTod, getTod } from './timeOfDay.js';
 import GeneratedSky from './GeneratedSky.jsx';
 import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
-import { buildRealFlowerGroup } from './realFlowers.js';
+import { buildRealFlowerGroup, proxyDistance } from './realFlowers.js';
 import { createMeadowHabitat, applyHabitatMaterial, smooth as habitatSmooth, habitatHash } from './meadowHabitat.js';
 import { communityAt, scatterDensity, slopeFacing, placeCommunityFlowers, COMMUNITIES, COMMUNITY_MIX } from './meadowCommunities.js';
 import { growHabitatGrass, placeHabitatFlowers, tintHabitatBlade } from './meadowHabitatGrowth.js';
@@ -365,9 +365,10 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
     let tufts = null;
     if(habitat && flowers) {
       const placed=placeHabitatFlowers(farField,habitat,manifest,{bank:bankLowering.current});
-      const real=buildRealFlowerGroup({flowerScene:flowers.scene,placed,resources,maxFlowers:4500,naturalScale:true,receiveShadow:true});group.add(real.group);group.userData.habitat.flowers=real.total;
+      const proxyBeyond=proxyDistance(); // far flowers become tiny proxies (realFlowers.js); ?flowerproxy=off compares
+      const real=buildRealFlowerGroup({flowerScene:flowers.scene,placed,resources,maxFlowers:4500,naturalScale:true,receiveShadow:true,proxyBeyond});group.add(real.group);group.userData.habitat.flowers=real.total;
       const split=splitFlowers(placeCommunityFlowers(farField,habitat,{bank:bankLowering.current}),62); // detailed models close to the camera, the lowest level of detail beyond (a flower there is a few pixels)
-      const communityNear=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.near,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:1,name:'Flowering communities (near)'});const communityFar=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.far,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:2,name:'Flowering communities (far)'});
+      const communityNear=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.near,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:1,name:'Flowering communities (near)'});const communityFar=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.far,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:2,name:'Flowering communities (far)',proxyBeyond});
       const community={group:new THREE.Group(),total:communityNear.total+communityFar.total,dispose:()=>{communityNear.dispose();communityFar.dispose();}};community.group.add(communityNear.group,communityFar.group);group.add(community.group);group.userData.habitat.communityFlowers=community.total;
       tufts={group:real.group,dispose:()=>{real.dispose();community.dispose();}};
     } else if (meadowDetail && meadowMode === 'blades' && corridor && !baseline && flowers) {
@@ -424,7 +425,7 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       const mesh = new THREE.InstancedMesh(geometry, Array.isArray(source.material) ? materials : materials[0], records.length);
       mesh.name = `${species} LOD ${lod}`; const matrix = new THREE.Matrix4();
       records.forEach((record, index) => { matrix.fromArray(record); if (bankLowering.current) matrix.elements[13] += bankLowering.current.offsetAt(record[12], record[14], record[13]); mesh.setMatrixAt(index, matrix); });
-      mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.castShadow = baseline || lod < 2; mesh.receiveShadow = true;
+      mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.castShadow = baseline || lod < (new URLSearchParams(window.location.search).get('flowershadow') === 'all' ? 2 : 1); // only the nearest flowers cast shadows; beyond ~26 m their shadows are sub-pixel (?flowershadow=all restores) mesh.receiveShadow = true;
       group.add(mesh); owned.push({ mesh, geometry, materials });
     });
     return { group, dispose: () => owned.forEach(({ mesh, geometry, materials }) => { mesh.dispose(); geometry.dispose(); materials.forEach((m) => m.dispose()); }) };
@@ -567,7 +568,9 @@ function Measurements({ manifest, pipeline, onReady }) {
     const context = gl.getContext();
     const extension = context.getExtension('WEBGL_debug_renderer_info');
     window.__echelonPrototype = {
-      ready: true, manifest, totalFrames: state.current.frames,
+      ready: true, manifest, totalFrames: state.current.frames, scene, // scene: for profiling and diagnostics scripts
+      // ?hide=a,b hides every mesh whose name or parent name contains one of the strings (profiling only)
+      hidden: (() => { const hide = (new URLSearchParams(window.location.search).get('hide') || '').split(',').filter(Boolean); if (!hide.length) return 0; let n = 0; scene.traverse((o) => { if (!o.isMesh) return; const label = `${o.name} ${o.parent?.name ?? ''}`; if (hide.some((h) => label.includes(h))) { o.visible = false; n += 1; } }); return n; })(),
       renderer: extension ? context.getParameter(extension.UNMASKED_RENDERER_WEBGL) : context.getParameter(context.RENDERER),
       inventory: (() => {
         scene.updateMatrixWorld(true); const trees = [];
@@ -709,7 +712,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
 export default function AlpinePrototype({ vegetation = true, waterMode = 'fresnel', look = 'parity', surfaceDetail = true, refinement = true, corridor = true, benchmark = false, dpr = 1, stripNormals = 'calibrated', resolve = 'linear', flowerFilter = 'anisotropic', waterPass = 'refined', terrainFilter = 'anisotropic', fillRoots = 'on', treeStyle = 'styled', flowerStyle = 'styled', reflectionMode = 'real', hamletStyle = 'procedural', meadowStyle = 'habitat', onReady }) {
   const baseline = look === 'baseline';
   return <Canvas onCreated={({ gl }) => { gl.debug.checkShaderErrors = new URLSearchParams(window.location.search).has('shaderlog'); /* skipping the blocking link check lets the driver compile programs in parallel; add ?shaderlog=1 to see shader errors */ }} frameloop={benchmark ? 'always' : 'demand'} scene={{ environmentIntensity: baseline ? .12 : 1 }} dpr={dpr} shadows={{ type: THREE.PCFSoftShadowMap }} camera={{ fov: 39.7607076, near: .1, far: 1500 }}
-    gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: baseline ? THREE.AgXToneMapping : THREE.CustomToneMapping, toneMappingExposure: baseline ? .7 : 1 }}>
+    gl={{ antialias: true, alpha: false, powerPreference: new URLSearchParams(window.location.search).get('gpu') === 'low' ? 'low-power' : 'high-performance', /* ?gpu=low asks for the integrated GPU (testing) */ toneMapping: baseline ? THREE.AgXToneMapping : THREE.CustomToneMapping, toneMappingExposure: baseline ? .7 : 1 }}>
     <Suspense fallback={null}><Scene vegetation={vegetation} waterMode={waterMode} look={look} surfaceDetail={surfaceDetail} refinement={refinement} corridor={corridor} stripNormals={stripNormals} resolve={resolve} flowerFilter={flowerFilter} waterRefine={waterPass !== 'approved'} terrainFilter={terrainFilter} fillRoots={fillRoots} treeStyle={treeStyle} flowerStyle={flowerStyle} reflectionMode={reflectionMode} hamletStyle={hamletStyle} meadowStyle={meadowStyle} onReady={onReady} /></Suspense>
   </Canvas>;
 }
