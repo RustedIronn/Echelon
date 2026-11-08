@@ -47,9 +47,9 @@ export function createLinearResolve(renderer, displayLut, display) {
       renderer.getDrawingBufferSize(size);
       if (!target || target.width !== size.x || target.height !== size.y) {
         target?.dispose();
-        // A packed 32-bit float colour target (R11F_G11F_B10F) instead of 64-bit half floats: half the memory traffic per multisample (12-15% faster on the
-        // integrated GPU, ~4% on the RTX 5050) with no visible difference in the hero frame. ?rt=half restores the half-float target for comparison.
-        const packed = typeof window === 'undefined' || new URLSearchParams(window.location.search).get('rt') !== 'half';
+        // ?rt=r11: a packed 32-bit float colour target (R11F_G11F_B10F) instead of 64-bit half floats. It saves memory traffic (12-15% on the integrated GPU,
+        // ~4% on the RTX 5050); no banding showed in 1:1 sky crops at noon or dusk, but the gain on the RTX is small, so it stays opt-in until other devices matter.
+        const packed = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('rt') === 'r11';
         target = new THREE.WebGLRenderTarget(size.x, size.y, packed ? { type: THREE.UnsignedInt101111Type, format: THREE.RGBFormat, samples: resolveSamples(renderer.capabilities.maxSamples), depthBuffer: true } : { type: THREE.HalfFloatType, samples: resolveSamples(renderer.capabilities.maxSamples), depthBuffer: true });
       }
       renderer.setRenderTarget(target);
