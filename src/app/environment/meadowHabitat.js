@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const HABITAT = Object.freeze({ minX: -220, minZ: -320, width: 440, height: 304, cell: 1, protectNear: 32 });
+export const HABITAT = Object.freeze({ minX: -220, minZ: -320, width: 440, height: 332, cell: 1, protectNear: 32 }); // reaches the camera (z 12) so the near frame edges can be grown too
 // Long, overlapping growth sweeps follow the valley. Noise only softens their edges.
 export const GROWTH_SWEEPS = Object.freeze([
   { x: -34, z: -64, across: 22, along: 58, bend: -.35, strength: .85 },

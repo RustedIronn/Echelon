@@ -18,7 +18,7 @@ import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
 import { buildRealFlowerGroup, proxyDistance } from './realFlowers.js';
 import { createMeadowHabitat, applyHabitatMaterial, smooth as habitatSmooth, habitatHash } from './meadowHabitat.js';
 import { communityAt, scatterDensity, slopeFacing, placeCommunityFlowers, COMMUNITIES, COMMUNITY_MIX } from './meadowCommunities.js';
-import { growHabitatGrass, placeHabitatFlowers, tintHabitatBlade } from './meadowHabitatGrowth.js';
+import { growHabitatGrass, placeHabitatFlowers, tintHabitatBlade, extendForegroundFlowers } from './meadowHabitatGrowth.js';
 import { occupancyMap, synthesizeMeadow, SYNTH } from './meadowSynthesis.js';
 import { HeightField } from './hamletGeometry.js';
 import { applyMeadowDetail, meadowBladeTint, flowerDrift } from './meadowDetail.js';
@@ -26,6 +26,7 @@ import { bankLowering, createBankLowering, widenFarWater } from './bankLowering.
 import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
 import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
+import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
@@ -280,7 +281,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
     if(habitat && corridor && !baseline) {
       group.userData.habitat={ mapSize:[habitat.config.width,habitat.config.height] };
       const base=layers.findIndex(l=>l.layer===0 && !String(l.file).includes('fill'));
-      const growth=growHabitatGrass(new Float32Array(buffers[base]),farField,habitat,{bank:bankLowering.current});
+      const growth=growHabitatGrass(new Float32Array(buffers[base]),farField,habitat,{bank:bankLowering.current,nearGround:habitat.nearGround});
       group.userData.habitat.nearGrass=growth.near.length/9;group.userData.habitat.farGrass=growth.far.length/9;
       for(const [records,silhouette,tag] of [[growth.near,false,'Shared habitat middle grass'],[growth.far,true,'Shared habitat receding grass']])if(records.length)sources.push({layer:{...layers[base],source:tag,file:'habitat',synthetic:true,silhouette,count:records.length/9,stride:9},buffer:records.buffer});
     }
@@ -313,7 +314,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
           if(corridor && !baseline) {
             if(layer.layer>=2 || layer.synthetic) {
               projected.set(records[offset],records[offset+2],-records[offset+1]).applyMatrix4(viewProjection);
-              if(Math.abs(projected.x)>1.2 || Math.abs(projected.y)>1.2 || projected.z>1)continue;
+              if(Math.abs(projected.x)>(layer.synthetic&&Math.hypot(records[offset]+3,-records[offset+1]-10)<32?1.04:1.2) || Math.abs(projected.y)>1.2 || projected.z>1)continue; // the near frame-edge band only where this window shows it
             } else if(!keepResolvedGrass(records,offset,manifest.camera))continue;
           }
           indices.push(i); softs.push(soft);
@@ -394,7 +395,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
   return <primitive object={result.group} />;
 }
 
-function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyle, clearing }) {
+function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyle, clearing, extra = null }) {
   const maxAnisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy());
   const result = useMemo(() => {
     gltf.scene.updateMatrixWorld(true); const group = new THREE.Group(); const owned = [];
@@ -403,6 +404,7 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       const species = inheritedMetadata(source, 'species'); if(!isMeadowFlowerEnabled(species))return;
       let records = manifest.flowers[species];
       if (!records) return;
+      if (extra?.[species]) records = records.concat(extra[species]);
       const lod = inheritedMetadata(source, 'lod') ?? 0;
       if (clearing) records = records.filter((record) => clearing.softness(record[12], record[14]) > 0.7);
       if (!baseline) records = records.filter((record) => {
@@ -425,13 +427,13 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       });
       const mesh = new THREE.InstancedMesh(geometry, Array.isArray(source.material) ? materials : materials[0], records.length);
       mesh.name = `${species} LOD ${lod}`; const matrix = new THREE.Matrix4();
-      records.forEach((record, index) => { matrix.fromArray(record); if (bankLowering.current) matrix.elements[13] += bankLowering.current.offsetAt(record[12], record[14], record[13]); mesh.setMatrixAt(index, matrix); });
+      records.forEach((record, index) => { matrix.fromArray(record); if (bankLowering.current && !record.grounded) matrix.elements[13] += bankLowering.current.offsetAt(record[12], record[14], record[13]); mesh.setMatrixAt(index, matrix); });
       mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.castShadow = baseline || lod < (new URLSearchParams(window.location.search).get('flowershadow') === 'all' ? 2 : 1); // only the nearest flowers cast shadows; beyond ~26 m their shadows are sub-pixel (?flowershadow=all restores)
       mesh.receiveShadow = true;
       group.add(mesh); owned.push({ mesh, geometry, materials });
     });
     return { group, dispose: () => owned.forEach(({ mesh, geometry, materials }) => { mesh.dispose(); geometry.dispose(); materials.forEach((m) => m.dispose()); }) };
-  }, [gltf, manifest, resources, baseline, flowerFilter, flowerStyle, maxAnisotropy, clearing]);
+  }, [gltf, manifest, resources, baseline, flowerFilter, flowerStyle, maxAnisotropy, clearing, extra]);
   useEffect(() => () => result.dispose(), [result]);
   return <primitive object={result.group} />;
 }
@@ -669,7 +671,7 @@ function LookDevBridge({ baseline, resources, manifest }) {
 }
 
 function attachSceneHabitat(group,field,clearing,roots) {
-  const habitat=createMeadowHabitat({group,field,clearing,roots,bank:bankLowering.current});
+  const habitat=createMeadowHabitat({group,field,clearing,roots,bank:bankLowering.current});habitat.nearGround=terrainRaster(group); // the rendered ground near the camera, for the frame-edge planting
   group.traverse(o=>{if(!o.isMesh || inheritedMetadata(o,'echelonRole')!=='terrain')return;for(const material of Array.isArray(o.material)?o.material:[o.material])applyHabitatMaterial(material,habitat);});
   return habitat;
 }
@@ -700,6 +702,15 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     return attachSceneHabitat(geometry.group,new HeightField(farMeta,new Float32Array(farRaw)),clearing,new Float32Array(nativeRoots));
   },[sharedHabitat,geometry,farMeta,farRaw,clearing,nativeRoots]);
   useEffect(()=>()=>habitat?.dispose(),[habitat]);
+  // foreground flowers for the frame edges the delivered meadow does not reach in wide windows (meadowHabitatGrowth.js)
+  const viewAspect=useThree((state)=>Math.round(state.size.width/state.size.height*20)/20); // rounded so a window resize does not rebuild the flowers every frame
+  const edgeFlowers=useMemo(()=>{
+    if(!habitat)return null;const all=extendForegroundFlowers(manifest.flowers,new HeightField(farMeta,new Float32Array(farRaw)),habitat,{enabled:isMeadowFlowerEnabled,scatter:scatterDensity,clearing,nearGround:habitat.nearGround});
+    // keep only those this window can show (a 16:9 window sees none of them, so they cost nothing there)
+    const cam=authoredCamera(manifest,viewAspect);const vp=new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);const p=new THREE.Vector3();const out={};
+    for(const [species,list] of Object.entries(all)){const kept=list.filter(m=>{p.set(m[12],m[13]+.2,m[14]).applyMatrix4(vp);return Math.abs(p.x)<1.06&&p.z<1;});if(kept.length)out[species]=kept;}
+    return out;
+  },[habitat,manifest,farMeta,farRaw,clearing,viewAspect]);
   const gl = useThree((state) => state.gl);
   const pipeline = useMemo(() => (resolve === 'linear' && !baseline ? createLinearResolve(gl, resources.displayLut, resources.metadata.display) : null), [gl, resolve, baseline, resources]);
   useEffect(() => () => pipeline?.dispose(), [pipeline]);
@@ -709,7 +720,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     <Daylight manifest={manifest} resources={resources} baseline={baseline} />
     <primitive object={geometry.group} />
     {hamletNew && <Hamlet terrain={geometry.group} resources={resources} mode={hamletStyle === 'blockout' ? 'blockout' : 'detailed'} />}
-    {vegetation && <><Grass manifest={manifest} gltf={grass} resources={resources} baseline={baseline} refinement={refinement} corridor={corridor} stripNormals={stripNormals} resolve={resolve} fillRoots={fillRoots} clearing={clearing} meadowDetail={meadowDetail} meadowMode={meadowMode} flowers={flowers} habitat={habitat} /><Flowers manifest={manifest} gltf={flowers} resources={resources} baseline={baseline} flowerFilter={flowerFilter} flowerStyle={flowerStyle} clearing={clearing} /></>}
+    {vegetation && <><Grass manifest={manifest} gltf={grass} resources={resources} baseline={baseline} refinement={refinement} corridor={corridor} stripNormals={stripNormals} resolve={resolve} fillRoots={fillRoots} clearing={clearing} meadowDetail={meadowDetail} meadowMode={meadowMode} flowers={flowers} habitat={habitat} /><Flowers manifest={manifest} gltf={flowers} resources={resources} baseline={baseline} flowerFilter={flowerFilter} flowerStyle={flowerStyle} clearing={clearing} extra={edgeFlowers} /></>}
     {!baseline && <GeneratedSky resources={resources} />}
     {!baseline && vegetation && <ValleyMist farMeta={farMeta} farRaw={farRaw} resources={resources} />}
     {!baseline && <CloudShadows />}

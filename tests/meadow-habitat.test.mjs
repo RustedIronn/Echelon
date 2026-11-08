@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {createMeadowHabitat} from '../src/app/environment/meadowHabitat.js';
-import {growHabitatGrass,placeHabitatFlowers} from '../src/app/environment/meadowHabitatGrowth.js';
+import {growHabitatGrass,placeHabitatFlowers,AUTHORED_HALF_ANGLE} from '../src/app/environment/meadowHabitatGrowth.js';
 
 function fixture(){
  const group=new THREE.Group();
@@ -27,7 +27,7 @@ test('new vegetation is deterministic, above the stream and absent from protecte
  const {habitat,field}=fixture(),template=Float32Array.from([0,0,0,0,1,1,0,1,1]);
  const a=growHabitatGrass(template,field,habitat,{from:32,to:65,cell:.4}),b=growHabitatGrass(template,field,habitat,{from:32,to:65,cell:.4});
  assert.deepEqual(a,b);assert.ok(a.near.length>0);
- for(const records of [a.near,a.far])for(let k=0;k<records.length;k+=9){const x=records[k],z=-records[k+1],y=records[k+2],h=habitat.sample(x,z);assert.ok(Math.hypot(x+3,z-10)>=32-1e-5);assert.ok(h.waterDistance>=3||y>=h.waterLevel+.024);assert.ok(Math.abs(y-field.at(x,z))<1e-6);}
+ for(const records of [a.near,a.far])for(let k=0;k<records.length;k+=9){const x=records[k],z=-records[k+1],y=records[k+2],h=habitat.sample(x,z);const dd=Math.hypot(x+3,z-10);assert.ok(dd>=32-1e-5||Math.atan2(Math.abs(x+3),10-z)>=AUTHORED_HALF_ANGLE-.05,"below 32 m only outside the authored corridor");assert.ok(h.waterDistance>=3||y>=h.waterLevel+.024);assert.ok(Math.abs(y-field.at(x,z))<1e-6);}
  const flowers=placeHabitatFlowers(field,habitat,{flowers:{}},{from:42,to:65});
  for(const m of flowers.matrices)for(let k=0;k<m.length;k+=16){const h=habitat.sample(m[k+12],m[k+14]);assert.ok(h.waterDistance>=3||m[k+13]+.012>=h.waterLevel+.034);}
  habitat.dispose();
