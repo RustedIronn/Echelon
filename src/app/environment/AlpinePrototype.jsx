@@ -23,6 +23,7 @@ import { HeightField } from './hamletGeometry.js';
 import { applyMeadowDetail, meadowBladeTint, flowerDrift } from './meadowDetail.js';
 import { bankLowering, createBankLowering, widenFarWater } from './bankLowering.js';
 import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
+import ValleyMist from './ValleyMist.jsx';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
 import { createHamletClearing } from './hamletLayout.js';
 import { createLinearResolve } from './linearResolve.js';
@@ -694,6 +695,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     {hamletNew && <Hamlet resources={resources} mode={hamletStyle === 'blockout' ? 'blockout' : 'detailed'} />}
     {vegetation && <><Grass manifest={manifest} gltf={grass} resources={resources} baseline={baseline} refinement={refinement} corridor={corridor} stripNormals={stripNormals} resolve={resolve} fillRoots={fillRoots} clearing={clearing} meadowDetail={meadowDetail} meadowMode={meadowMode} flowers={flowers} habitat={habitat} /><Flowers manifest={manifest} gltf={flowers} resources={resources} baseline={baseline} flowerFilter={flowerFilter} flowerStyle={flowerStyle} clearing={clearing} /></>}
     {!baseline && <GeneratedSky resources={resources} />}
+    {!baseline && vegetation && <ValleyMist farMeta={farMeta} farRaw={farRaw} resources={resources} />}
     <LookDevBridge baseline={baseline} resources={resources} manifest={manifest} />
     <BankReflection geography={geometry} corridor={corridor} waterRefine={waterRefine} reflectionMode={reflectionMode} enabled={!baseline && refinement && waterMode === 'fresnel'} />
     <Measurements key={`${vegetation}-${waterMode}-${look}-${surfaceDetail}-${refinement}-${corridor}-${resolve}`} manifest={manifest} pipeline={pipeline} onReady={onReady} />

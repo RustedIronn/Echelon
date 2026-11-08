@@ -73,7 +73,10 @@ export function moodState(date) {
   const m = mixStops(sample(MORNING, sun.elevation), sample(EVENING, sun.elevation), evening);
   const moonVisible = smooth(-1, 6, moon.elevation) * clamp01(m.moon);
   const e = sun.elevation; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
-  return { ...m, gain, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
+  // valley mist: thickest just after sunrise, gone by mid-morning; only a trace at dusk
+  const morningMist = smooth(-6, 0, e) * (1 - smooth(5, 22, e)), duskMist = 0.14 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
+  const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
+  return { ...m, gain, mist, mistColor, sun, moon, moonVisible, moonLight: moonVisible * (0.25 + 0.75 * moon.illumination), cloudShift: (sun.hour + dayOfYear(date) * 0.7) * 0.25 };
 }
 
 // ---- store (mode: approved | manual | live)
@@ -107,7 +110,9 @@ if (typeof window !== 'undefined') applyTodQuery(window.location.search);
 export function applyTimeOfDay(scene, ref, date, base) {
   const sun = scene.getObjectByName('sun'), moon = scene.getObjectByName('moon'), hemi = scene.getObjectByName('tod-ambient'), rig = scene.userData.todRig;
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
+  const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
+    mistLayer?.userData.update?.(0, new THREE.Color(1, 1, 1));
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
@@ -116,7 +121,7 @@ export function applyTimeOfDay(scene, ref, date, base) {
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
-  rig?.setActive(true); rig?.update(s);
+  rig?.setActive(true); rig?.update(s); mistLayer?.userData.update?.(s.mist, s.mistColor);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK };
 }
