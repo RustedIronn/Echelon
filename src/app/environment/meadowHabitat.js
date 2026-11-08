@@ -8,7 +8,13 @@ export const GROWTH_SWEEPS = Object.freeze([
   { x: -24, z: -183, across: 62, along: 95, bend: -.24, strength: .50 },
 ]);
 export const smooth = (a,b,x) => { const t=THREE.MathUtils.clamp((x-a)/(b-a),0,1);return t*t*(3-2*t); };
-export const habitatHash = (x,z,s=0) => { const v=Math.sin(x*127.1+z*311.7+s*74.7)*43758.5453;return v-Math.floor(v); };
+// An integer hash of the bit patterns of (x, z, s). The earlier sin-based hash correlates along lattice lines: invisible on flat ground seen edge-on, but on a slope facing the camera
+// it showed as parallel rows ("ploughed furrows") in the density of the grass and flowers.
+const hashBuffer = new Float32Array(2), hashBits = new Int32Array(hashBuffer.buffer);
+export const habitatHash = (x,z,s=0) => {
+  hashBuffer[0]=x;hashBuffer[1]=z;let h=Math.imul(hashBits[0],0x9E3779B1)^Math.imul(hashBits[1]+0x7F4A7C15,0x85EBCA6B)^Math.imul((s|0)+0x165667B1+Math.round((s%1)*1024),0xC2B2AE35);
+  h^=h>>>15;h=Math.imul(h,0x2C1B3C6D);h^=h>>>12;h=Math.imul(h,0x297A2D39);h^=h>>>15;return (h>>>0)/4294967296;
+};
 const noise=(x,z)=>{const i=Math.floor(x),j=Math.floor(z),u=smooth(0,1,x-i),v=smooth(0,1,z-j);return THREE.MathUtils.lerp(THREE.MathUtils.lerp(habitatHash(i,j),habitatHash(i+1,j),u),THREE.MathUtils.lerp(habitatHash(i,j+1),habitatHash(i+1,j+1),u),v);};
 const clamp=(v)=>THREE.MathUtils.clamp(v,0,1);
 

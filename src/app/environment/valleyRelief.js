@@ -35,10 +35,39 @@ export function createValleyRelief({ water, hamletBounds, options = RELIEF, amou
     let r = 0; for (const s of options.swells) r += s.h * Math.exp(-(((x - s.x) / s.sx) ** 2) - (((z - s.z) / s.sz) ** 2));
     return r + 0.9 * (vnoise(x * 0.035, z * 0.05) - 0.5); // a metre or so of unevenness so no swell is a perfect bump
   };
-  const at = (x, z) => { if (!amount) return 0; const m = mask(x, z); return m > 0 ? amount * m * shape(x, z) : 0; };
-  // Slope of the added relief, for correcting vertex normals.
-  const gradient = (x, z) => [(at(x + 1, z) - at(x - 1, z)) / 2, (at(x, z + 1) - at(x, z - 1)) / 2];
-  return { at, gradient, mask, shape, waterDistance, amount };
+  const exactAt = (x, z) => { if (!amount) return 0; const m = mask(x, z); return m > 0 ? amount * m * shape(x, z) : 0; };
+  // Once the terrain mesh has been displaced, everything standing on it asks for the height of the MESH (its triangles interpolate the vertex offsets linearly), not of the
+  // smooth formula: where the mesh is coarser than the landform the two differ by tens of centimetres, which showed as rows of blades floating above or sinking into the slope.
+  let raster = null;
+  const sampleRaster = (x, z) => {
+    const fx = (x - raster.minX) / raster.cell - 0.5, fz = (z - raster.minZ) / raster.cell - 0.5; const i = Math.floor(fx), j = Math.floor(fz); if (i < 0 || j < 0 || i + 1 >= raster.w || j + 1 >= raster.h) return NaN;
+    const u = fx - i, v = fz - j, a = raster.data[j * raster.w + i], b = raster.data[j * raster.w + i + 1], c = raster.data[(j + 1) * raster.w + i], d = raster.data[(j + 1) * raster.w + i + 1];
+    if (a !== a || b !== b || c !== c || d !== d) return NaN; return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+  };
+  const at = (x, z) => { if (!raster) return exactAt(x, z); const v = sampleRaster(x, z); return v === v ? v : exactAt(x, z); };
+  // Slope of the added relief, for correcting vertex normals (always from the formula).
+  const gradient = (x, z) => [(exactAt(x + 1, z) - exactAt(x - 1, z)) / 2, (exactAt(x, z + 1) - exactAt(x, z - 1)) / 2];
+  // meshes: [{ position: BufferAttribute, index: BufferAttribute | null, values: Float32Array (relief at each vertex) }]
+  const bindMesh = (meshes, cellSize = 1) => {
+    const w2 = Math.ceil((options.maxX - minX) / cellSize), h2 = Math.ceil((options.maxZ - minZ) / cellSize); const data = new Float32Array(w2 * h2).fill(NaN); let covered = 0;
+    for (const { position, index, values } of meshes) {
+      const n = index ? index.count : position.count;
+      for (let t = 0; t < n; t += 3) {
+        const i0 = index ? index.getX(t) : t, i1 = index ? index.getX(t + 1) : t + 1, i2 = index ? index.getX(t + 2) : t + 2;
+        const v0 = values[i0], v1 = values[i1], v2 = values[i2]; if (Math.abs(v0) < 1e-4 && Math.abs(v1) < 1e-4 && Math.abs(v2) < 1e-4) continue;
+        const x0 = position.getX(i0), z0 = position.getZ(i0), x1 = position.getX(i1), z1 = position.getZ(i1), x2 = position.getX(i2), z2 = position.getZ(i2);
+        const den = (z1 - z2) * (x0 - x2) + (x2 - x1) * (z0 - z2); if (Math.abs(den) < 1e-9) continue;
+        const gx0 = Math.max(0, Math.floor((Math.min(x0, x1, x2) - minX) / cellSize) - 1), gx1 = Math.min(w2 - 1, Math.ceil((Math.max(x0, x1, x2) - minX) / cellSize) + 1);
+        const gz0 = Math.max(0, Math.floor((Math.min(z0, z1, z2) - minZ) / cellSize) - 1), gz1 = Math.min(h2 - 1, Math.ceil((Math.max(z0, z1, z2) - minZ) / cellSize) + 1);
+        for (let gz = gz0; gz <= gz1; gz += 1) for (let gx = gx0; gx <= gx1; gx += 1) {
+          const x = minX + (gx + 0.5) * cellSize, z = minZ + (gz + 0.5) * cellSize; const a = ((z1 - z2) * (x - x2) + (x2 - x1) * (z - z2)) / den, b = ((z2 - z0) * (x - x2) + (x0 - x2) * (z - z2)) / den, c = 1 - a - b;
+          if (a >= -1e-6 && b >= -1e-6 && c >= -1e-6) { if (data[gz * w2 + gx] !== data[gz * w2 + gx]) covered += 1; data[gz * w2 + gx] = a * v0 + b * v1 + c * v2; }
+        }
+      }
+    }
+    raster = { data, w: w2, h: h2, cell: cellSize, minX, minZ }; return covered;
+  };
+  return { at, exactAt, gradient, mask, shape, waterDistance, amount, bindMesh };
 }
 
 // Adds the relief to a bank-lowering object so every consumer of offsetAt receives it.

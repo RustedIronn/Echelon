@@ -148,6 +148,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
     if (amount > 0) bank = withValleyRelief(bank, createValleyRelief({ water: waterWorld, hamletBounds: createHamletClearing().bounds, amount }));
   }
   bankLowering.current = bank;
+  const reliefMeshes = [];
   group.traverse((object) => {
     if (!object.isMesh) return;
     const role = inheritedMetadata(object, 'echelonRole');
@@ -188,12 +189,12 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       }
       if (bank && role === 'terrain') {
         object.geometry = object.geometry.clone(); ownedGeometry.push(object.geometry); const p = object.geometry.attributes.position;
-        const nrm = object.geometry.attributes.normal; const tilt = new THREE.Vector3();
+        const nrm = object.geometry.attributes.normal; const tilt = new THREE.Vector3(); const reliefValues = bank.relief ? new Float32Array(p.count) : null;
         for (let i = 0; i < p.count; i += 1) {
-          const x = p.getX(i), z = p.getZ(i); const dy = bank.offsetAt(x, z, p.getY(i)); if (dy !== 0) p.setY(i, p.getY(i) + dy);
+          const x = p.getX(i), z = p.getZ(i); const dy = bank.offsetAt(x, z, p.getY(i)); if (dy !== 0) p.setY(i, p.getY(i) + dy); if (reliefValues) reliefValues[i] = bank.relief.exactAt(x, z);
           if (bank.relief && nrm && dy !== 0) { const [gx, gz] = bank.relief.gradient(x, z); const ny = nrm.getY(i); tilt.set(nrm.getX(i) - gx * ny, ny, nrm.getZ(i) - gz * ny).normalize(); nrm.setXYZ(i, tilt.x, tilt.y, tilt.z); }
         }
-        if (nrm) nrm.needsUpdate = true;
+        if (nrm) nrm.needsUpdate = true; if (reliefValues) reliefMeshes.push({ position: p, index: object.geometry.index, values: reliefValues });
         p.needsUpdate = true; object.geometry.computeBoundingBox(); object.geometry.computeBoundingSphere();
       }
       const originals = Array.isArray(object.material) ? object.material : [object.material];
@@ -229,6 +230,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       object.material = Array.isArray(object.material) ? materials : materials[0];
     }
   });
+  if (bank?.relief && reliefMeshes.length) bank.relief.bindMesh(reliefMeshes); // from here on, anything standing on the ground follows the displaced mesh exactly
   return { group, dispose: () => { ownedMaterials.forEach((m) => m.dispose()); ownedGeometry.forEach((g) => g.dispose()); normal.dispose(); wetness?.texture.dispose(); } };
 }
 
@@ -352,7 +354,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
           }
           mesh.setColorAt(i, tint);
         });
-        mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.receiveShadow = true;
+        mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.receiveShadow = new URLSearchParams(window.location.search).get('grassshadow') !== '0';
         mesh.castShadow = layer.layer === 0 && !layer.synthetic; group.add(mesh);
       }
     });
