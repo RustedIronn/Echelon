@@ -22,6 +22,7 @@ import { occupancyMap, synthesizeMeadow, SYNTH } from './meadowSynthesis.js';
 import { HeightField } from './hamletGeometry.js';
 import { applyMeadowDetail, meadowBladeTint, flowerDrift } from './meadowDetail.js';
 import { bankLowering, createBankLowering, widenFarWater } from './bankLowering.js';
+import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
 import { createHamletClearing } from './hamletLayout.js';
 import { createLinearResolve } from './linearResolve.js';
@@ -137,10 +138,14 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
     if (waterGeometry) wetness = createBankWetness(waterGeometry);
   }
   // The distant stream sits in a shallow channel; lower the banks along it (terrain, grass, flowers and hamlet ground share one offset) and widen the water to fill.
-  let bank = null;
+  let bank = null, waterWorld = null;
   if (!baseline && corridor && waterRefine && waterMode === 'fresnel') {
     let water = null; group.traverse((o) => { if (o.isMesh && inheritedMetadata(o, 'echelonRole') === 'water') water = o; });
-    if (water) { const p = water.geometry.attributes.position; water.updateWorldMatrix(true, false); const world = new Float32Array(p.count * 3); const v = new THREE.Vector3(); for (let i = 0; i < p.count; i += 1) { v.fromBufferAttribute(p, i).applyMatrix4(water.matrixWorld); world[i * 3] = v.x; world[i * 3 + 1] = v.y; world[i * 3 + 2] = v.z; } bank = createBankLowering(world); }
+    if (water) { const p = water.geometry.attributes.position; water.updateWorldMatrix(true, false); const world = new Float32Array(p.count * 3); const v = new THREE.Vector3(); for (let i = 0; i < p.count; i += 1) { v.fromBufferAttribute(p, i).applyMatrix4(water.matrixWorld); world[i * 3] = v.x; world[i * 3 + 1] = v.y; world[i * 3 + 2] = v.z; } bank = createBankLowering(world); waterWorld = world; }
+  }
+  if (bank && waterWorld) { // valley relief (valleyRelief.js): gentle landforms in the middle ground; ?relief=0 compares with the flat valley, ?relief=1.5 exaggerates
+    const asked = new URLSearchParams(window.location.search).get('relief'); const amount = asked === null ? 0 : Number(asked); // off by default: the valley keeps its authored terrain unless ?relief=1 (or more) asks for the experiment
+    if (amount > 0) bank = withValleyRelief(bank, createValleyRelief({ water: waterWorld, hamletBounds: createHamletClearing().bounds, amount }));
   }
   bankLowering.current = bank;
   group.traverse((object) => {
@@ -183,7 +188,12 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       }
       if (bank && role === 'terrain') {
         object.geometry = object.geometry.clone(); ownedGeometry.push(object.geometry); const p = object.geometry.attributes.position;
-        for (let i = 0; i < p.count; i += 1) { const dy = bank.offsetAt(p.getX(i), p.getZ(i), p.getY(i)); if (dy < 0) p.setY(i, p.getY(i) + dy); }
+        const nrm = object.geometry.attributes.normal; const tilt = new THREE.Vector3();
+        for (let i = 0; i < p.count; i += 1) {
+          const x = p.getX(i), z = p.getZ(i); const dy = bank.offsetAt(x, z, p.getY(i)); if (dy !== 0) p.setY(i, p.getY(i) + dy);
+          if (bank.relief && nrm && dy !== 0) { const [gx, gz] = bank.relief.gradient(x, z); const ny = nrm.getY(i); tilt.set(nrm.getX(i) - gx * ny, ny, nrm.getZ(i) - gz * ny).normalize(); nrm.setXYZ(i, tilt.x, tilt.y, tilt.z); }
+        }
+        if (nrm) nrm.needsUpdate = true;
         p.needsUpdate = true; object.geometry.computeBoundingBox(); object.geometry.computeBoundingSphere();
       }
       const originals = Array.isArray(object.material) ? object.material : [object.material];
