@@ -17,6 +17,8 @@ vec3 skyRadiance(vec3 d){
   float sd=max(dot(d,uSunDir),0.0); float up=smoothstep(-0.25,0.05,uSunDir.y);
   col+=uSunC*(pow(sd,6.0)*0.28+pow(sd,48.0)*0.7)*uGlowK*up;
   col+=uSunC*smoothstep(0.9990,0.99965,sd)*uGlowK*5.0*uSunDisc;
+  // A broad warm band that rises well above the horizon on the sun's side near sunrise and sunset: the tight halo above hides behind the mountains, but the afterglow must be seen over them.
+  float band=pow(sd,2.0)*exp(-max(y,0.0)*4.0); col+=uSunC*band*uGlowK*0.6*smoothstep(-0.38,-0.02,uSunDir.y)*(1.0-smoothstep(0.1,0.5,uSunDir.y));
   vec2 hd=normalize(d.xz+vec2(1e-4)); vec2 ad=normalize(-uSunDir.xz+vec2(1e-4));
   float belt=pow(max(dot(hd,ad),0.0),2.5)*exp(-max(y,0.0)*9.0)*uBeltK;
   col=mix(col,uBelt,clamp(belt,0.0,1.0)*0.9);
