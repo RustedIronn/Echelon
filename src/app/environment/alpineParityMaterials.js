@@ -83,14 +83,22 @@ export function applyWetSediment(material, refinement = true, corridor = false) 
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous.call(material, shader, renderer);
-    shader.vertexShader = 'attribute float wetness; varying float vWetness;\n' + shader.vertexShader;
-    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWetness = wetness;');
-    shader.fragmentShader = 'varying float vWetness;\n' + shader.fragmentShader;
-    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, ${corridor ? '0.72' : '0.43'}, vWetness);`);
+    shader.vertexShader = 'attribute float wetness; varying float vWetness; varying vec3 vSedWorld;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWetness = wetness; vSedWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    shader.fragmentShader = 'varying float vWetness; varying vec3 vSedWorld;\nfloat sedHash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }\nfloat sedNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(sedHash(i),sedHash(i+vec2(1,0)),f.x),mix(sedHash(i+vec2(0,1)),sedHash(i+vec2(1,1)),f.x),f.y); }\n' + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, ${corridor ? '0.72' : '0.43'}, vWetness);
+${corridor ? `// The bed's pebbles were all the same pale grey on a dark bed, so through the clear water they read as polka dots. Real stream stones vary:
+// ochre, brown, grey-green and a few dark ones, and in quieter patches silt settles over them. The pebbles are the pale parts of the bed's colour.
+{ float l = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)); float pebble = smoothstep(0.1, 0.24, l);
+  vec2 cell = floor(vSedWorld.xz * 5.0); float h1 = sedHash(cell), h2 = sedHash(cell + 7.3);
+  vec3 tint = mix(vec3(0.68, 0.56, 0.42), vec3(0.47, 0.5, 0.45), h1) * mix(1.0, 0.5, step(0.78, h2));
+  float silted = smoothstep(0.38, 0.72, sedNoise(vSedWorld.xz * 0.21 + 1.3));
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * tint, pebble);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.15, 0.115) * (0.85 + 0.3 * sedNoise(vSedWorld.xz * 0.6)), pebble * silted * 0.8); }` : ''}`);
     if (refinement) {
       shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 // Refraction integrates fine bed relief; retain its silhouette but suppress hard pebble lighting underwater.
-normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0)), vWetness * ${corridor ? '0.35' : '0.65'}));
+normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0)), vWetness * ${corridor ? '0.6' : '0.65'}));
 `);
       if (!corridor) shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 // Wavelength-dependent underwater attenuation. Dry banks retain their original material.
@@ -98,7 +106,7 @@ diffuseColor.rgb *= mix(vec3(1.0), vec3(0.48, 0.67, 0.76), vWetness);
 `);
     }
   };
-  material.customProgramCacheKey = () => `echelon-blender-wet-sediment-${corridor ? 3 : refinement ? 2 : 1}`;
+  material.customProgramCacheKey = () => `echelon-blender-wet-sediment-${corridor ? 4 : refinement ? 2 : 1}`;
   return material;
 }
 
