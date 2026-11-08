@@ -9,7 +9,7 @@ const MIX = { 6: [['Marguerite', 0.8], ['Carthusian Pink', 0.2]], 7: [['Margueri
 const hash = (x, s = 0) => { const v = Math.sin(x * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); };
 
 export function planRealFlowers(placed, { maxFlowers = 3500, naturalScale = false, mix = null, keepScale = false } = {}) {
-  const speciesMix = mix ? mix : naturalScale ? {6:[['Marguerite',.65],['Carthusian Pink',.35]],7:[['Marguerite',.35],['Red Clover',.4],['Dandelion',.25]],8:[['Dandelion',.55],['Marguerite',.35],['Carthusian Pink',.10]]} : MIX;
+  const speciesMix = mix ? mix : naturalScale ? {6:[['Marguerite',.65],['Carthusian Pink',.35]],7:[['Marguerite',.5],['Red Clover',.12],['Dandelion',.23],['Carthusian Pink',.15]],8:[['Dandelion',.55],['Marguerite',.35],['Carthusian Pink',.10]]} : MIX;
   const total = [6, 7, 8].reduce((a, c) => a + placed.counts[c], 0); const keep = Math.min(1, maxFlowers / Math.max(1, total)); const lists = new Map();
   for (const cell of [6, 7, 8]) {
     for (let k = 0; k < placed.counts[cell]; k += 1) {

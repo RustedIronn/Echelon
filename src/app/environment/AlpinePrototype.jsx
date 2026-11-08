@@ -396,6 +396,10 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       if (!records) return;
       const lod = inheritedMetadata(source, 'lod') ?? 0;
       if (clearing) records = records.filter((record) => clearing.softness(record[12], record[14]) > 0.7);
+      if (!baseline && species === 'Red Clover') { // the dark magenta heads were too many: keep a share (?clover=0.4 by default, 0 removes them, 1 restores all)
+        const asked = new URLSearchParams(window.location.search).get('clover'); const keep = asked === null ? 0.4 : Number(asked);
+        records = records.filter((record, index) => ((Math.sin(index * 12.9898 + record[12] * 78.233 + record[14] * 37.719) * 43758.5453) % 1 + 1) % 1 < keep);
+      }
       if (!baseline) records = records.filter((record) => {
         const distance = Math.hypot(record[12] - manifest.camera.matrix[12], record[14] - manifest.camera.matrix[14]);
         return (distance < 26 ? 0 : distance < 65 ? 1 : 2) === lod;

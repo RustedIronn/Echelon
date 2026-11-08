@@ -9,7 +9,7 @@ export const COMMUNITIES = Object.freeze([
   { name: 'oxeye', cell: 6, rgb: [0.76, 0.74, 0.60] },
   { name: 'cranesbill', cell: 7, rgb: [0.34, 0.18, 0.62] },
 ]);
-export const COMMUNITY_MIX = Object.freeze({ 6: [['Marguerite', 0.92], ['Carthusian Pink', 0.08]], 7: [['Carthusian Pink', 0.72], ['Red Clover', 0.28]], 8: [['Dandelion', 1]] });
+export const COMMUNITY_MIX = Object.freeze({ 6: [['Marguerite', 0.92], ['Carthusian Pink', 0.08]], 7: [['Carthusian Pink', 0.9], ['Red Clover', 0.1]], 8: [['Dandelion', 1]] });
 // The first area to be made beautiful: the far bank between the river and the hamlet. Widening this window carries the same look through the valley.
 export const VIGNETTE = { x0: -125, x1: 125, z0: -165, z1: -26, soft: 12 }; // the whole visible valley (the camera's view cone limits it further)
 
