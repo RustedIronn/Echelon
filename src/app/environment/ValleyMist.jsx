@@ -44,7 +44,7 @@ export default function ValleyMist({ farMeta, farRaw, resources }) {
     });
     group.userData.update = (s) => {
       const amount = s ? s.mist : 0; group.visible = amount > 0.004; if (!s) return;
-      for (const { material, k } of materials) { const u = material.uniforms; u.uMist.value = amount * 0.5 * k; u.uColor.value.copy(s.mistColor); u.uSunDir.value.fromArray(s.sun.dir); u.uSunC.value.copy(s.sunC); u.uSunK.value = Math.min(1, Math.max(0, (s.sun.elevation + 6) / 12)); }
+      for (const { material, k } of materials) { const u = material.uniforms; u.uMist.value = amount * 0.42 * k; u.uColor.value.copy(s.mistColor); u.uSunDir.value.fromArray(s.sun.dir); u.uSunC.value.copy(s.sunC); u.uSunK.value = Math.min(1, Math.max(0, (s.sun.elevation + 6) / 12)); }
     };
     return { group, geometry, materials };
   }, [farMeta, farRaw, resources]);

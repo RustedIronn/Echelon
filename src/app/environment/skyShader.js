@@ -11,7 +11,7 @@ float vnoise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f); retur
 float fbm(vec2 p){ float a=0.5; float s=0.0; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=0.5; } return s; }
 vec3 skyRadiance(vec3 d){
   float y=d.y;
-  vec3 col=mix(uHor,uZen,pow(smoothstep(-0.04,0.8,y),0.65));
+  vec3 col=mix(uHor,uZen,pow(smoothstep(-0.04,0.8,y),0.5));
   col=mix(col,uHor*0.75,smoothstep(0.0,-0.25,y));
   col=mix(col,uHor,exp(-max(y,0.0)*7.0)*0.3);
   float sd=max(dot(d,uSunDir),0.0); float up=smoothstep(-0.25,0.05,uSunDir.y);
