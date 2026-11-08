@@ -16,6 +16,7 @@ import GeneratedSky from './GeneratedSky.jsx';
 import { buildTuftGroup, placeMeadow, splitFlowers } from './tuftGroup.js';
 import { buildRealFlowerGroup } from './realFlowers.js';
 import { createMeadowHabitat, applyHabitatMaterial, smooth as habitatSmooth, habitatHash } from './meadowHabitat.js';
+import { communityAt, placeCommunityFlowers, COMMUNITIES, COMMUNITY_MIX } from './meadowCommunities.js';
 import { growHabitatGrass, placeHabitatFlowers, tintHabitatBlade } from './meadowHabitatGrowth.js';
 import { occupancyMap, synthesizeMeadow, SYNTH } from './meadowSynthesis.js';
 import { HeightField } from './hamletGeometry.js';
@@ -335,6 +336,10 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
             if (drift.amount * reach > 0.01) tint.lerp(driftColor.setRGB(drift.rgb[0], drift.rgb[1], drift.rgb[2]), Math.min(0.5, drift.amount * reach * flecks * 0.8));
           }
           if(habitat && Math.hypot(records[offset]+3,-records[offset+1]-10)>32)tintHabitatBlade(tint,habitat.sample(records[offset],-records[offset+1]),habitatSmooth(32,60,Math.hypot(records[offset]+3,-records[offset+1]-10)));
+          if(habitat){ // flowering communities: some of the blades inside a drift take its colour, so the drift reads as colour even where individual flowers are too small
+            const bx=records[offset],bz=-records[offset+1];
+            if(Math.hypot(bx+3,bz-10)>38){const hs=habitat.sample(bx,bz);const c=communityAt(bx,bz,hs.moisture);if(c.strength>.08&&habitatHash(bx,bz,131)<c.strength*.7)tint.lerp(driftColor.setRGB(...COMMUNITIES[c.kind].rgb),.45+.3*habitatHash(bx,bz,132));}
+          }
           mesh.setColorAt(i, tint);
         });
         mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.receiveShadow = true;
@@ -345,7 +350,11 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
     let tufts = null;
     if(habitat && flowers) {
       const placed=placeHabitatFlowers(farField,habitat,manifest,{bank:bankLowering.current});
-      const real=buildRealFlowerGroup({flowerScene:flowers.scene,placed,resources,maxFlowers:4500,naturalScale:true,receiveShadow:true});group.add(real.group);group.userData.habitat.flowers=real.total;tufts={group:real.group,dispose:()=>real.dispose()};
+      const real=buildRealFlowerGroup({flowerScene:flowers.scene,placed,resources,maxFlowers:4500,naturalScale:true,receiveShadow:true});group.add(real.group);group.userData.habitat.flowers=real.total;
+      const split=splitFlowers(placeCommunityFlowers(farField,habitat,{bank:bankLowering.current}),62); // detailed models close to the camera, the lowest level of detail beyond (a flower there is a few pixels)
+      const communityNear=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.near,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:1,name:'Flowering communities (near)'});const communityFar=buildRealFlowerGroup({flowerScene:flowers.scene,placed:split.far,resources,maxFlowers:9000,mix:COMMUNITY_MIX,keepScale:true,receiveShadow:true,preferLod:2,name:'Flowering communities (far)'});
+      const community={group:new THREE.Group(),total:communityNear.total+communityFar.total,dispose:()=>{communityNear.dispose();communityFar.dispose();}};community.group.add(communityNear.group,communityFar.group);group.add(community.group);group.userData.habitat.communityFlowers=community.total;
+      tufts={group:real.group,dispose:()=>{real.dispose();community.dispose();}};
     } else if (meadowDetail && meadowMode === 'blades' && corridor && !baseline && flowers) {
       const grassIndex = layers.findIndex((l) => l.layer === 0 && !String(l.file).includes('fill'));
       if (grassIndex >= 0) {
