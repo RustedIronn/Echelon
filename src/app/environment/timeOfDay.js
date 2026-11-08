@@ -87,7 +87,7 @@ export function moodState(date) {
   const haze = 1 + 0.4 * dayK;
   // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
   const nightK = 1 - smooth(-14, -4, e);
-  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.24 * dayK, /* daylight: deeper darks and a little more punch; dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated
