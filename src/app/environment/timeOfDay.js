@@ -15,11 +15,15 @@ export function solarDay(date) {
   const season = Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365); const dayLength = 12.4 + 1.0 * season; const noon = 12.75;
   return { dayLength, noon, sunrise: noon - dayLength / 2, sunset: noon + dayLength / 2, maxElevation: 50 + 14 * season };
 }
+const SUN_PATH = typeof window === 'undefined' ? 'behind' : (new URLSearchParams(window.location.search).get('sunpath') || 'behind');
 // The sun rises behind and to the left of the camera, climbs through the open sky and sets in front, behind the mountains.
 export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;
-  if (into <= solar.dayLength) { const f = into / solar.dayLength; elevation = solar.maxElevation * Math.sin(Math.PI * f); azimuth = (160 - 230 * f) * DEG; }
-  else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (-70 - 230 * g) * DEG; }
+  // ?sunpath=side (experiment): the same sunrise and sunset points, but the sun crosses the sky in FRONT of the camera (to the left at noon) instead of behind it,
+  // so the day is side- and back-lit like the evening, not flatly front-lit.
+  const side = SUN_PATH === 'side';
+  if (into <= solar.dayLength) { const f = into / solar.dayLength; elevation = solar.maxElevation * Math.sin(Math.PI * f); azimuth = (side ? 160 + 130 * f : 160 - 230 * f) * DEG; }
+  else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
   const e = elevation * DEG; return { elevation, azimuth, solar, hour: h, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
 }
 const NEW_MOON = Date.UTC(2000, 0, 6, 18, 14); const SYNODIC = 29.530588853;
@@ -153,6 +157,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast;
+  { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; } } // ?grade=contrast,saturation (look-dev experiment)
   rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
   return { ...base, exposure: base.exposure * s.exp, environmentIntensity: base.environmentIntensity * s.env, fogDensity: base.fogDensity * s.fogK * s.haze };

@@ -47,8 +47,11 @@ export function applyGrassHabitat(material, refinement = true, corridor = false,
     shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLeafHeight = clamp(position.y, 0.0, 1.0);');
     shader.fragmentShader = 'varying float vLeafHeight;\n' + shader.fragmentShader;
-    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(0.65, 1.03, smoothstep(0.0, 0.75, vLeafHeight));');
-    shader.fragmentShader = shader.fragmentShader.replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= mix(0.58, 1.0, smoothstep(0.0, 0.65, vLeafHeight));');
+    // Canopy occlusion: inside a real meadow the light falls off steeply toward the ground between the blades, which is where a photograph's darks come from.
+    // ?canopy=deep (experiment) deepens it; the default keeps the approved, lighter falloff.
+    const deep = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep';
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>\ndiffuseColor.rgb *= mix(${deep ? '0.42' : '0.65'}, 1.03, smoothstep(0.0, ${deep ? '0.85' : '0.75'}, vLeafHeight));`);
+    shader.fragmentShader = shader.fragmentShader.replace('#include <aomap_fragment>', `#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= mix(${deep ? '0.28' : '0.58'}, 1.0, smoothstep(0.0, ${deep ? '0.8' : '0.65'}, vLeafHeight));`);
     if (refinement) {
       shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 // Subpixel foliage should converge toward the canopy response rather than alternate dark face normals.
@@ -63,7 +66,7 @@ normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0))
       );
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', leafLighting);
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-reflectedLight.directDiffuse *= mix(0.78, 1.0, smoothstep(0.03, 0.8, vLeafHeight));
+reflectedLight.directDiffuse *= mix(${deep ? '0.55' : '0.78'}, 1.0, smoothstep(0.03, ${deep ? '0.9' : '0.8'}, vLeafHeight));
 `);
       if (strip) {
         // Runs before the distance-based canopy blend above, so the effective blend is slightly higher than upBlend.
@@ -75,7 +78,7 @@ reflectedLight.directDiffuse *= ${strip.gain.toFixed(3)}; reflectedLight.indirec
     }
   };
 
-  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}`;
+  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}${typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep' ? '-deep' : ''}`;
   return material;
 }
 
