@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addWind } from './wind.js';
+import { addWind, WIND_KINDS } from './wind.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -315,7 +315,7 @@ export function applyFlowerResponse(material, style = FLOWER_RESPONSE) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    addWind(shader, 'position.y / 0.45'); // flower models are about 0.3-0.6 m tall in their own units
+    addWind(shader, 'position.y / 0.45', WIND_KINDS.flower); // flower models are about 0.3-0.6 m tall in their own units
     // Beyond 40-110 m the dark, desaturated parts (stems, leaves, shaded petals) melt into the meadow; bright and strongly coloured petals stay.
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 fc = diffuseColor.rgb; float fl = dot(fc, vec3(0.2126, 0.7152, 0.0722)); float hi = max(max(fc.r, fc.g), fc.b); float sat = (hi - min(min(fc.r, fc.g), fc.b)) / max(hi, 1e-4);

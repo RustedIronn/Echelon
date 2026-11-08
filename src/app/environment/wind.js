@@ -14,17 +14,38 @@ export function animationFps({ activity = 'scenic', hidden = false, wind = true 
   return ACTIVITY_FPS[activity] ?? ACTIVITY_FPS.scenic;
 }
 
-// GLSL replacing three.js's <project_vertex> for instanced vegetation: the sway is added in world space, so every blade bends the same way.
-// heightExpr: 0 at the root, 1 at the tip (in the mesh's local units).
-export const windVertex = (heightExpr) => `
+// How each kind of plant answers the wind. Grass is light and quick; flowers carry a head, so they sway slower, lag behind the gust and nod a little more.
+export const WIND_KINDS = Object.freeze({
+  grass: { stiffness: 1.0, rate: 1.0, lag: 0.0, amount: 1.0 },
+  flower: { stiffness: 0.75, rate: 0.62, lag: 0.45, amount: 1.15 },
+});
+
+// GLSL replacing three.js's <project_vertex> for instanced vegetation. The wind is one field of gusts rolling across the valley at a steady speed
+// (all plants feel the same gust as it passes them); every plant then answers it in its own way: its own stiffness, its own natural rate and phase,
+// so neighbours never move in lockstep. Motion fades out with distance and with the plant's size on screen: a moving sub-pixel blade does not read
+// as wind, only as shimmer. heightExpr: 0 at the root, 1 at the tip (mesh-local units).
+export const windVertex = (heightExpr, kind = WIND_KINDS.grass) => `
 #ifdef USE_INSTANCING
   vec4 windWorld = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
+  vec3 windRoot = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   float windH = clamp(${heightExpr}, 0.0, 1.0); float windSize = length((modelMatrix * instanceMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
   vec2 windDir = normalize(vec2(0.8, -0.6));
-  float gust = 0.55 + 0.45 * sin(uWindTime * 0.55 - dot(windWorld.xz, windDir) * 0.07) * sin(uWindTime * 0.23 + windWorld.x * 0.013);
-  float flutter = sin(uWindTime * 2.1 + dot(windWorld.xz, vec2(0.37, 0.23))) * 0.35 + sin(uWindTime * 3.7 + windWorld.x * 0.9 + windWorld.z * 0.6) * 0.15;
-  float bend = uWindK * windH * windH * windSize * (gust * 0.16 + flutter * 0.05);
-  windWorld.xz += windDir * bend; windWorld.y -= abs(bend) * 0.25 * windH;
+  // per plant: a stable random number from its root position
+  float seed = fract(sin(dot(windRoot.xz, vec2(12.9898, 78.233))) * 43758.5453); float seed2 = fract(seed * 7.13 + 0.37);
+  float stiff = ${kind.stiffness.toFixed(3)} * mix(0.65, 1.35, seed); float rate = ${kind.rate.toFixed(3)} * mix(0.75, 1.3, seed2);
+  // the gust field: two layers of soft noise drifting downwind (~4 m/s), sampled a little later for heavier plants
+  float t = uWindTime - ${kind.lag.toFixed(3)} * (0.6 + seed);
+  vec2 g1 = windRoot.xz * 0.045 - windDir * t * 0.18, g2 = windRoot.xz * 0.11 - windDir * t * 0.42 + 3.7;
+  float gust = windValueNoise(g1) * 0.7 + windValueNoise(g2) * 0.3; gust = smoothstep(0.25, 0.85, gust);
+  // the plant's own sway around the bent position, at its own rate and phase; stronger when the gust is stronger
+  float sway = sin(uWindTime * 1.7 * rate + seed * 6.2832) * 0.6 + sin(uWindTime * 2.9 * rate + seed2 * 6.2832) * 0.25;
+  vec2 across = vec2(-windDir.y, windDir.x);
+  // shimmer guard: no motion where a plant is too small on screen to show it
+  float dist = length(windRoot - cameraPosition); float onScreen = windSize / max(dist, 0.1);
+  float fade = (1.0 - smoothstep(12.0, 34.0, dist)) * smoothstep(0.006, 0.016, onScreen);
+  float bendAmount = uWindK * fade * ${kind.amount.toFixed(3)} * windH * windH * windSize / stiff;
+  vec2 offset = windDir * bendAmount * (0.04 + 0.15 * gust + 0.05 * gust * sway) + across * bendAmount * 0.03 * sway * (0.4 + gust);
+  windWorld.xz += offset; windWorld.y -= dot(offset, offset) / max(windSize, 0.05) * 0.5 * windH;
   vec4 mvPosition = viewMatrix * windWorld;
 #else
   vec4 mvPosition = vec4( transformed, 1.0 );
@@ -35,7 +56,10 @@ export const windVertex = (heightExpr) => `
 #endif
   gl_Position = projectionMatrix * mvPosition;`;
 
-export function addWind(shader, heightExpr) {
+const NOISE = `float windHash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+float windValueNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(windHash(i),windHash(i+vec2(1,0)),f.x),mix(windHash(i+vec2(0,1)),windHash(i+vec2(1,1)),f.x),f.y); }`;
+
+export function addWind(shader, heightExpr, kind = WIND_KINDS.grass) {
   shader.uniforms.uWindTime = WIND.time; shader.uniforms.uWindK = WIND.strength;
-  shader.vertexShader = 'uniform float uWindTime; uniform float uWindK;\n' + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr));
+  shader.vertexShader = `uniform float uWindTime; uniform float uWindK;\n${NOISE}\n` + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr, kind));
 }
