@@ -87,7 +87,7 @@ export function moodState(date) {
   const haze = 1 + 0.4 * dayK;
   // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
   const nightK = 1 - smooth(-14, -4, e);
-  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.07 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.025 * dayK, sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.24 * dayK, /* daylight: deeper darks and a little more punch; dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated
@@ -147,7 +147,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
   const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
-    mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1;
+    mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1; GRADE.toe.value = 0;
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); if(Array.isArray(ref.sunColor))sun.color.fromArray(ref.sunColor);else sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
@@ -156,7 +156,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
-  GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast;
+  GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe;
   { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; } } // ?grade=contrast,saturation (look-dev experiment)
   rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
