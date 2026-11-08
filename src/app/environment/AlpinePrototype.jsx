@@ -144,7 +144,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
     if (water) { const p = water.geometry.attributes.position; water.updateWorldMatrix(true, false); const world = new Float32Array(p.count * 3); const v = new THREE.Vector3(); for (let i = 0; i < p.count; i += 1) { v.fromBufferAttribute(p, i).applyMatrix4(water.matrixWorld); world[i * 3] = v.x; world[i * 3 + 1] = v.y; world[i * 3 + 2] = v.z; } bank = createBankLowering(world); waterWorld = world; }
   }
   if (bank && waterWorld) { // valley relief (valleyRelief.js): gentle landforms in the middle ground; ?relief=0 compares with the flat valley, ?relief=1.5 exaggerates
-    const asked = new URLSearchParams(window.location.search).get('relief'); const amount = asked === null ? 0 : Number(asked); // off by default: the valley keeps its authored terrain unless ?relief=1 (or more) asks for the experiment
+    const asked = new URLSearchParams(window.location.search).get('relief'); const amount = asked === null ? 1.4 : Number(asked); // 1.4 by default; ?relief=0 restores the authored flat valley, ?relief=1.8 exaggerates
     if (amount > 0) bank = withValleyRelief(bank, createValleyRelief({ water: waterWorld, hamletBounds: createHamletClearing().bounds, amount }));
   }
   bankLowering.current = bank;
