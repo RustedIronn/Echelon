@@ -554,6 +554,16 @@ test('hamlet ground treatment joins continuously and keeps geography protection 
   }
 });
 
+test('settlement grass regrows continuously instead of forming stepped clearance rings',()=>{
+  const clearing=createHamletClearing();let min=1,max=0,previous=null;
+  for(let x=-3;x<14;x+=.1){
+    const value=clearing.softness(x,-150);assert.ok(Number.isFinite(value)&&value>=0&&value<=1);
+    if(previous!==null)assert.ok(Math.abs(value-previous)<.12,'no abrupt cut-height bands at the lane edge');
+    min=Math.min(min,value);max=Math.max(max,value);previous=value;
+  }
+  assert.ok(min<.1&&max>.99,'transect crosses the lane and its returning meadow');
+});
+
 test('hamlet is a gated flag: preview default is procedural and pass=previous restores the authored mesh', () => {
   const preview = readFileSync(new URL('src/app/environment/landscapePreview.jsx', root), 'utf8'); const scene = readFileSync(new URL('src/app/environment/AlpinePrototype.jsx', root), 'utf8');
   assert.ok(preview.includes("params.get('hamlet') || (previousPass ? 'previous' : 'procedural')"));

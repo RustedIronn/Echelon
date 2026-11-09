@@ -160,6 +160,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
     mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1; GRADE.toe.value = 0; FLOW.rate.value = 1;
+    LEAF_LIGHT.backlight.value = 1; FLOWER_LIGHT.close.value = 0; FLOWER_LIGHT.lean.value = 0; // restore the original daylight foliage and neutral flower pose
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); if(Array.isArray(ref.sunColor))sun.color.fromArray(ref.sunColor);else sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;

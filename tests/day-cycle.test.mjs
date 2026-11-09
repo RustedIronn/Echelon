@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {readFileSync} from 'node:fs';
 import {moodState,createLiveMoodSampler,applyTimeOfDay} from '../src/app/environment/timeOfDay.js';
 import {GRADE} from '../src/app/environment/linearResolve.js';
+import {LEAF_LIGHT,FLOWER_LIGHT} from '../src/app/environment/leafLight.js';
 import {HAMLET_BUILDINGS} from '../src/app/environment/hamletLayout.js';
 import {windowWarmth} from '../src/app/environment/hamletWindowLighting.js';
 import {HeightField,buildHamlet} from '../src/app/environment/hamletGeometry.js';
@@ -46,7 +47,10 @@ test('the approved look restores lighting, grade, mist and window emission after
  const date=new Date(2026,5,21,21,30);const applied=applyTimeOfDay(scene,ref,date,base,{state:createLiveMoodSampler()(date),refreshEnvironment:false});
  assert.ok(Number.isFinite(applied.fogDensity));assert.ok(Number.isFinite(GRADE.toe.value));
  assert.ok(active);assert.equal(refresh,false);assert.ok(material.emissiveIntensity>0);
+ assert.ok(LEAF_LIGHT.backlight.value<1,'night suppresses daytime leaf glow');
+ assert.ok(FLOWER_LIGHT.close.value>0,'flowers close at dusk');
  const restored=applyTimeOfDay(scene,ref,null,base);
+ assert.equal(LEAF_LIGHT.backlight.value,1);assert.equal(FLOWER_LIGHT.close.value,0);assert.equal(FLOWER_LIGHT.lean.value,0);
  assert.equal(restored,base);assert.equal(active,false);assert.equal(mist,null);assert.equal(material.emissiveIntensity,0);assert.equal(moon.intensity,0);assert.equal(hemi.intensity,0);assert.equal(GRADE.sat.value,1);assert.equal(GRADE.contrast.value,1);assert.equal(scene.fog.color.getHexString(),'bacad8');assert.deepEqual(sun.color.toArray(),ref.sunColor);
  mesh.geometry.dispose();material.dispose();
 });
