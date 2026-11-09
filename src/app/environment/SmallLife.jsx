@@ -57,6 +57,62 @@ function makeBirds(count) {
   return mesh;
 }
 
+// ---- birds in the round: a body, a tail and two wings, flying along their heading and banking into turns, lit by the scene. Local frame: +x the
+// head, y up, z across the span. Rooks are glossy black and narrow-winged; the buzzard has broad fingered wings, a fanned tail and the pale underwing
+// with dark wrist patches and dark tips you see from below. Sunlight glows through the thin wing edges when the bird is against the sun.
+// ?birds=flat restores the earlier flat silhouettes.
+export const ROUND_BIRDS = typeof window === 'undefined' || new URLSearchParams(window.location.search).get('birds') !== 'flat';
+const BIRD_KINDS = {
+  rook: { span: 0.55, chord: 0.2, fingers: 4, tail: 0.08, body: '#1b1c21', wing: '#1d1e24', tip: '#111216', edge: '#2a2c33', patch: '#1d1e24' },
+  buzzard: { span: 0.7, chord: 0.28, fingers: 5, tail: 0.14, body: '#7d6a52', wing: '#8a7559', tip: '#1c1610', edge: '#3f3224', patch: '#241a12' }, // a buzzard from below against a bright sky: mid brown, darker tips and trailing edge
+};
+function makeRoundBirds(count, kind) {
+  const k = BIRD_KINDS[kind]; const P = [], C = [], S = [], E = [], I = [];
+  const col = (hex) => new THREE.Color(hex);
+  const v = (x, y, z, color, side = 0, edge = 0) => { P.push(x, y, z); C.push(color.r, color.g, color.b); S.push(side); E.push(edge); return P.length / 3 - 1; };
+  // body: a slim double cone from beak to tail root, dark on top, the species colour beneath
+  const back = col(kind === 'rook' ? '#15161a' : '#3e2f22'), belly = col(k.body);
+  const head = v(0.3, 0, 0, back), tailRoot = v(-0.24, 0, 0, belly), top = v(0.02, 0.045, 0, back), under = v(0.02, -0.04, 0, belly), l = v(0.02, 0, -0.05, belly), r = v(0.02, 0, 0.05, belly);
+  for (const [a, b] of [[top, l], [l, under], [under, r], [r, top]]) { I.push(head, a, b); I.push(tailRoot, b, a); }
+  // tail: a fan behind the body
+  const tailCol = col(kind === 'rook' ? '#17181c' : '#6f5c45'); const t0 = v(-0.22, 0, 0, tailCol);
+  const tailPts = [-1, -0.5, 0, 0.5, 1].map((u) => v(-0.42 - (1 - Math.abs(u)) * 0.03, 0, u * k.tail, tailCol, 0, 0.6));
+  for (let i = 0; i < tailPts.length - 1; i += 1) I.push(t0, tailPts[i], tailPts[i + 1]);
+  // wings: an arm from the body to the wrist, then the hand ending in separated fingers; drawn as a fan from a point inside the wing
+  for (const s of [-1, 1]) {
+    const wingCol = col(k.wing), tip = col(k.tip), edge = col(k.edge), patch = col(k.patch);
+    const centre = v(-0.02, 0, s * k.span * 0.32, wingCol, s);
+    const ring = [];
+    ring.push(v(0.09, 0, s * 0.04, wingCol, s)); // root, leading edge
+    ring.push(v(0.08, 0, s * k.span * 0.55, patch, s)); // the wrist (a dark patch on a buzzard)
+    for (let f = 0; f < k.fingers; f += 1) { // the fingers: alternating tips and notches
+      const u = f / (k.fingers - 1); const x = 0.03 - u * k.chord * 0.85, z = s * k.span * (0.93 + 0.07 * Math.sin(Math.PI * u));
+      ring.push(v(x, 0, z, tip, s, 1)); if (f < k.fingers - 1) ring.push(v(x - k.chord * 0.1, 0, s * k.span * 0.86, tip, s, 1));
+    }
+    ring.push(v(-k.chord * 0.85, 0, s * k.span * 0.7, edge, s, 0.8)); // trailing edge, darker
+    ring.push(v(-k.chord * 0.7, 0, s * k.span * 0.3, edge, s, 0.6));
+    ring.push(v(-0.12, 0, s * 0.04, wingCol, s));
+    for (let i = 0; i < ring.length; i += 1) I.push(centre, ring[i], ring[(i + 1) % ring.length]);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  g.setAttribute('aSide', new THREE.Float32BufferAttribute(S, 1)); g.setAttribute('aEdge', new THREE.Float32BufferAttribute(E, 1)); g.setIndex(I); g.computeVertexNormals();
+  const wing = new THREE.InstancedBufferAttribute(new Float32Array(count), 1); wing.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aWing', wing);
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: kind === 'rook' ? 0.55 : 0.85, metalness: 0 });
+  material.onBeforeCompile = (shader) => {
+    // the wings rise and fall about the body (aWing: lift per unit of span); the thin edges let the light through when the bird is against the sun
+    shader.vertexShader = 'attribute float aSide; attribute float aWing; attribute float aEdge; varying float vEdge;\n' + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+vEdge = aEdge; if (aSide != 0.0) { float r = abs(transformed.z); transformed.y += r * aWing; transformed.x -= r * abs(aWing) * 0.15; }`);
+    shader.fragmentShader = 'varying float vEdge;\n' + shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment.replace(
+      'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
+      `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
+       reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 3.0) * (0.05 + 0.95 * vEdge) * (vec3(0.9, 0.75, 0.55) + material.diffuseContribution) * 0.35;`));
+    shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= 1.15; // the underside takes a little light from the sky and the meadow below');
+  };
+  material.customProgramCacheKey = () => `round-bird-${kind}`;
+  const mesh = new THREE.InstancedMesh(g, material, count); mesh.name = `Small life / birds (${kind})`; mesh.frustumCulled = false; mesh.renderOrder = 3; mesh.castShadow = false;
+  return mesh;
+}
+
 // ---- chimney smoke: soft camera-facing puffs rising, growing and bending downwind, fading as they go
 export function makeChimneySmoke(top, count = 22) {
   const g = new THREE.PlaneGeometry(1, 1); const seed = new Float32Array(count); for (let i = 0; i < count; i += 1) seed[i] = i / count; g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 1));
@@ -90,9 +146,13 @@ export default function SmallLife({ ground }) {
   const scene = useThree((s) => s.scene);
   const built = useMemo(() => {
     const group = new THREE.Group(); group.name = 'Small life';
-    const butterflies = makeButterflies(7), birds = makeBirds(8); butterflies.layers.enable(REACTIVE.layer); birds.layers.enable(REACTIVE.layer); group.add(butterflies, birds); return { group, butterflies, birds };
+    const butterflies = makeButterflies(7); butterflies.layers.enable(REACTIVE.layer); group.add(butterflies);
+    // birds: the flock (instances 0-6 of smallLifeMotion's output) and the buzzard (instance 7)
+    const flock = ROUND_BIRDS ? makeRoundBirds(7, 'rook') : makeBirds(8); const buzzard = ROUND_BIRDS ? makeRoundBirds(1, 'buzzard') : null;
+    for (const b of [flock, buzzard]) if (b) { b.layers.enable(REACTIVE.layer); group.add(b); }
+    return { group, butterflies, flock, buzzard, heading: new Float32Array(8), prev: new Float32Array(24).fill(NaN) };
   }, []);
-  useEffect(() => () => { REACTIVE.active = false; for (const o of [built.butterflies, built.birds]) { o.geometry.dispose(); o.material.dispose(); o.dispose(); } }, [built]);
+  useEffect(() => () => { REACTIVE.active = false; for (const o of [built.butterflies, built.flock, built.buzzard]) if (o) { o.geometry.dispose(); o.material.dispose(); o.dispose(); } }, [built]);
   // behaviour (smallLifeMotion.js): butterflies keep to the near meadow left of the pool and perch only on dry ground
   const life = useMemo(() => {
     const groundAt = (x, z) => (ground ? ground.at(x, z) : NaN);
@@ -108,13 +168,20 @@ export default function SmallLife({ ground }) {
       e.set(o.pitch, o.yaw, o.roll); q.setFromEuler(e); v.set(o.x, o.y, o.z); m.compose(v, q, sc.setScalar(o.scale)); built.butterflies.setMatrixAt(i, m); wingB.setX(i, o.wing); if (o.scale > 0.01) anyB = true;
     });
     built.butterflies.visible = anyB; built.butterflies.instanceMatrix.needsUpdate = true; wingB.needsUpdate = true;
-    // birds: wings stay in the view plane, so the roll is a tilt of the silhouette
-    life.birds.step(dt, t, sunY, WIND.strength?.value ?? 0.4); let anyBird = false; const wingD = built.birds.geometry.attributes.aWing;
+    life.birds.step(dt, t, sunY, WIND.strength?.value ?? 0.4); let anyFlock = false, anyBuzzard = false;
     life.birds.out.forEach((o, i) => {
-      e.set(0, 0, o.roll); q.setFromEuler(e); v.set(o.x, o.y, o.z); m.compose(v, q, sc.setScalar(o.scale)); built.birds.setMatrixAt(i, m); wingD.setX(i, o.wing); if (o.scale > 0) anyBird = true;
+      const mesh = built.buzzard && i === 7 ? built.buzzard : built.flock; const slot = built.buzzard && i === 7 ? 0 : i; const wing = mesh.geometry.attributes.aWing;
+      if (ROUND_BIRDS) { // face along the flight: the heading from the last step (kept while the bird hovers), banked into the turn, a touch nose-down in a glide
+        const p = built.prev, dx = o.x - p[i * 3], dz = o.z - p[i * 3 + 2], dy = o.y - p[i * 3 + 1];
+        if (dx * dx + dz * dz > 1e-6) built.heading[i] = Math.atan2(-dz, dx);
+        const speed = Math.hypot(dx, dz) || 1; e.set(o.roll * 1.4, built.heading[i], Math.max(-0.3, Math.min(0.3, dy / speed)));
+        p[i * 3] = o.x; p[i * 3 + 1] = o.y; p[i * 3 + 2] = o.z;
+      } else e.set(0, 0, o.roll); // flat silhouettes: wings in the view plane, the roll a tilt
+      q.setFromEuler(e); v.set(o.x, o.y, o.z); m.compose(v, q, sc.setScalar(o.scale * (ROUND_BIRDS ? 1.25 : 1))); /* seen side-on the round birds lose span to foreshortening */ mesh.setMatrixAt(slot, m); wing.setX(slot, o.wing);
+      if (o.scale > 0) { if (mesh === built.buzzard) anyBuzzard = true; else anyFlock = true; }
     });
-    built.birds.visible = anyBird; built.birds.instanceMatrix.needsUpdate = true; wingD.needsUpdate = true;
-    REACTIVE.active = built.butterflies.visible || built.birds.visible; // keeps TAA from blending them away (taaReactive.js)
+    for (const [mesh, any] of [[built.flock, anyFlock || (!built.buzzard && anyBuzzard)], [built.buzzard, anyBuzzard]]) if (mesh) { mesh.visible = any; mesh.instanceMatrix.needsUpdate = true; mesh.geometry.attributes.aWing.needsUpdate = true; }
+    REACTIVE.active = built.butterflies.visible || built.flock.visible || Boolean(built.buzzard?.visible); // keeps TAA from blending them away (taaReactive.js)
     // smoke: denser in the morning, evening and night (fires lit), a thin thread at midday; coloured by the horizon light
     if (!smokeRef.current) scene.traverse((o) => { if (o.name === 'Small life / chimney smoke') smokeRef.current = o; });
     const smoke = smokeRef.current; if (smoke) {
