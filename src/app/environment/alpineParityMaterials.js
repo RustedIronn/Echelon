@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { addWind, addWindSheen, WIND_KINDS, WIND } from './wind.js';
+import { FLOW } from './waterFlow.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -344,7 +345,7 @@ function makeDepthResolvedWater(resources, normalTexture, refine = false, real =
       bedColor: { value: resources.sky }, bedDepth: { value: resources.sky }, bedReady: { value: 0 },
       viewportSize: { value: new THREE.Vector2(2560, 1440) }, cameraRange: { value: new THREE.Vector2(.1, 1500) },
       // Look-dev hooks (neutral by default): reflection weight, reflection mip offset and ripple strength of the refined water.
-      uReflectK: { value: 1 }, uLodBias: { value: 0 }, uRippleK: { value: 1 }, uWaterTime: WIND.time, // flowing water shares the world clock (paused with the wind)
+      uReflectK: { value: 1 }, uLodBias: { value: 0 }, uRippleK: { value: 1 }, uWaterTime: WIND.time, uFlowRate: FLOW.rate, // flowing water shares the world clock (paused with the wind)
       // Native water: absorption density .16, blue-green volume and lightly tinted transmission.
       extinction: { value: new THREE.Vector3(.240, .073, .113).multiplyScalar(refine ? WATER_REFINEMENT.extinctionScale : 1) },
     },
@@ -363,12 +364,12 @@ uniform float uTodSky;
 uniform sampler2D panorama; uniform sampler2D ripple; uniform sampler2D reflectionMap; uniform mat4 reflectionMatrix;
 uniform float reflectionReady; uniform float reflectionHeight; uniform sampler2D reflectionMap2; uniform mat4 reflectionMatrix2; uniform float reflectionReady2; uniform float reflectionHeight2; uniform sampler2D bedColor; uniform sampler2D bedDepth; uniform float bedReady;
 uniform vec2 viewportSize; uniform vec2 cameraRange; uniform vec3 extinction; uniform float uReflectK; uniform float uLodBias; uniform float uRippleK;
-varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ; varying vec2 vFlow; uniform float uWaterTime;
+varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ; varying vec2 vFlow; uniform float uWaterTime; uniform float uFlowRate;
 // Flowing water: the ripple pattern is carried downstream at the local flow speed. Two copies, half a cycle apart, are cross-faded so the pattern
 // never stretches; a slow third layer drifts across the wind so even the level pool is never still.
 vec2 flowWave(vec2 p, vec2 scale, vec2 offset) {
   float t = uWaterTime * 0.22; float a = fract(t), b = fract(t + 0.5); float wa = 1.0 - abs(2.0 * a - 1.0);
-  vec2 sa = texture2D(ripple, (p - vFlow * a * 4.5) * scale + offset).xy, sb = texture2D(ripple, (p - vFlow * b * 4.5) * scale + offset + 0.37).xy;
+  vec2 sa = texture2D(ripple, (p - vFlow * uFlowRate * a * 4.5) * scale + offset).xy, sb = texture2D(ripple, (p - vFlow * uFlowRate * b * 4.5) * scale + offset + 0.37).xy;
   return mix(sb, sa, wa) * 2.0 - 1.0;
 }
 float viewDepth(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(bedDepth, uv).r, cameraRange.x, cameraRange.y); }

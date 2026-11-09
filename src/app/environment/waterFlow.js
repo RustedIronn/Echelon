@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+// The visible drift runs from the camera side away up the valley (the user's art direction, 2026-11-09), so the field is reversed.
+const FLOW_SIGN = -1;
+
+// The stream's daily rhythm, like a snowmelt-fed alpine stream: lowest before dawn, rising through the day as the snow melts, fullest in the late
+// afternoon, easing off through the night. Multiplies every flow speed; driven by the time of day (timeOfDay.js).
+export const FLOW = { rate: { value: 1 } };
+export const flowRateAt = (hour) => 0.95 + 0.3 * Math.cos(((hour - 16.5) / 24) * 2 * Math.PI);
+
 // Which way and how fast the stream flows at every water vertex, from the water mesh itself. The stream falls from about 9.6 m in the far valley to
 // 1.7 m in the foreground pool. Direction: the water is rasterised (1 m cells) and a distance-along-the-channel is spread from its highest reach; the
 // flow follows that distance downstream, so it bends with the channel (and drifts slowly through the flat pool). Speed: from the local fall of the
@@ -42,7 +50,7 @@ export function computeWaterFlow(geometry, matrixWorld, { cell = 1 } = {}) {
     }
     const len = Math.hypot(gx, gz); if (len < 1e-6) continue; const slope = ln ? ls / ln : 0;
     const speed = Math.min(1.6, 0.18 + 14 * slope); // m/s: a slow drift on the level pool, quicker where the stream falls
-    flow[k * 2] = gx / len * speed; flow[k * 2 + 1] = gz / len * speed;
+    flow[k * 2] = FLOW_SIGN * gx / len * speed; flow[k * 2 + 1] = FLOW_SIGN * gz / len * speed;
   }
   return flow;
 }

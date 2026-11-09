@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { GRADE } from './linearResolve.js';
+import { FLOW, flowRateAt } from './waterFlow.js';
 // Time of day for the living world: an artistically controlled solar cycle driven by the device clock, date and timezone (no location needed).
 // The four moods (morning, afternoon, evening, night) are colour anchors blended continuously by solar elevation along a rising (morning) and a
 // setting (evening) timeline, so there are no presets and no fixed-hour palette swaps. "Approved" keeps the earlier renderer for comparison.
 const DEG = Math.PI / 180;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+// A little more colour everywhere (the user's call, 2026-11-09): every mood's saturation is raised by this factor. ?sat=1 restores the earlier level.
+const SAT_BASE = (() => { const v = typeof window === 'undefined' ? NaN : Number(new URLSearchParams(window.location.search).get('sat')); return v > 0 && v < 2 ? v : 1.15; })();
 export const wrapHour = (hour) => ((Number(hour) % 24) + 24) % 24;
 export const hourOf = (date) => date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600 + date.getMilliseconds() / 3600000;
 export const dayOfYear = (date) => Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
@@ -60,9 +63,9 @@ const EVENING = [
 const MORNING = [
   stop(-18, NIGHT),
   stop(-8, { zen: '#3d4f88', hor: '#9ca2c2', belt: '#c6a9bb', sunC: '#c9a0b0', hemiSky: '#7f8cb6', ground: '#68826a', fog: '#7c86ac', cloud: '#8b93bb', sunK: 0, glowK: 0.1, beltK: 0.4, hemiK: 0.42, env: 0.3, exp: 1.3, fogK: 1.4, cover: 0.35, stars: 0.5, glow: 0.9, moon: 0.5 }),
-  stop(1, { zen: '#5f9fe6', hor: '#d6e3f0', belt: '#f2c4b4', sunC: '#ffdcb4', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dde4ec', cloud: '#fbe4d8', sunK: 0.4, glowK: 0.6, beltK: 0.55, hemiK: 0.3, env: 0.3, exp: 1.16, fogK: 1.3, cover: 0.5, stars: 0.08, glow: 0.6, moon: 0.15 }),
-  stop(7, { zen: '#5a9be8', hor: '#cfe2f2', belt: '#f0d2c4', sunC: '#ffe6c2', hemiSky: '#cfe0f0', ground: '#86a572', fog: '#d9e6f0', cloud: '#ffffff', sunK: 0.82, glowK: 0.6, beltK: 0.3, hemiK: 0.3, env: 0.52, exp: 1.05, fogK: 1.15, cover: 0.5, stars: 0, glow: 0.3, moon: 0 }),
-  stop(14, { zen: '#4a92e6', hor: '#bcd9f2', belt: '#c8def0', sunC: '#ffeacd', hemiSky: '#cbdcec', ground: '#8ea36f', fog: '#d6e5ee', cloud: '#ffffff', sunK: 0.96, glowK: 0.45, beltK: 0.1, hemiK: 0.27, env: 0.7, exp: 1.02, fogK: 1.05, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
+  stop(1, { zen: '#5f9fe6', hor: '#d6e3f0', belt: '#f2c4b4', sunC: '#ffdcb4', hemiSky: '#c4cfe6', ground: '#7f9a74', fog: '#dde4ec', cloud: '#fbe4d8', sunK: 0.4, glowK: 0.6, beltK: 0.55, hemiK: 0.3, env: 0.3, exp: 1.04, fogK: 1.1, cover: 0.5, stars: 0.08, glow: 0.6, moon: 0.15 }),
+  stop(7, { zen: '#5a9be8', hor: '#cfe2f2', belt: '#f0d2c4', sunC: '#ffe6c2', hemiSky: '#cfe0f0', ground: '#86a572', fog: '#d9e6f0', cloud: '#ffffff', sunK: 0.82, glowK: 0.6, beltK: 0.3, hemiK: 0.3, env: 0.52, exp: 0.96, fogK: 1.04, cover: 0.5, stars: 0, glow: 0.3, moon: 0 }),
+  stop(14, { zen: '#4a92e6', hor: '#bcd9f2', belt: '#c8def0', sunC: '#ffeacd', hemiSky: '#cbdcec', ground: '#8ea36f', fog: '#d6e5ee', cloud: '#ffffff', sunK: 0.96, glowK: 0.45, beltK: 0.1, hemiK: 0.27, env: 0.7, exp: 0.97, fogK: 1.0, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
   stop(26, { zen: '#3585e0', hor: '#a8cdee', belt: '#a8cdee', sunC: '#fff0d6', hemiSky: '#cddbe8', ground: '#8d9d68', fog: '#d6e0e6', cloud: '#fff6ec', sunK: 1.06, glowK: 0.5, beltK: 0, hemiK: 0.26, env: 0.78, exp: 1, fogK: 1, cover: 0.52, stars: 0, glow: 0, moon: 0 }),
   stop(40, DAY),
 ];
@@ -87,7 +90,7 @@ export function moodState(date) {
   const haze = 1 + 0.4 * dayK;
   // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
   const nightK = 1 - smooth(-14, -4, e);
-  return { ...m, gain, mist, mistColor, haze, sat: (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  return { ...m, gain, mist, mistColor, haze, sat: SAT_BASE * (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated
@@ -147,7 +150,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   const setGlow = (value) => scene.traverse((o) => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.userData?.windowGlow) m.emissiveIntensity = value; });
   const mistLayer = scene.getObjectByName('valley-mist');
   if (date == null) {
-    mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1; GRADE.toe.value = 0;
+    mistLayer?.userData.update?.(null); GRADE.sat.value = 1; GRADE.contrast.value = 1; GRADE.toe.value = 0; FLOW.rate.value = 1;
     if (sun) { sun.position.set(ref.sunDir[0] * 180, ref.sunDir[1] * 180, ref.sunDir[2] * 180 - 70); if(Array.isArray(ref.sunColor))sun.color.fromArray(ref.sunColor);else sun.color.set(ref.sunColor); sun.userData.baseIntensity = ref.sunEnergy; }
     if (moon) moon.intensity = 0; if (hemi) hemi.intensity = 0; rig?.setActive(false);
     if (scene.fog) scene.fog.color.set(ref.fogColor); setGlow(0); return base;
@@ -156,7 +159,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 1.1; }
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
-  GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe;
+  GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe; FLOW.rate.value = flowRateAt(s.sun.hour); // the stream runs fuller in the afternoon (snowmelt)
   { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat, toe] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; if (toe === toe && toe !== undefined) GRADE.toe.value = toe; } } // ?grade=contrast,saturation (look-dev experiment)
   rig?.setActive(true); rig?.update(s, refreshEnvironment); mistLayer?.userData.update?.(s);
   if (scene.fog) scene.fog.color.copy(s.fog); setGlow(s.glow * 1.6);
