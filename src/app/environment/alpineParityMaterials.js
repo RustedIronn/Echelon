@@ -284,6 +284,10 @@ export function applyBankWetness(material, wetness) {
 // albedo, a cone-like blended normal removes the cardboard faceting, back-lighting lets the sun glow through the needles, and the
 // ambient wrap fills the shade. Values were chosen by eye against the live scene; the Spruce brightness slider scales the whole material.
 export const FOLIAGE_STYLE = { sphericalBlend: 0.5, translucency: 0.35, ambientWrap: 0.35, brightness: 1.1, saturation: 1.45 };
+// Conifers in the middle distance, seen against the light (the sun is in front all day): much less glow through the needles than the near
+// spruce, a little less lift and saturation, and the needle colour darkened (CONIFER_DARKEN), so they read dark as real spruce does, not pale.
+export const BACKLIT_CONIFER_STYLE = { sphericalBlend: 0.5, translucency: 0.12, ambientWrap: 0.25, brightness: 0.9, saturation: 1.15, backlight: 0.12 };
+export const CONIFER_DARKEN = 0.62;
 
 export function applyFoliageStyle(material, center, style = FOLIAGE_STYLE) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;

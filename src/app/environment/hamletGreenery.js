@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { applyBlenderDisplay, applyFoliageStyle } from './alpineParityMaterials.js';
+import { applyBlenderDisplay, applyFoliageStyle, BACKLIT_CONIFER_STYLE, CONIFER_DARKEN } from './alpineParityMaterials.js';
 import { HAMLET_SHELTER } from './hamletLayout.js';
 
 // One shelter tree belongs to the settlement. Reuse the delivered Norway spruce
@@ -23,7 +23,7 @@ export function buildHamletShelter(landscape, field, resources) {
       const material=original.clone();
       if(original.userData.baseColor)material.color.copy(original.userData.baseColor);
       material.transparent=false;material.alphaTest=.3;material.alphaToCoverage=true;material.side=THREE.DoubleSide;
-      material.roughness=.95;applyBlenderDisplay(material,resources);applyFoliageStyle(material,center);
+      material.roughness=.95;applyBlenderDisplay(material,resources);applyFoliageStyle(material,center,BACKLIT_CONIFER_STYLE);if(material.map)material.color.multiplyScalar(CONIFER_DARKEN); /* dark against the light, like the copses: the near-spruce style read pale here */
       material.userData.lookRole='trees';material.userData.baseColor=material.color.clone();materials.set(original,material);return material;
     };
     object.material=Array.isArray(object.material)?object.material.map(copy):copy(object.material);

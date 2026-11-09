@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { applyBlenderDisplay, applyFoliageStyle } from './alpineParityMaterials.js';
+import { applyBlenderDisplay, applyFoliageStyle, BACKLIT_CONIFER_STYLE as COPSE_STYLE, CONIFER_DARKEN } from './alpineParityMaterials.js';
 import { HAMLET_BUILDINGS } from './hamletLayout.js';
 
 // Trees where trees really stand in an upland valley (the delivered Norway spruce and the audition larch, both by Georgeous, CC BY 4.0 - see
@@ -8,7 +8,7 @@ import { HAMLET_BUILDINGS } from './hamletLayout.js';
 //  1. (off; ?copses=belt) a montane spruce belt at the foot of the mountains: a ragged lower edge where the mown ground ends, tongues up the hollows,
 //     pasture clearings cut into it. The mountains are built smaller than they read, and from the hero camera their foot hides behind the valley's
 //     own rise, so real trees there are either giant spikes or invisible: a forest on the mountains belongs in the mountain material instead;
-//  2. a lone pasture spruce or two standing in the meadow, broad and branched to the ground, as on the wooded pastures of the Jura: grazed and mown round,
+//  2. a small group or two of pasture spruce in the meadow, broad and branched to the ground, as on the wooded pastures of the Jura: grazed and mown round,
 //     left for the shade and shelter of the stock (the summer larch read pale and leafless here, so they are kept for the windbreak's edge);
 //  3. a shelter wood on the hamlet's windward (south-west) side, behind it from the camera, 26 m and more from the buildings and not ringing them.
 // Nothing stands in the sunrise over the low hills left of the mountains (azimuth 236-252).
@@ -17,8 +17,6 @@ const COPSES_QUERY = typeof window !== 'undefined' ? new URLSearchParams(window.
 export const COPSES_WANTED = COPSES_QUERY === 'on' || COPSES_QUERY === 'belt';
 const BELT_WANTED = COPSES_QUERY === 'belt';
 const CAMERA = [-3, 4.36, 10];
-// Conifers seen against the light: much less glow through the needles than the near spruce's style, a little less lift and saturation.
-const COPSE_STYLE = { sphericalBlend: 0.5, translucency: 0.12, ambientWrap: 0.25, brightness: 0.9, saturation: 1.15, backlight: 0.12 };
 const DEG = Math.PI / 180;
 const hash = (a, b, s) => { const v = Math.sin(a * 127.1 + b * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
 const smooth = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -82,13 +80,20 @@ export function planCopses({ ground, habitat, clearing = null }) {
       sites.push({ x, y, z, kind: hash(ja, jd, 7) < larch ? 'larch' : 'spruce', height, yaw: hash(ja, jd, 8) * Math.PI * 2, near: false });
     }
   }
-  // 2. lone pasture spruce in the meadow: on level ground, clear of the stream bank, far apart
+  // 2. pasture spruce in the meadow: on level ground, clear of the stream bank, groups far apart
   let meadow = 0;
   for (let i = 0; i < 800 && meadow < 2; i += 1) {
     const az = (246 + 44 * hash(i, 21, 3)) * DEG, d = 230 + 190 * hash(i, 22, 5); const x = CAMERA[0] + Math.cos(az) * d, z = CAMERA[2] + Math.sin(az) * d;
     const y = at(x, z); if (!Number.isFinite(y) || slopeAt(x, z) > 0.09) continue; const h = habitat.sample(x, z); if (h.waterDistance < 14) continue; if (clearing && clearing.softness(x, z) < 1) continue;
     if (!spaced(x, z, 70)) continue; const height = 15 + 6 * hash(i, 23, 7); if (!seen(x, y, z, height)) continue;
     sites.push({ x, y, z, kind: 'spruce', height, broad: 1.25, yaw: hash(i, 24, 9) * Math.PI * 2, near: true }); meadow += 1;
+    // pasture spruce stand in small family groups, not alone: the old tree with a few younger ones that seeded in its lee, close enough to share
+    // one shadow, uneven in height and spacing
+    for (let k = 0, placed = 0; k < 30 && placed < 3; k += 1) {
+      const a = hash(i, 40 + k, 3) * Math.PI * 2, r = 4.5 + 6 * hash(i, 50 + k, 5); const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r; const py = at(px, pz);
+      if (!Number.isFinite(py) || habitat.sample(px, pz).waterDistance < 10 || !spaced(px, pz, 4.5)) continue;
+      sites.push({ x: px, y: py, z: pz, kind: 'spruce', height: height * (0.55 + 0.35 * hash(i, 60 + k, 7)), broad: 1.2, yaw: hash(i, 70 + k, 9) * Math.PI * 2, near: true }); placed += 1;
+    }
   }
   // 3. the windbreak: two loose staggered rows across the south-west wind (south is azimuth 264 in this scene), 55-65 m out from the middle of the
   //    hamlet and at least 26 m from any building, mostly spruce (evergreen shelter in winter) with a larch or two
@@ -121,7 +126,7 @@ export function buildCopses(sites, sources, resources) {
       if (!o.isMesh) return;
       const local = normalise.clone().multiply(o.matrixWorld); const centreHere = centre.clone().applyMatrix4(local.clone().invert()); // the tree centre in this part's own space
       const style = (original) => { const m = original.clone(); if (original.userData.baseColor) m.color.copy(original.userData.baseColor);
-        m.transparent = false; m.alphaTest = 0.3; m.alphaToCoverage = true; m.side = THREE.DoubleSide; m.roughness = 0.95; applyBlenderDisplay(m, resources); applyFoliageStyle(m, centreHere, COPSE_STYLE); if (m.map) m.color.multiplyScalar(0.62); /* conifers read dark even far off */
+        m.transparent = false; m.alphaTest = 0.3; m.alphaToCoverage = true; m.side = THREE.DoubleSide; m.roughness = 0.95; applyBlenderDisplay(m, resources); applyFoliageStyle(m, centreHere, COPSE_STYLE); if (m.map) m.color.multiplyScalar(CONIFER_DARKEN); /* conifers read dark even far off */
         m.userData.lookRole = 'trees'; m.userData.baseColor = m.color.clone(); disposables.push(m); return m; };
       for (const near of [true, false]) {
         const these = mine.filter((s) => s.near === near); if (!these.length) continue;
