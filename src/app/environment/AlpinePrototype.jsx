@@ -32,7 +32,7 @@ import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
 import Airborne, { airborneWanted } from './Airborne.jsx';
-import { planCopses, buildCopses, COPSES_WANTED } from './treeCopses.js';
+import { planCopses, buildCopses, rasterTerrain, COPSES_WANTED } from './treeCopses.js';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
@@ -699,8 +699,12 @@ function Copses({ landscape, habitat, farMeta, farRaw, clearing, resources }) {
   const built = useMemo(() => {
     let spruce = null; landscape.traverse((o) => { if (!spruce && o.userData.echelonRole === 'tree') spruce = o; });
     const field = new HeightField(farMeta, new Float32Array(farRaw)); const bank = bankLowering.current;
-    const groundAt = (x, z) => { const y = field.at(x, z); return y + (bank ? bank.offsetAt(x, z, y) : 0); };
-    return buildCopses(planCopses({ habitat, groundAt, clearing }), { spruce, larch: larch.scene }, resources);
+    const terrain = []; landscape.traverse((o) => { if (o.isMesh && inheritedMetadata(o, 'echelonRole') === 'terrain') terrain.push(o); });
+    const far = rasterTerrain(terrain, { minX: -700, maxX: 700, minZ: -1020, maxZ: 20, cell: 4 }); // the foothills, beyond the baked far-heights raster
+    const inField = (x, z) => x > farMeta.minX + 2 && x < farMeta.minX + farMeta.width * farMeta.resolution - 2 && z > farMeta.minZ + 2 && z < farMeta.minZ + farMeta.height * farMeta.resolution - 2;
+    const at = (x, z) => { if (!inField(x, z)) return far.at(x, z); const y = field.at(x, z); return y + (bank ? bank.offsetAt(x, z, y) : 0); };
+    const t0 = performance.now(); const sites = planCopses({ ground: { at }, habitat, clearing }); const out = buildCopses(sites, { spruce, larch: larch.scene }, resources);
+    out.group.userData.copses = { count: sites.length, belt: sites.filter((s) => !s.near).length, ms: Math.round(performance.now() - t0) }; return out;
   }, [landscape, habitat, farMeta, farRaw, clearing, resources, larch]);
   useEffect(() => () => built.dispose(), [built]);
   return <primitive object={built.group} />;

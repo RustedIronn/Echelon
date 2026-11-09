@@ -291,7 +291,12 @@ export function applyFoliageStyle(material, center, style = FOLIAGE_STYLE) {
     previous?.call(material, shader, renderer);
     shader.uniforms.uTreeCenter = { value: center };
     shader.vertexShader = 'uniform vec3 uTreeCenter; varying vec3 vTreeNormal;\n' + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-vec3 treeDirection = (modelMatrix * vec4(transformed, 1.0)).xyz - uTreeCenter; treeDirection.y *= 0.35;
+#ifdef USE_INSTANCING
+vec3 treeDirection = (modelMatrix * instanceMatrix * vec4(transformed - uTreeCenter, 0.0)).xyz; /* instanced trees: the centre is in the part's own space */
+#else
+vec3 treeDirection = (modelMatrix * vec4(transformed, 1.0)).xyz - uTreeCenter;
+#endif
+treeDirection.y *= 0.35;
 vTreeNormal = normalize((viewMatrix * vec4(normalize(treeDirection), 0.0)).xyz);`);
     shader.fragmentShader = 'varying vec3 vTreeNormal;\n' + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
