@@ -125,7 +125,7 @@ function Daylight({ manifest, resources, baseline }) {
       shadow-mapSize={[2048, 2048]} shadow-camera-left={-60} shadow-camera-right={60}
       shadow-camera-top={60} shadow-camera-bottom={-60} shadow-camera-near={.5} shadow-camera-far={600}
       shadow-normalBias={.025} shadow-bias={-.00006} />
-    <directionalLight name="moon" position={[-sun[0], -sun[1], -sun[2]]} target={target} intensity={0} color="#9db4ff" />
+    <directionalLight name="moon" position={[-sun[0], -sun[1], -sun[2]]} target={target} intensity={0} color="#aebcdc" />
     <hemisphereLight name="tod-ambient" args={['#ffffff', '#ffffff', 0]} />
     <fogExp2 attach="fog" args={[baseline ? '#a7b8c3' : '#bacad8', .00042]} />
   </>;

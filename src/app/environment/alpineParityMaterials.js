@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { addWind, addWindSheen, WIND_KINDS, WIND } from './wind.js';
 import { FLOW } from './waterFlow.js';
+import { LEAF_LIGHT } from './leafLight.js';
 import { FOAM_GLSL, FOAM_WANTED, MAX_FOAM_STONES } from './streamFoam.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
@@ -49,7 +50,7 @@ export function applyGrassHabitat(material, refinement = true, corridor = false,
     previous.call(material, shader, renderer);
     shader.vertexShader = 'varying float vLeafHeight;\n' + shader.vertexShader; addWind(shader, 'position.y'); addWindSheen(shader);
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLeafHeight = clamp(position.y, 0.0, 1.0);');
-    shader.fragmentShader = 'varying float vLeafHeight;\n' + shader.fragmentShader;
+    shader.fragmentShader = 'varying float vLeafHeight; uniform float uLeafBacklight;\n' + shader.fragmentShader; shader.uniforms.uLeafBacklight = LEAF_LIGHT.backlight;
     // Canopy occlusion: inside a real meadow the light falls off steeply toward the ground between the blades, which is where a photograph's darks come from.
     // ?canopy=deep (experiment) deepens it; the default keeps the approved, lighter falloff.
     const deep = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep';
@@ -67,7 +68,7 @@ normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0))
         `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
          reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * 0.16 * smoothstep(0.05, 0.7, vLeafHeight);
          // backlight: looking toward the sun, thin blades glow with the light coming through them (a warm-green halo on the tips), shadowed like the rest
-         reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * vec3(1.05, 1.2, 0.55) * 0.55 * smoothstep(0.25, 0.95, vLeafHeight);`,
+         reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * vec3(1.05, 1.2, 0.55) * 0.55 * uLeafBacklight * smoothstep(0.25, 0.95, vLeafHeight);`,
       );
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', leafLighting);
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
