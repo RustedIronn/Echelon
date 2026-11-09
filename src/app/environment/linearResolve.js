@@ -1,5 +1,6 @@
 import { DEFAULT_MSAA } from './antialias.js';
 import * as THREE from 'three';
+import { REACTIVE } from './taaReactive.js';
 
 // Optional comparison path. The default framebuffer resolves MSAA after the Blender display transform has already been
 // applied per fragment, so sub-pixel highlights (petals, blade tips) are averaged in display space and lose energy.
@@ -36,7 +37,7 @@ void main() {
 // blade has moved the stale colour is rejected; the blend weight rises where the clamp had to work hard. The camera never moves, so no velocity
 // buffer is needed: everything that moves is wind, which the clamp handles at these sub-pixel to few-pixel distances.
 export const TAA_FRAGMENT = `
-uniform sampler2D current; uniform sampler2D history; uniform vec2 texel; uniform vec2 unjitter; uniform float historyValid; uniform float baseAlpha;
+uniform sampler2D current; uniform sampler2D history; uniform vec2 texel; uniform vec2 unjitter; uniform float historyValid; uniform float baseAlpha; uniform sampler2D reactive; uniform float reactiveOn;
 varying vec2 vUv;
 vec3 toY(vec3 c){ c = c / (1.0 + max(c.r, max(c.g, c.b))); return vec3(0.25*c.r + 0.5*c.g + 0.25*c.b, 0.5*c.r - 0.5*c.b, -0.25*c.r + 0.5*c.g - 0.25*c.b); }
 vec3 fromY(vec3 y){ vec3 c = vec3(y.x + y.y - y.z, y.x + y.z, y.x - y.y - y.z); return c / max(1.0 - max(c.r, max(c.g, c.b)), 1e-4); }
@@ -49,6 +50,7 @@ void main() {
   vec3 hy = toY(texture2D(history, vUv).rgb); vec3 clamped = clamp(hy, lo, hi);
   float moved = clamp(length(clamped - hy) * 6.0, 0.0, 1.0);
   float alpha = historyValid > 0.5 ? mix(baseAlpha, 0.5, moved) : 1.0;
+  if (reactiveOn > 0.5) { vec3 rm = texture2D(reactive, vUv).rgb; alpha = max(alpha, 0.85 * min(1.0, 2.0 * max(rm.r, max(rm.g, rm.b)))); } /* small moving life: trust the current frame (taaReactive.js) */
   gl_FragColor = vec4(fromY(mix(clamped, cy, alpha)), 1.0);
 }`;
 const UNJITTER_SIGN = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('unj') ? new URLSearchParams(window.location.search).get('unj').split(',').map(Number) : [-1, 1];
@@ -69,7 +71,8 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
   const size = new THREE.Vector2(); let target = null;
   // TAA state: two history buffers (ping-pong), a jitter sequence, and a count of frames since the history was valid
   const taaMaterial = taa ? new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, toneMapped: false, vertexShader: RESOLVE_VERTEX, fragmentShader: TAA_FRAGMENT,
-    uniforms: { current: { value: null }, history: { value: null }, texel: { value: new THREE.Vector2() }, unjitter: { value: new THREE.Vector2() }, historyValid: { value: 0 }, baseAlpha: { value: 0.1 } } }) : null;
+    uniforms: { current: { value: null }, history: { value: null }, texel: { value: new THREE.Vector2() }, unjitter: { value: new THREE.Vector2() }, historyValid: { value: 0 }, baseAlpha: { value: 0.1 }, reactive: { value: null }, reactiveOn: { value: 0 } } }) : null;
+  let reactiveTarget = null; const reactiveMaterial = taa ? new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, toneMapped: false }) : null; const clearColor = new THREE.Color();
   const taaQuad = taa ? new THREE.Mesh(new THREE.PlaneGeometry(2, 2), taaMaterial) : null; if (taaQuad) taaQuad.frustumCulled = false;
   const taaScene = taa ? new THREE.Scene() : null; if (taaQuad) taaScene.add(taaQuad);
   let histories = null, frame = 0, settled = 0, lastRender = 0;
@@ -106,6 +109,17 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
       if (jitter) sourceCamera.setViewOffset(size.x, size.y, jx, jy, size.x, size.y);
       renderer.setRenderTarget(target);
       try { renderer.render(sourceScene, sourceCamera); } finally { renderer.setRenderTarget(null); if (jitter) sourceCamera.clearViewOffset(); }
+      // reactive mask: objects on REACTIVE.layer drawn plain white at half resolution (the linear upsample dilates it a little)
+      taaMaterial.uniforms.reactiveOn.value = REACTIVE.active ? 1 : 0;
+      if (REACTIVE.active) {
+        const w = Math.max(1, size.x >> 1), h = Math.max(1, size.y >> 1);
+        if (!reactiveTarget || reactiveTarget.width !== w || reactiveTarget.height !== h) { reactiveTarget?.dispose(); reactiveTarget = new THREE.WebGLRenderTarget(w, h, { depthBuffer: true, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter }); }
+        const shadows = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false; const layers = sourceCamera.layers.mask, background = sourceScene.background, override = sourceScene.overrideMaterial, alpha = renderer.getClearAlpha(); renderer.getClearColor(clearColor);
+        sourceCamera.layers.set(REACTIVE.layer); sourceScene.background = null; sourceScene.overrideMaterial = reactiveMaterial; renderer.setClearColor(0x000000, 1);
+        try { renderer.setRenderTarget(reactiveTarget); renderer.clear(); renderer.render(sourceScene, sourceCamera); }
+        finally { renderer.setRenderTarget(null); renderer.shadowMap.autoUpdate = shadows; sourceCamera.layers.mask = layers; sourceScene.background = background; sourceScene.overrideMaterial = override; renderer.setClearColor(clearColor, alpha); }
+        taaMaterial.uniforms.reactive.value = reactiveTarget.texture;
+      }
       const read = histories[frame % 2], write = histories[(frame + 1) % 2];
       taaMaterial.uniforms.current.value = target.texture; taaMaterial.uniforms.history.value = read.texture;
       taaMaterial.uniforms.unjitter.value.set(jitter ? UNJITTER_SIGN[0] * jx / size.x : 0, jitter ? UNJITTER_SIGN[1] * jy / size.y : 0);
@@ -118,6 +132,6 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
       settled += 1; if (settled < SETTLE) invalidate?.();
     },
     noteChange() { settled = 0; }, // something changed; the next frames should accumulate again
-    dispose() { target?.dispose(); histories?.forEach((h) => h.dispose()); material.dispose(); quad.geometry.dispose(); taaMaterial?.dispose(); taaQuad?.geometry.dispose(); },
+    dispose() { target?.dispose(); histories?.forEach((h) => h.dispose()); material.dispose(); quad.geometry.dispose(); taaMaterial?.dispose(); taaQuad?.geometry.dispose(); reactiveTarget?.dispose(); reactiveMaterial?.dispose(); },
   };
 }

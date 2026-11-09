@@ -28,6 +28,7 @@ import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
+import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
@@ -596,6 +597,7 @@ function Measurements({ manifest, pipeline, onReady }) {
       })(),
       timerAvailable: Boolean(context.getExtension('EXT_disjoint_timer_query_webgl2')),
       camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov },
+      cameraObject: camera, // for diagnostics scripts that project world points to the screen
     };
     onReady();
     return () => { delete window.__echelonPrototype; };
@@ -731,6 +733,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     {!baseline && vegetation && <ValleyMist farMeta={farMeta} farRaw={farRaw} resources={resources} />}
     {!baseline && <CloudShadows />}
     {!baseline && <Wind />}
+    {!baseline && vegetation && lifeWanted() && <SmallLife ground={habitat?.nearGround} />}
     <LookDevBridge baseline={baseline} resources={resources} manifest={manifest} />
     <BankReflection geography={geometry} corridor={corridor} waterRefine={waterRefine} reflectionMode={reflectionMode} enabled={!baseline && refinement && waterMode === 'fresnel'} />
     <Measurements key={`${vegetation}-${waterMode}-${look}-${surfaceDetail}-${refinement}-${corridor}-${resolve}`} manifest={manifest} pipeline={pipeline} onReady={onReady} />
