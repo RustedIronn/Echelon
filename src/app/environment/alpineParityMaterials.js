@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addWind, addWindSheen, WIND_KINDS } from './wind.js';
+import { addWind, addWindSheen, WIND_KINDS, WIND } from './wind.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -344,14 +344,14 @@ function makeDepthResolvedWater(resources, normalTexture, refine = false, real =
       bedColor: { value: resources.sky }, bedDepth: { value: resources.sky }, bedReady: { value: 0 },
       viewportSize: { value: new THREE.Vector2(2560, 1440) }, cameraRange: { value: new THREE.Vector2(.1, 1500) },
       // Look-dev hooks (neutral by default): reflection weight, reflection mip offset and ripple strength of the refined water.
-      uReflectK: { value: 1 }, uLodBias: { value: 0 }, uRippleK: { value: 1 },
+      uReflectK: { value: 1 }, uLodBias: { value: 0 }, uRippleK: { value: 1 }, uWaterTime: WIND.time, // flowing water shares the world clock (paused with the wind)
       // Native water: absorption density .16, blue-green volume and lightly tinted transmission.
       extinction: { value: new THREE.Vector3(.240, .073, .113).multiplyScalar(refine ? WATER_REFINEMENT.extinctionScale : 1) },
     },
     vertexShader: `
-attribute float waterDepth; varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ;
+attribute float waterDepth; attribute vec2 aFlow; varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ; varying vec2 vFlow;
 void main() {
-  vec4 world = modelMatrix * vec4(position, 1.0); vWaterWorld = world.xyz;
+  vec4 world = modelMatrix * vec4(position, 1.0); vWaterWorld = world.xyz; vFlow = aFlow;
   vWaterNormal = normalize(mat3(modelMatrix) * normal); vDepth = waterDepth;
   vec4 view = viewMatrix * world; vSurfaceZ = -view.z; gl_Position = projectionMatrix * view;
 }`,
@@ -363,15 +363,23 @@ uniform float uTodSky;
 uniform sampler2D panorama; uniform sampler2D ripple; uniform sampler2D reflectionMap; uniform mat4 reflectionMatrix;
 uniform float reflectionReady; uniform float reflectionHeight; uniform sampler2D reflectionMap2; uniform mat4 reflectionMatrix2; uniform float reflectionReady2; uniform float reflectionHeight2; uniform sampler2D bedColor; uniform sampler2D bedDepth; uniform float bedReady;
 uniform vec2 viewportSize; uniform vec2 cameraRange; uniform vec3 extinction; uniform float uReflectK; uniform float uLodBias; uniform float uRippleK;
-varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ;
+varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ; varying vec2 vFlow; uniform float uWaterTime;
+// Flowing water: the ripple pattern is carried downstream at the local flow speed. Two copies, half a cycle apart, are cross-faded so the pattern
+// never stretches; a slow third layer drifts across the wind so even the level pool is never still.
+vec2 flowWave(vec2 p, vec2 scale, vec2 offset) {
+  float t = uWaterTime * 0.22; float a = fract(t), b = fract(t + 0.5); float wa = 1.0 - abs(2.0 * a - 1.0);
+  vec2 sa = texture2D(ripple, (p - vFlow * a * 4.5) * scale + offset).xy, sb = texture2D(ripple, (p - vFlow * b * 4.5) * scale + offset + 0.37).xy;
+  return mix(sb, sa, wa) * 2.0 - 1.0;
+}
 float viewDepth(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(bedDepth, uv).r, cameraRange.x, cameraRange.y); }
 vec2 skyUV(vec3 direction) { return vec2(atan(direction.z,direction.x)*RECIPROCAL_PI2+0.5,asin(clamp(direction.y,-1.0,1.0))*RECIPROCAL_PI+0.5); }
 void main() {
   vec3 V = normalize(cameraPosition-vWaterWorld); float distanceToCamera = length(cameraPosition-vWaterWorld);
   float distanceResponse = smoothstep(25.0, 130.0, distanceToCamera);
-  vec3 waveA = texture2D(ripple, vWaterWorld.xz * vec2(.58, .22)).xyz*2.0-1.0;
-  vec3 waveB = texture2D(ripple, vWaterWorld.xz * vec2(1.7, .83)+vec2(.31,.57)).xyz*2.0-1.0;
-  vec2 wave = waveA.xy*.72 + waveB.xy*.28;
+  vec2 waveA = flowWave(vWaterWorld.xz, vec2(.58, .22), vec2(0.0));
+  vec2 waveB = flowWave(vWaterWorld.xz, vec2(1.7, .83), vec2(.31, .57));
+  vec2 drift = texture2D(ripple, vWaterWorld.xz * vec2(.31, .27) + vec2(uWaterTime * .011, -uWaterTime * .007)).xy * 2.0 - 1.0;
+  vec2 wave = waveA*.66 + waveB*.26 + drift*.08;
   ${refine ? 'vec3 N = normalize(vWaterNormal + vec3(wave.x, 0.0, wave.y) * mix(.24, .13, distanceResponse) * uRippleK);' : 'vec3 N = normalize(vWaterNormal + vec3(wave.x, 0.0, wave.y) * mix(.24, .13, distanceResponse));'}
   float cosine = clamp(dot(N,V), .015, 1.0);
   float fresnel = .0204 + .9796*pow(1.0-cosine,5.0);
@@ -426,6 +434,7 @@ void main() {
   float glint = pow(max(dot(normalize(reflect(-V,N)), normalize(uSunDir)), 0.0), 90.0) * uGlowK * step(0.0, uSunDir.y) * uTodSky;
   radiance += uSunC * glint * (.5 + farWater);` : 'float shore = smoothstep(0.0,max(.012,fwidth(column)),column);'}
   gl_FragColor=vec4(radiance,bedReady>.5 ? ${refine ? 'mix(shore, 1.0, smoothstep(18.0, 55.0, distanceToCamera) * .92)' : 'shore'} : .8);
+  ${typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('flowdebug') ? 'gl_FragColor = vec4(0.5 + 0.5 * normalize(vFlow + 1e-5).x, 0.5 + 0.5 * normalize(vFlow + 1e-5).y, length(vFlow) / 1.6, 1.0);' : ''}
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,

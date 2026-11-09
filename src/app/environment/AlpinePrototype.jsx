@@ -28,6 +28,7 @@ import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
+import { computeWaterFlow } from './waterFlow.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
@@ -172,6 +173,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       if (!baseline && waterMode === 'fresnel') {
         if (resources.waterDepth.length !== position.count) throw new Error('Water depth attribute no longer matches delivery geometry');
         object.geometry.setAttribute('waterDepth', new THREE.BufferAttribute(resources.waterDepth, 1));
+        object.updateWorldMatrix(true, false); object.geometry.setAttribute('aFlow', new THREE.BufferAttribute(computeWaterFlow(object.geometry, object.matrixWorld), 2)); // flowing water (waterFlow.js)
         object.material = makeShallowWater(resources, normal, refinement, corridor, waterRefine, realReflection);
         object.material.userData.lookRole = 'water'; object.material.userData.baseExtinction = object.material.uniforms.extinction?.value.clone();
       } else {
