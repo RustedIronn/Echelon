@@ -9,4 +9,6 @@ const params = typeof window === 'undefined' ? new URLSearchParams('') : new URL
 const aa = (params.get('aa') || '').split(',');
 export const FOLIAGE_A2C = !aa.includes('noa2c');
 export const SUPERSAMPLE = (() => { const v = Number(params.get('ss')); return v >= 1 && v <= 2 ? v : 1.25; })();
-export const DEFAULT_MSAA = SUPERSAMPLE > 1 ? 4 : 8;
+// Temporal anti-aliasing (linearResolve.js): on by default; ?taa=0 turns it off for comparison.
+export const TAA = params.get('taa') !== '0';
+export const DEFAULT_MSAA =SUPERSAMPLE > 1 ? 4 : 8;

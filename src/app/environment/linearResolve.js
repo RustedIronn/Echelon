@@ -30,7 +30,31 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-export function createLinearResolve(renderer, displayLut, display) {
+// Temporal anti-aliasing, tuned for a fixed camera over swaying foliage. Each frame the projection is nudged by a sub-pixel amount (Halton 2,3), and the
+// new frame is blended into a running history, so thin blades and petals are resolved over many frames instead of crawling between pixels.
+// Ghosting guard: the history is clamped to the colour range of the current frame's 3x3 neighbourhood (in YCoCg, on tonemapped values), so where a
+// blade has moved the stale colour is rejected; the blend weight rises where the clamp had to work hard. The camera never moves, so no velocity
+// buffer is needed: everything that moves is wind, which the clamp handles at these sub-pixel to few-pixel distances.
+export const TAA_FRAGMENT = `
+uniform sampler2D current; uniform sampler2D history; uniform vec2 texel; uniform vec2 unjitter; uniform float historyValid; uniform float baseAlpha;
+varying vec2 vUv;
+vec3 toY(vec3 c){ c = c / (1.0 + max(c.r, max(c.g, c.b))); return vec3(0.25*c.r + 0.5*c.g + 0.25*c.b, 0.5*c.r - 0.5*c.b, -0.25*c.r + 0.5*c.g - 0.25*c.b); }
+vec3 fromY(vec3 y){ vec3 c = vec3(y.x + y.y - y.z, y.x + y.z, y.x - y.y - y.z); return c / max(1.0 - max(c.r, max(c.g, c.b)), 1e-4); }
+void main() {
+  vec3 cur = texture2D(current, vUv + unjitter).rgb; vec3 cy = toY(cur); // sample where this pixel would be without the jitter
+  vec3 lo = cy, hi = cy, m1 = vec3(0.0), m2 = vec3(0.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec3 s = toY(texture2D(current, vUv + vec2(float(i), float(j)) * texel).rgb); lo = min(lo, s); hi = max(hi, s); m1 += s; m2 += s * s; }
+  // variance box, a little tighter than min/max: rejects ghosts without letting single-pixel sparkles through
+  vec3 mean = m1 / 9.0; vec3 sd = sqrt(max(m2 / 9.0 - mean * mean, 0.0)); lo = max(lo, mean - 1.25 * sd); hi = min(hi, mean + 1.25 * sd);
+  vec3 hy = toY(texture2D(history, vUv).rgb); vec3 clamped = clamp(hy, lo, hi);
+  float moved = clamp(length(clamped - hy) * 6.0, 0.0, 1.0);
+  float alpha = historyValid > 0.5 ? mix(baseAlpha, 0.5, moved) : 1.0;
+  gl_FragColor = vec4(fromY(mix(clamped, cy, alpha)), 1.0);
+}`;
+const UNJITTER_SIGN = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('unj') ? new URLSearchParams(window.location.search).get('unj').split(',').map(Number) : [-1, 1];
+const HALTON =(i, b) => { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };
+
+export function createLinearResolve(renderer, displayLut, display, { taa = false, invalidate = null } = {}) {
   const material = new THREE.ShaderMaterial({
     depthTest: false, depthWrite: false, toneMapped: false,
     uniforms: {
@@ -43,9 +67,18 @@ export function createLinearResolve(renderer, displayLut, display) {
   const scene = new THREE.Scene(); scene.add(quad);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const size = new THREE.Vector2(); let target = null;
+  // TAA state: two history buffers (ping-pong), a jitter sequence, and a count of frames since the history was valid
+  const taaMaterial = taa ? new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, toneMapped: false, vertexShader: RESOLVE_VERTEX, fragmentShader: TAA_FRAGMENT,
+    uniforms: { current: { value: null }, history: { value: null }, texel: { value: new THREE.Vector2() }, unjitter: { value: new THREE.Vector2() }, historyValid: { value: 0 }, baseAlpha: { value: 0.1 } } }) : null;
+  const taaQuad = taa ? new THREE.Mesh(new THREE.PlaneGeometry(2, 2), taaMaterial) : null; if (taaQuad) taaQuad.frustumCulled = false;
+  const taaScene = taa ? new THREE.Scene() : null; if (taaQuad) taaScene.add(taaQuad);
+  let histories = null, frame = 0, settled = 0, lastRender = 0;
+  const SETTLE = 24; // frames to accumulate after a still scene changes
 
   return {
+    resetHistory() { settled = 0; frame = 0; if (taaMaterial) taaMaterial.uniforms.historyValid.value = 0; invalidate?.(); },
     render(sourceScene, sourceCamera) {
+      if (taa) return this.renderTaa(sourceScene, sourceCamera);
       renderer.getDrawingBufferSize(size);
       if (!target || target.width !== size.x || target.height !== size.y) {
         target?.dispose();
@@ -59,6 +92,32 @@ export function createLinearResolve(renderer, displayLut, display) {
       material.uniforms.radiance.value = target.texture; material.uniforms.exposure.value = renderer.toneMappingExposure;
       renderer.render(scene, camera);
     },
-    dispose() { target?.dispose(); material.dispose(); quad.geometry.dispose(); },
+    renderTaa(sourceScene, sourceCamera) {
+      renderer.getDrawingBufferSize(size);
+      if (!target || target.width !== size.x || target.height !== size.y) {
+        target?.dispose(); histories?.forEach((h) => h.dispose());
+        target = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: resolveSamples(renderer.capabilities.maxSamples), depthBuffer: true });
+        histories = [0, 1].map(() => new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter }));
+        taaMaterial.uniforms.texel.value.set(1 / size.x, 1 / size.y); taaMaterial.uniforms.historyValid.value = 0; settled = 0;
+      }
+      // sub-pixel jitter of the projection (a fixed camera, so the history needs no reprojection)
+      const k = (frame % 16) + 1; const jx = HALTON(k, 2) - 0.5, jy = HALTON(k, 3) - 0.5; frame += 1;
+      const jitter = Boolean(sourceCamera.isPerspectiveCamera);
+      if (jitter) sourceCamera.setViewOffset(size.x, size.y, jx, jy, size.x, size.y);
+      renderer.setRenderTarget(target);
+      try { renderer.render(sourceScene, sourceCamera); } finally { renderer.setRenderTarget(null); if (jitter) sourceCamera.clearViewOffset(); }
+      const read = histories[frame % 2], write = histories[(frame + 1) % 2];
+      taaMaterial.uniforms.current.value = target.texture; taaMaterial.uniforms.history.value = read.texture;
+      taaMaterial.uniforms.unjitter.value.set(jitter ? UNJITTER_SIGN[0] * jx / size.x : 0, jitter ? UNJITTER_SIGN[1] * jy / size.y : 0);
+      renderer.setRenderTarget(write); renderer.render(taaScene, camera); renderer.setRenderTarget(null);
+      taaMaterial.uniforms.historyValid.value = 1;
+      material.uniforms.radiance.value = write.texture; material.uniforms.exposure.value = renderer.toneMappingExposure;
+      renderer.render(scene, camera);
+      // a still scene renders only on change: keep accumulating for a moment so it converges
+      const now = performance.now(); if (now - lastRender > 120) settled = 0; lastRender = now; // a render after an idle spell is a new change
+      settled += 1; if (settled < SETTLE) invalidate?.();
+    },
+    noteChange() { settled = 0; }, // something changed; the next frames should accumulate again
+    dispose() { target?.dispose(); histories?.forEach((h) => h.dispose()); material.dispose(); quad.geometry.dispose(); taaMaterial?.dispose(); taaQuad?.geometry.dispose(); },
   };
 }

@@ -28,7 +28,7 @@ import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
-import { FOLIAGE_A2C } from './antialias.js';
+import { FOLIAGE_A2C, TAA } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
 import { createHamletClearing } from './hamletLayout.js';
@@ -712,8 +712,8 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     for(const [species,list] of Object.entries(all)){const kept=list.filter(m=>{p.set(m[12],m[13]+.2,m[14]).applyMatrix4(vp);return Math.abs(p.x)<1.06&&p.z<1;});if(kept.length)out[species]=kept;}
     return out;
   },[habitat,manifest,farMeta,farRaw,clearing,viewAspect]);
-  const gl = useThree((state) => state.gl);
-  const pipeline = useMemo(() => (resolve === 'linear' && !baseline ? createLinearResolve(gl, resources.displayLut, resources.metadata.display) : null), [gl, resolve, baseline, resources]);
+  const gl = useThree((state) => state.gl); const invalidate = useThree((state) => state.invalidate);
+  const pipeline = useMemo(() => (resolve === 'linear' && !baseline ? createLinearResolve(gl, resources.displayLut, resources.metadata.display, { taa: TAA, invalidate }) : null), [gl, resolve, baseline, resources, invalidate]);
   useEffect(() => () => pipeline?.dispose(), [pipeline]);
   return <>
     <Camera manifest={manifest} />
