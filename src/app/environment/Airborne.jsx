@@ -29,9 +29,9 @@ void main() {
     p.y += sin(uTime * (0.4 + aSeed.w * 0.5) + aSeed.x * 20.0) * 0.35 + sin(uTime * 1.3 + aSeed.y * 30.0) * 0.06;
     vec3 v = normalize(p - cameraPosition); float back = pow(max(dot(v, uSunDir), 0.0), 2.0); // looking toward the sun: lit from behind
     float low = 1.0 - smoothstep(0.2, 0.6, uSunDir.y);
-    float glow = (0.1 + 3.2 * back * (0.4 + 0.6 * low)) * sunUp;
+    float glow = 2.0 * pow(back, 3.0) * (0.4 + 0.6 * low) * sunUp; /* only where the sun is right behind them: otherwise unseen */
     col = (k < 0.5 ? mix(vec3(1.0), uSunC, 0.5) : vec3(1.0, 0.86, 0.5) * uSunC) * glow * (k < 0.5 ? 1.2 : 0.8);
-    size = k < 0.5 ? 0.02 : 0.008; alpha = 1.0;
+    size = k < 0.5 ? 0.012 : 0.006; alpha = 1.0;
   } else if (k < 2.5) { // dew: still, on the grass tips, sparkling back toward the sun behind the camera, only in the early morning
     vec3 v = normalize(p - cameraPosition); float retro = pow(max(dot(-v, uSunDir), 0.0), 2.0);
     float morning = (1.0 - smoothstep(-0.35, 0.1, uSunDir.x)) * smoothstep(-0.02, 0.06, uSunDir.y) * (1.0 - smoothstep(0.25, 0.45, uSunDir.y));
@@ -45,9 +45,9 @@ void main() {
     float dusk = smoothstep(-0.06, 0.02, uSunDir.y) * (1.0 - smoothstep(0.12, 0.28, uSunDir.y));
     col = uSunC * (0.15 + 2.2 * back) * dusk; size = 0.004; alpha = 1.0;
   }
-  vec4 mv = viewMatrix * vec4(p, 1.0); float px = size * uPx / max(-mv.z, 0.1) * 2.5; /* the sprite holds a soft glow 2.5x the mote itself */
+  vec4 mv = viewMatrix * vec4(p, 1.0); float px = size * uPx / max(-mv.z, 0.1) * 2.0; /* the sprite holds a soft glow 2x the mote itself */
   // never smaller than a pixel: shrink the light instead, so sub-pixel points fade rather than flicker
-  vColor = col * (k > 1.5 && k < 2.5 ? 1.0 : min(1.0, px * px / 6.25)) * uSkyGain; /* dew glints are specular points: bright even below a pixel */ vAlpha = alpha; gl_PointSize = clamp(px, k > 1.5 && k < 2.5 ? 2.5 : 1.0, 20.0); /* capped: a mote right at the lens must not flood the screen with overdraw */ /* a glint is a little star of light even when the drop is far smaller */
+  vColor = col * (k > 1.5 && k < 2.5 ? 1.0 : min(1.0, px * px / 4.0)) * uSkyGain; /* dew glints are specular points: bright even below a pixel */ vAlpha = alpha; gl_PointSize = clamp(px, k > 1.5 && k < 2.5 ? 2.5 : 1.0, 20.0); /* capped: a mote right at the lens must not flood the screen with overdraw */ /* a glint is a little star of light even when the drop is far smaller */
   gl_Position = projectionMatrix * mv; if (dot(col, col) < 1e-6) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }`;
 const FRAGMENT = `varying vec3 vColor; varying float vAlpha;
@@ -61,7 +61,7 @@ export default function Airborne({ ground }) {
     const P = [], K = [], S = [];
     const add = (x, y, z, k) => { P.push(x, y, z); K.push(k); S.push(rnd(), rnd(), rnd(), rnd()); };
     const inBox = () => [BOX.minX + rnd() * (BOX.maxX - BOX.minX), BOX.minZ + rnd() * (BOX.maxZ - BOX.minZ)];
-    for (let i = 0; i < 420; i += 1) { const [x, z] = inBox(); add(x, groundAt(x, z) + 0.6 + rnd() * 3.2, z, 0); } // seed fluff
+    for (let i = 0; i < 140; i += 1) { const [x, z] = inBox(); add(x, groundAt(x, z) + 0.5 + rnd() * 1.4, z, 0); } // seed fluff: a few, low over the grass (seen against the meadow, not dotted over the sky)
     for (let i = 0; i < 700; i += 1) { const [x, z] = inBox(); add(x, groundAt(x, z) + 0.3 + rnd() * 1.6, z, 1); } // pollen
     for (let i = 0; i < 1800; i += 1) { const x = -14 + rnd() * 20, z = -16 + rnd() * 22; const g = ground ? ground.at(x, z) : NaN; if (!Number.isFinite(g) || g < 1.88) continue; add(x, g + 0.25 + rnd() * 0.3, z, 2); } // dew, on dry meadow only
     for (const [cx, cy, cz] of SWARMS) for (let i = 0; i < 70; i += 1) add(cx + (rnd() - 0.5) * 0.6, cy + (rnd() - 0.5) * 0.5, cz + (rnd() - 0.5) * 0.6, 3); // midges
