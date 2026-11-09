@@ -1,6 +1,9 @@
 // Wind through the meadow: grass blades and flowers sway with slow travelling gusts and a quicker flutter, bending more toward their tips.
 // One shared time and strength (WIND); every grass and flower material reads them, so turning the wind on or off never recompiles anything.
 export const WIND = { time: { value: 0 }, strength: { value: 0 } };
+// Compare the prior distance response without changing density or the world clock.
+export const FIELD_WIND_ENABLED = typeof window === 'undefined' || new URLSearchParams(window.location.search).get('fieldwind') !== 'previous';
+export const FIELD_WIND = Object.freeze({ nearStart: 12, nearFull: 38, farStart: 240, farEnd: 360, grassLean: .34, flowerLean: .22, canopyTilt: .24 });
 
 // The user's reduced-motion preference turns vegetation movement off; ?wind=0 also turns it off (for comparisons).
 export const prefersReducedMotion = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
@@ -46,14 +49,29 @@ export const windVertex = (heightExpr, kind = WIND_KINDS.grass) => `
   float bendAmount = uWindK * fade * ${kind.amount.toFixed(3)} * windH * windH * windSize / stiff;
   vec2 offset = windDir * bendAmount * (0.04 + 0.15 * gust + 0.05 * gust * sway) + across * bendAmount * 0.03 * sway * (0.4 + gust);
   // Middle ground: no per-plant flutter there (sub-pixel blades fluttering only shimmer), but the gusts still visibly sweep across the meadow:
-  // whole patches lean together downwind (about a pixel, slowly), and bent grass turns its paler side up (the sheen of wind on a field).
+  // whole patches lean together downwind, with their lighting following the canopy tilt.
+  ${FIELD_WIND_ENABLED ? `
+  // Collective canopy movement survives the fine-blade flutter cutoff. These
+  // are the SAME advected gusts as the foreground, not a second scrolling mask.
+  // A narrow stiffness range keeps neighbours moving as a soft mass; flower
+  // stems stay heavier and retain their existing delayed response.
+  float fieldK = uWindK * smoothstep(${FIELD_WIND.nearStart.toFixed(1)}, ${FIELD_WIND.nearFull.toFixed(1)}, dist) * (1.0 - smoothstep(${FIELD_WIND.farStart.toFixed(1)}, ${FIELD_WIND.farEnd.toFixed(1)}, dist));
+  float fieldStiff = ${kind.stiffness.toFixed(3)} * mix(0.9, 1.1, seed);
+  float fieldBend = fieldK * ${(kind === WIND_KINDS.flower ? FIELD_WIND.flowerLean : FIELD_WIND.grassLean).toFixed(3)} * windH * windH * windSize * gust / fieldStiff;
+  offset += windDir * fieldBend;
+  // Tilt the low-detail canopy lighting with the actual collective lean.
+  // Without this, the strongly upward-smoothed distant normals hide the sway.
+  vWindCanopyBend = windDir * fieldK * ${FIELD_WIND.canopyTilt.toFixed(3)} * gust;
+  ` : `
   float midK = uWindK * smoothstep(10.0, 34.0, dist) * (1.0 - smoothstep(110.0, 180.0, dist));
   offset += windDir * midK * 0.075 * windH * windH * windSize * gust / stiff;
+  vWindCanopyBend = vec2(0.0);
+  `}
   vWindSheen = uWindK * smoothstep(0.45, 0.95, gust) * windH * (0.35 + 0.65 * smoothstep(8.0, 30.0, dist));
   windWorld.xz += offset; windWorld.y -= dot(offset, offset) / max(windSize, 0.05) * 0.5 * windH;
   vec4 mvPosition = viewMatrix * windWorld;
 #else
-  vWindSheen = 0.0;
+  vWindSheen = 0.0; vWindCanopyBend = vec2(0.0);
   vec4 mvPosition = vec4( transformed, 1.0 );
   #ifdef USE_BATCHING
     mvPosition = batchingMatrix * mvPosition;
@@ -67,10 +85,11 @@ float windValueNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); ret
 
 // Fragment side of the wind sheen, for grass: a bent blade shows its paler, sky-lit side.
 export function addWindSheen(shader) {
-  shader.fragmentShader = 'varying float vWindSheen;\n' + shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.16, 1.14, 1.02) + vec3(0.012, 0.016, 0.006), clamp(vWindSheen, 0.0, 1.0) * 0.75);');
+  shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(normal + mat3(viewMatrix) * vec3(-vWindCanopyBend.x, 0.0, -vWindCanopyBend.y));');
+  shader.fragmentShader = 'varying float vWindSheen; varying vec2 vWindCanopyBend;\n' + shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.16, 1.14, 1.02) + vec3(0.012, 0.016, 0.006), clamp(vWindSheen, 0.0, 1.0) * 0.75);');
 }
 
 export function addWind(shader, heightExpr, kind = WIND_KINDS.grass) {
   shader.uniforms.uWindTime = WIND.time; shader.uniforms.uWindK = WIND.strength;
-  shader.vertexShader = `uniform float uWindTime; uniform float uWindK; varying float vWindSheen;\n${NOISE}\n` + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr, kind));
+  shader.vertexShader = `uniform float uWindTime; uniform float uWindK; varying float vWindSheen; varying vec2 vWindCanopyBend;\n${NOISE}\n` + shader.vertexShader.replace('#include <project_vertex>', windVertex(heightExpr, kind));
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addWind, addWindSheen, WIND_KINDS, WIND } from './wind.js';
+import { addWind, addWindSheen, WIND_KINDS, WIND, FIELD_WIND_ENABLED } from './wind.js';
 import { FLOW } from './waterFlow.js';
 import { LEAF_LIGHT } from './leafLight.js';
 import { FOAM_GLSL, FOAM_WANTED, MAX_FOAM_STONES } from './streamFoam.js';
@@ -84,7 +84,7 @@ reflectedLight.directDiffuse *= ${strip.gain.toFixed(3)}; reflectedLight.indirec
     }
   };
 
-  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-bl1-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}${typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep' ? '-deep' : ''}`;
+  material.customProgramCacheKey = () => `echelon-blender-grass-habitat-field-${FIELD_WIND_ENABLED ? 2 : 1}-${corridor ? 3 : refinement ? 2 : 1}${strip ? `-strip-${strip.upBlend}-${strip.gain}` : ''}${typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('canopy') === 'deep' ? '-deep' : ''}`;
   return material;
 }
 
