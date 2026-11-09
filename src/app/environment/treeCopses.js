@@ -8,8 +8,7 @@ import { HAMLET_BUILDINGS } from './hamletLayout.js';
 //  1. (off; ?copses=belt) a montane spruce belt at the foot of the mountains: a ragged lower edge where the mown ground ends, tongues up the hollows,
 //     pasture clearings cut into it. The mountains are built smaller than they read, and from the hero camera their foot hides behind the valley's
 //     own rise, so real trees there are either giant spikes or invisible: a forest on the mountains belongs in the mountain material instead;
-//  2. a small group or two of pasture spruce in the meadow, broad and branched to the ground, as on the wooded pastures of the Jura: grazed and mown round,
-//     left for the shade and shelter of the stock (the summer larch read pale and leafless here, so they are kept for the windbreak's edge);
+//  2. (removed after review) lone pasture spruce, or small groups of them, in the meadow read as a stray cluster in front of the mountains;
 //  3. a shelter wood on the hamlet's windward (south-west) side, behind it from the camera, 26 m and more from the buildings and not ringing them.
 // Nothing stands in the sunrise over the low hills left of the mountains (azimuth 236-252).
 // ?copses=on to see them.
@@ -78,21 +77,6 @@ export function planCopses({ ground, habitat, clearing = null }) {
       const height = (8.5 + 5 * hash(ja, jd, 6)) * (1 - 0.55 * smooth(0, 20, rel)) * (0.75 + 0.25 * p); if (!seen(x, y, z, height)) continue;
       const larch = 0.06 + (1 - p) * 0.22; // spruce in the body of the wood, the odd larch at its edges
       sites.push({ x, y, z, kind: hash(ja, jd, 7) < larch ? 'larch' : 'spruce', height, yaw: hash(ja, jd, 8) * Math.PI * 2, near: false });
-    }
-  }
-  // 2. pasture spruce in the meadow: on level ground, clear of the stream bank, groups far apart
-  let meadow = 0;
-  for (let i = 0; i < 800 && meadow < 2; i += 1) {
-    const az = (246 + 44 * hash(i, 21, 3)) * DEG, d = 230 + 190 * hash(i, 22, 5); const x = CAMERA[0] + Math.cos(az) * d, z = CAMERA[2] + Math.sin(az) * d;
-    const y = at(x, z); if (!Number.isFinite(y) || slopeAt(x, z) > 0.09) continue; const h = habitat.sample(x, z); if (h.waterDistance < 14) continue; if (clearing && clearing.softness(x, z) < 1) continue;
-    if (!spaced(x, z, 70)) continue; const height = 15 + 6 * hash(i, 23, 7); if (!seen(x, y, z, height)) continue;
-    sites.push({ x, y, z, kind: 'spruce', height, broad: 1.25, yaw: hash(i, 24, 9) * Math.PI * 2, near: true }); meadow += 1;
-    // pasture spruce stand in small family groups, not alone: the old tree with a few younger ones that seeded in its lee, close enough to share
-    // one shadow, uneven in height and spacing
-    for (let k = 0, placed = 0; k < 30 && placed < 3; k += 1) {
-      const a = hash(i, 40 + k, 3) * Math.PI * 2, r = 4.5 + 6 * hash(i, 50 + k, 5); const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r; const py = at(px, pz);
-      if (!Number.isFinite(py) || habitat.sample(px, pz).waterDistance < 10 || !spaced(px, pz, 4.5)) continue;
-      sites.push({ x: px, y: py, z: pz, kind: 'spruce', height: height * (0.55 + 0.35 * hash(i, 60 + k, 7)), broad: 1.2, yaw: hash(i, 70 + k, 9) * Math.PI * 2, near: true }); placed += 1;
     }
   }
   // 3. the windbreak: two loose staggered rows across the south-west wind (south is azimuth 264 in this scene), 55-65 m out from the middle of the
