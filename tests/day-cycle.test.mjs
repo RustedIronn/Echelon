@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {readFileSync} from 'node:fs';
-import {moodState,createLiveMoodSampler,applyTimeOfDay} from '../src/app/environment/timeOfDay.js';
+import {moodState,createLiveMoodSampler,applyTimeOfDay,sunPose,solarDay} from '../src/app/environment/timeOfDay.js';
 import {GRADE} from '../src/app/environment/linearResolve.js';
+import {authoredCamera} from '../src/app/environment/alpinePrototypeData.js';
 import {LEAF_LIGHT,FLOWER_LIGHT} from '../src/app/environment/leafLight.js';
 import {HAMLET_BUILDINGS} from '../src/app/environment/hamletLayout.js';
 import {windowWarmth} from '../src/app/environment/hamletWindowLighting.js';
@@ -53,4 +54,26 @@ test('the approved look restores lighting, grade, mist and window emission after
  assert.equal(LEAF_LIGHT.backlight.value,1);assert.equal(FLOWER_LIGHT.close.value,0);assert.equal(FLOWER_LIGHT.lean.value,0);
  assert.equal(restored,base);assert.equal(active,false);assert.equal(mist,null);assert.equal(material.emissiveIntensity,0);assert.equal(moon.intensity,0);assert.equal(hemi.intensity,0);assert.equal(GRADE.sat.value,1);assert.equal(GRADE.contrast.value,1);assert.equal(scene.fog.color.getHexString(),'bacad8');assert.deepEqual(sun.color.toArray(),ref.sunColor);
  mesh.geometry.dispose();material.dispose();
+});
+
+
+test('the entire front sun arc fits the actual hero camera through every season, including morning and noon',()=>{
+ const manifest=JSON.parse(readFileSync(new URL('../public/assets/environment/alpine-prototype/manifest.json',import.meta.url)));
+ // The previous test only checked an arbitrary elevation range and missed
+ // both the left-edge morning exit and the summer-noon exit above the frame.
+ for(const aspect of[16/9,16/10,4/3]){
+  const camera=authoredCamera(manifest,aspect);
+  for(let month=0;month<12;month++){
+   const midnight=new Date(2026,month,21),solar=solarDay(midnight);
+   for(let step=0;step<=60;step++){
+    const hour=solar.sunrise+solar.dayLength*step/60,date=new Date(+midnight+hour*3600000),sun=sunPose(date);
+    const projected=new THREE.Vector3(...sun.dir).multiplyScalar(1000).add(camera.position).project(camera);
+    assert.ok(Math.abs(projected.x)<.92,`sun leaves the horizontal frame: month ${month+1}, hour ${hour}, aspect ${aspect}`);
+    assert.ok(Math.abs(projected.y)<.86,`sun leaves the vertical frame: month ${month+1}, hour ${hour}, aspect ${aspect}`);
+    assert.ok(projected.z>-1&&projected.z<1,'sun remains in front of the saved camera');
+   }
+   near(sunPose(new Date(+midnight+solar.sunrise*3600000)).elevation,0,.001);
+   near(sunPose(new Date(+midnight+solar.sunset*3600000)).elevation,0,.001);
+  }
+ }
 });

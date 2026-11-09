@@ -20,21 +20,26 @@ export function solarDay(date) {
   return { dayLength, noon, sunrise: noon - dayLength / 2, sunset: noon + dayLength / 2, maxElevation: 50 + 14 * season };
 }
 const SUN_PATH = typeof window === 'undefined' ? 'front' : (new URLSearchParams(window.location.search).get('sunpath') || 'front'); // the sun in view by default (chosen 2026-11-09); ?sunpath=behind for the earlier path
-// The sun rises behind and to the left of the camera, climbs through the open sky and sets in front, behind the mountains.
+// The default arc is composed for the saved 39.76-degree vertical hero view.
+// "In front" is not sufficient: the former 215..290-degree / 28-degree-high
+// arc left the image at morning and noon. Keep the complete disc inside the
+// desktop framing, with room for its glow and gentle future camera parallax.
+const FRONT_SUN_ARC = Object.freeze({riseAzimuth:248,setAzimuth:290,peakElevation:14.5,seasonalElevation:1.5});
 export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;
   // ?sunpath=side (experiment): the same sunrise and sunset points, but the sun crosses the sky in FRONT of the camera (to the left at noon) instead of behind it,
   // so the day is side- and back-lit like the evening, not flatly front-lit.
   const side = SUN_PATH === 'side', front = SUN_PATH === 'front';
-  // ?sunpath=front: the sun you can see. It rises just off the left of the frame, crosses low in front of the camera (about 16 degrees up at a November noon,
-  // 28 in midsummer: real upland heights, inside or near the top of the frame) and sets where it always has, behind the right-hand peaks. The light comes
-  // from where the sun is, but the mood (colour, brightness) still follows the original daylight curve (mood), so noon reads as full daylight, not a long dusk.
+  // Camera-composed, not a geographic ephemeris: left morning sky -> open
+  // central sky -> right-hand mountain sunset. Seasonal peak: 13..16 degrees.
+  // Mood retains the full original daylight curve; light and reflections use
+  // the actual visible direction. Terrain/cloud occlusion remains natural.
   let mood = null;
   if (into <= solar.dayLength) {
     const f = into / solar.dayLength; const arc = Math.sin(Math.PI * f);
-    if (front) { elevation = (21 + 7 * Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365)) * arc; mood = solar.maxElevation * arc; azimuth = (215 + 75 * f) * DEG; }
+    if (front) { elevation = (FRONT_SUN_ARC.peakElevation + FRONT_SUN_ARC.seasonalElevation * Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365)) * arc; mood = solar.maxElevation * arc; azimuth = (FRONT_SUN_ARC.riseAzimuth + (FRONT_SUN_ARC.setAzimuth - FRONT_SUN_ARC.riseAzimuth) * f) * DEG; }
     else { elevation = solar.maxElevation * arc; azimuth = (side ? 160 + 130 * f : 160 - 230 * f) * DEG; }
-  } else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (front ? 290 + 285 * g : side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
+  } else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (front ? FRONT_SUN_ARC.setAzimuth + (360 + FRONT_SUN_ARC.riseAzimuth - FRONT_SUN_ARC.setAzimuth) * g : side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
   const e = elevation * DEG; return { elevation, mood: mood ?? elevation, azimuth, solar, hour: h, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
 }
 const NEW_MOON = Date.UTC(2000, 0, 6, 18, 14); const SYNODIC = 29.530588853;
