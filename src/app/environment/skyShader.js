@@ -4,6 +4,8 @@ import { WIND } from './wind.js';
 // The generated sky as shader code and a single shared uniform set, used by the visible sky, the environment light and the water's sky reflection.
 // Clouds are a flat layer (no volumetrics): a domain-warped billowy layer with sun-side self shadowing, darker dense cores, brighter thin edges and a
 // silver lining toward the sun, plus a thin high cirrus layer.
+// ?sunpath=front puts the sun in view all day (timeOfDay.js): its glow is drawn tighter then, so the sun reads as a sun, not a blown-out patch of sky.
+const SUN_IN_VIEW = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sunpath') === 'front';
 export const SKY_UNIFORM_GLSL = `
 uniform vec3 uSunDir; uniform vec3 uMoonDir; uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uBelt; uniform vec3 uSunC; uniform vec3 uCloudC;
 uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uSkyTime; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc; uniform float uMoonIllum;
@@ -37,13 +39,13 @@ vec3 skyRadiance(vec3 d){
   col=mix(col,uHor*0.75,(1.0-smoothstep(-0.25,0.0,y)));
   col=mix(col,uHor,exp(-max(y,0.0)*7.0)*0.3);
   float sd=max(dot(d,uSunDir),0.0); float up=smoothstep(-0.25,0.05,uSunDir.y);
-  col+=uSunC*(pow(sd,6.0)*0.10+pow(sd,48.0)*0.7)*uGlowK*up;
+  col+=uSunC*${SUN_IN_VIEW ? '(pow(sd,8.0)*0.035+pow(sd,60.0)*0.16+pow(sd,400.0)*0.6)' : '(pow(sd,6.0)*0.10+pow(sd,48.0)*0.7)'}*uGlowK*up; // with the sun in view: a tight aureole, not a blown-out sky
   // the sun's disc: crisp, darker toward its limb, a little flattened by refraction near the horizon, bright enough to bloom
   if(sd>0.999){
     vec3 rs=normalize(cross(uSunDir,vec3(0.0,1.0,0.0))+vec3(1e-5)); vec3 us=cross(rs,uSunDir); float squash=1.0-0.16*(1.0-smoothstep(-0.01,0.07,uSunDir.y));
     vec2 sq=vec2(dot(d,rs),dot(d,us)/squash)/0.0105; float sr=length(sq);
     float disc=1.0-smoothstep(0.93,1.0,sr); float limbD=0.58+0.42*sqrt(max(1.0-sr*sr,0.0));
-    col+=uSunC*disc*limbD*uGlowK*9.0*uSunDisc;
+    col+=uSunC*disc*limbD*uGlowK*${SUN_IN_VIEW ? '16.0' : '9.0'}*uSunDisc;
   }
   // A broad warm band that rises well above the horizon on the sun's side near sunrise and sunset: the tight halo above hides behind the mountains, but the afterglow must be seen over them.
   float band=pow(sd,2.0)*exp(-max(y,0.0)*8.0); col+=uSunC*band*uGlowK*0.35*smoothstep(-0.38,-0.02,uSunDir.y)*(1.0-smoothstep(0.1,0.5,uSunDir.y));
@@ -60,8 +62,8 @@ vec3 skyRadiance(vec3 d){
     float lit=clamp(0.58+(n-n2)*6.0,0.25,1.1); float thick=smoothstep(1.0-uCover,1.0-uCover+0.55,n);
     vec3 shade=mix(uCloudC*0.38,uZen*0.6,0.25);
     vec3 cc=mix(shade,uCloudC*1.08,lit*(0.6+0.4*(1.0-thick)));
-    cc+=uSunC*pow(sd,5.0)*(1.0-thick)*0.45*uGlowK*up;
-    cc+=uSunC*pow(sd,1.6)*(0.35+0.65*(1.0-thick))*0.2*uGlowK*up*(1.0-smoothstep(0.0,0.55,uSunDir.y));
+    cc+=uSunC*pow(sd,${SUN_IN_VIEW ? '16.0' : '5.0'})*(1.0-thick)*0.45*uGlowK*up; /* silver edges: only on clouds close to the sun when it is in view */
+    cc+=uSunC*pow(sd,${SUN_IN_VIEW ? '4.0' : '1.6'})*(0.35+0.65*(1.0-thick))*0.2*uGlowK*up*(1.0-smoothstep(0.0,0.55,uSunDir.y));
     col=mix(col,cc,cm*0.94);
     vec2 q=d.xz/(y+0.35)*vec2(0.6,2.4)+vec2(uCloudShift*0.4,0.0)+vec2(0.0014,0.0)*uSkyTime; // high cirrus drift slower
     float cirrus=smoothstep(0.55,0.85,fbm(q*2.6+w*0.6))*smoothstep(0.08,0.35,y)*0.38*(1.0-cm);

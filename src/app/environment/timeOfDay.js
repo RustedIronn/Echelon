@@ -25,10 +25,17 @@ export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;
   // ?sunpath=side (experiment): the same sunrise and sunset points, but the sun crosses the sky in FRONT of the camera (to the left at noon) instead of behind it,
   // so the day is side- and back-lit like the evening, not flatly front-lit.
-  const side = SUN_PATH === 'side';
-  if (into <= solar.dayLength) { const f = into / solar.dayLength; elevation = solar.maxElevation * Math.sin(Math.PI * f); azimuth = (side ? 160 + 130 * f : 160 - 230 * f) * DEG; }
-  else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
-  const e = elevation * DEG; return { elevation, azimuth, solar, hour: h, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
+  const side = SUN_PATH === 'side', front = SUN_PATH === 'front';
+  // ?sunpath=front: the sun you can see. It rises just off the left of the frame, crosses low in front of the camera (about 16 degrees up at a November noon,
+  // 28 in midsummer: real upland heights, inside or near the top of the frame) and sets where it always has, behind the right-hand peaks. The light comes
+  // from where the sun is, but the mood (colour, brightness) still follows the original daylight curve (mood), so noon reads as full daylight, not a long dusk.
+  let mood = null;
+  if (into <= solar.dayLength) {
+    const f = into / solar.dayLength; const arc = Math.sin(Math.PI * f);
+    if (front) { elevation = (21 + 7 * Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365)) * arc; mood = solar.maxElevation * arc; azimuth = (215 + 75 * f) * DEG; }
+    else { elevation = solar.maxElevation * arc; azimuth = (side ? 160 + 130 * f : 160 - 230 * f) * DEG; }
+  } else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (front ? 290 + 285 * g : side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
+  const e = elevation * DEG; return { elevation, mood: mood ?? elevation, azimuth, solar, hour: h, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
 }
 const NEW_MOON = Date.UTC(2000, 0, 6, 18, 14); const SYNODIC = 29.530588853;
 export const moonPhase = (date) => ((((date.getTime() - NEW_MOON) / 86400000 / SYNODIC) % 1) + 1) % 1; // 0 new, 0.25 first quarter, 0.5 full
@@ -80,10 +87,10 @@ function mixStops(a, b, t) { const out = {}; for (const k of C) out[k] = a[k].cl
 // Everything the renderer needs for one moment.
 export function moodState(date) {
   const sun = sunPose(date); const moon = moonPose(date, sun); const evening = smooth(sun.solar.noon - 1.5, sun.solar.noon + 1.5, sun.hour);
-  const m = mixStops(sample(MORNING, sun.elevation), sample(EVENING, sun.elevation), evening);
+  const m = mixStops(sample(MORNING, sun.mood), sample(EVENING, sun.mood), evening); // the mood follows the daylight curve (sunPose: mood)
   const moonVisible = smooth(-1, 6, moon.elevation) * clamp01(m.moon);
   const moonDisc = smooth(-1, 6, moon.elevation) * Math.max(clamp01(m.moon), 0.7); /* the disc may show by day too (a pale afternoon moon); its light stays a night thing (moonVisible) */
-  const e = sun.elevation; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
+  const e = sun.mood; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
   // valley mist: thickest just after sunrise, gone by mid-morning; only a trace at dusk
   const morningMist = smooth(-6, 0, e) * (1 - smooth(0.5, 11, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
   const mistColor = m.hor.clone().lerp(new THREE.Color(1, 1, 1), 0.4).multiplyScalar(0.55 + 0.45 * clamp01(gain));
@@ -92,7 +99,7 @@ export function moodState(date) {
   const haze = 1 + 0.4 * dayK;
   // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
   const nightK = 1 - smooth(-14, -4, e);
-  return { ...m, gain, mist, mistColor, haze, sat: SAT_BASE * (1 + 0.1 * dayK) * (1 - 0.28 * nightK) * (1 - 0.22 * nightK * moonVisible * moon.illumination), /* moonlight reads blue-grey: the brighter the moon, the more the eye's colour gives way */ contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonDisc, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  return { ...m, gain, mist, mistColor, haze, sat: SAT_BASE * (1 + 0.1 * dayK) * (1 - 0.28 * nightK) * (1 - 0.22 * nightK * moonVisible * moon.illumination), /* moonlight reads blue-grey: the brighter the moon, the more the eye's colour gives way */ contrast: 1 + 0.28 * dayK, toe: 0.18 * dayK, /* option B, chosen 2026-11-09: daylight with real depth (shadowed form, deeper darks) */ /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonDisc, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated

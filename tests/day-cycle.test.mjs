@@ -23,7 +23,7 @@ test('live samples follow subsecond time continuously through sample boundaries 
  }
 });
 test('daylight grading stays restrained and moon illumination has no artificial new-moon floor',()=>{
- for(let hour=0;hour<24;hour+=.25){const s=moodState(new Date(2026,5,21,0,hour*60));assert.ok(s.sat>=0.7&&s.sat<=1.27); /* below 1 only at night: moonlit colours are muted on purpose */assert.ok(s.contrast>=1&&s.contrast<=1.10001);near(s.moonLight,s.moonVisible*s.moon.illumination,1e-10);}
+ for(let hour=0;hour<24;hour+=.25){const s=moodState(new Date(2026,5,21,0,hour*60));assert.ok(s.sat>=0.7&&s.sat<=1.27); /* below 1 only at night: moonlit colours are muted on purpose */assert.ok(s.contrast>=1&&s.contrast<=1.28001); /* option B (2026-11-09): daylight contrast up to 1.28 */near(s.moonLight,s.moonVisible*s.moon.illumination,1e-10);}
 });
 test('only selected rooms glow; chapel belfry and service buildings remain dark',()=>{
  const chapel=HAMLET_BUILDINGS.find(b=>b.kind==='chapel');assert.equal(windowWarmth(chapel,[0,6.5,6]),0);assert.ok(windowWarmth(chapel,[0,3.74,6])>0);
