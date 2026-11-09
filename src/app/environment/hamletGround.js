@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {HAMLET_LANES,HAMLET_BUILDINGS,sampleCurve,yardPolygon,pointInPolygon} from './hamletLayout.js';
+import {HAMLET_LANES,sampleCurve,tendedGrowth} from './hamletLayout.js';
 
 const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 // Local, linear-data mask: R worn lane, G tended turf. All branches use the
@@ -24,8 +24,10 @@ export function buildHamletGroundMask(cell=.2){
       along+=length;
     }
   }
-  for(const yard of HAMLET_BUILDINGS.map(yardPolygon).filter(Boolean)){
-    for(let j=Math.max(0,Math.floor((Math.min(...yard.map(p=>p[1]))-minZ)/cell));j<Math.min(height,Math.ceil((Math.max(...yard.map(p=>p[1]))-minZ)/cell));j++)for(let i=Math.max(0,Math.floor((Math.min(...yard.map(p=>p[0]))-minX)/cell));i<Math.min(width,Math.ceil((Math.max(...yard.map(p=>p[0]))-minX)/cell));i++)if(pointInPolygon(minX+(i+.5)*cell,minZ+(j+.5)*cell,yard))data[(j*width+i)*4+1]=100;
+  // Continuous feathered turf responds to yards and the chapel common. No rectangular colour stamps.
+  for(let j=0;j<height;j++)for(let i=0;i<width;i++){
+    const growth=tendedGrowth(minX+(i+.5)*cell,minZ+(j+.5)*cell);
+    const at=(j*width+i)*4+1;data[at]=Math.max(data[at],Math.round(130*growth));
   }
   return{data,width,height,minX,minZ,spanX:width*cell,spanZ:height*cell};
 }
@@ -52,14 +54,14 @@ export function attachHamletGround(terrain,gravel){
 vec2 hamletUV=(vCanopyWorld.xz-uHamletBounds.xy)/uHamletBounds.zw;
 float hamletInside=step(0.0,hamletUV.x)*step(hamletUV.x,1.0)*step(0.0,hamletUV.y)*step(hamletUV.y,1.0);
 vec2 hamletGround=texture2D(uHamletMask,hamletUV).rg*hamletInside;
-vec3 hamletGravel=texture2D(uHamletGravel,vCanopyWorld.xz*.36).rgb*vec3(.46,.39,.28);
-diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.11,.155,.055),hamletGround.g*.65);
+vec3 hamletGravel=texture2D(uHamletGravel,vCanopyWorld.xz*.36).rgb*vec3(.52,.46,.35);
+diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.08,1.045,.96)+vec3(.008,.009,.002),hamletGround.g*.7);
 diffuseColor.rgb=mix(diffuseColor.rgb,hamletGravel,hamletGround.r);
 roughnessFactor=mix(roughnessFactor,.98,hamletGround.r);
 normal=normalize(mix(normal,nonPerturbedNormal,hamletGround.r*.85));
 #include <lights_physical_fragment>`);
       };
-      material.customProgramCacheKey=()=>previousKey.call(material)+'-hamlet-ground-1';material.needsUpdate=true;
+      material.customProgramCacheKey=()=>previousKey.call(material)+'-hamlet-ground-2';material.needsUpdate=true;
       restores.push(()=>{material.onBeforeCompile=previous;material.customProgramCacheKey=previousKey;material.needsUpdate=true;});
     }
   });

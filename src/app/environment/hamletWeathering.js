@@ -29,14 +29,14 @@ export function applyWeathering(material, ground, kind) {
     const wall = `
 { float ground = texture2D(uHamGround, (vHamWorld.xz - uHamBounds.xy) / uHamBounds.zw).r; float above = vHamWorld.y - ground;
   float damp = 1.0 - smoothstep(0.0, 1.15, above) * (0.75 + 0.25 * hamNoise(vHamWorld.xz * 3.1));
-  diffuseColor.rgb *= mix(vec3(1.0), vec3(0.6, 0.58, 0.5), damp * 0.9);
+  diffuseColor.rgb *= mix(vec3(1.0), vec3(0.76, 0.74, 0.66), damp * 0.62);
   float along = vHamWorld.x * 0.71 + vHamWorld.z * 0.71; float streak = hamNoise(vec2(along * 2.6, vHamWorld.y * 0.32 + 4.0));
   diffuseColor.rgb *= 1.0 - 0.11 * smoothstep(0.55, 0.92, streak) * smoothstep(0.4, 1.6, above);
-  diffuseColor.rgb *= 0.9 + 0.18 * hamHash(floor(vHamWorld.xz / 7.0)); }`;
+  diffuseColor.rgb *= 0.96 + 0.06 * hamNoise(vHamWorld.xz * .16); }`;
     const roof = `
 { float moss = smoothstep(0.52, 0.86, hamNoise(vHamWorld.xz * 0.85 + vHamWorld.y * 0.4)) * (0.6 + 0.4 * hamNoise(vHamWorld.xz * 3.7));
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.8, 0.88, 0.6), moss * 0.5);
-  diffuseColor.rgb *= 0.9 + 0.18 * hamHash(floor(vHamWorld.xz / 7.0) + 3.0); }`;
+  diffuseColor.rgb *= 0.95 + 0.07 * hamNoise(vHamWorld.xz * .14 + 3.0); }`;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>\n${kind === 'roof' ? roof : wall}`);
   };
   material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-hamlet-weathering-${kind}-1`;
@@ -44,7 +44,7 @@ export function applyWeathering(material, ground, kind) {
 }
 
 // A soft dark band on the ground around every footprint (darkest at the wall, gone 1 m out), following the ground heights.
-export function buildContactSkirt(field, { width = 1.4, strength = 0.55, lift = 0.035 } = {}) {
+export function buildContactSkirt(field, { width = 0.85, strength = 0.36, lift = 0.035 } = {}) {
   const P = [], A = [], I = [];
   for (const building of HAMLET_BUILDINGS) for (const polygon of footprint(building, 0)) {
     const cx = polygon.reduce((s, p) => s + p[0], 0) / polygon.length, cz = polygon.reduce((s, p) => s + p[1], 0) / polygon.length;

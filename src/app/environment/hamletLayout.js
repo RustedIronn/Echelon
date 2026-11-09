@@ -8,8 +8,8 @@ export function mulberry32(seed) {
 
 // Palette: warm whitewash, honey and ochre plaster, red timber, slate and terracotta roofs. Shutters add small notes of colour.
 export const HAMLET_PALETTE = {
-  whitewash:'#ddd5bf', cream:'#c9bfa5', ochre:'#c1b497', honeyTimber:'#93816a', redTimber:'#81725f', stone:'#b4ab93',
-  slate:'#626b70', terracotta:'#9b7660', shingle:'#77796e', shutterGreen:'#626d54', shutterBlue:'#697b80', shutterRed:'#8f6557', door:'#60614c',
+  whitewash:'#e6deca', cream:'#d9ccb1', ochre:'#cdbb98', honeyTimber:'#a08a6c', redTimber:'#87705b', stone:'#beb49e',
+  slate:'#626b70', terracotta:'#9b7660', shingle:'#77796e', shutterGreen:'#626d54', shutterBlue:'#697b80', shutterRed:'#8f6557', door:'#86745a',
 };
 
 // One architectural family, staggered around a lane and a small shared green.
@@ -17,7 +17,7 @@ export const HAMLET_BUILDINGS = [
  {id:'chapel',kind:'chapel',x:39,z:-124,yaw:-.12,w:5,d:9,eave:3.3,ridge:5.7,tower:{w:2.6,height:7.6,spire:1.65},wall:'whitewash',roof:'slate',shutter:'shutterGreen',yard:{w:12,d:17,ox:0,oz:0},boundary:'stone',boundaryEdges:[0,3]},
  {id:'cottage-a',kind:'house',x:20,z:-131,yaw:-.12,w:6.8,d:5.5,eave:2.8,ridge:5,wall:'cream',roof:'slate',shutter:'shutterGreen',chimney:'right',porch:true,yard:{w:9,d:6,oz:5},boundary:'stone',boundaryEdges:[2,3]},
  {id:'cottage-b',kind:'house',x:29,z:-148,yaw:.22,w:5.4,d:5.8,eave:4.4,ridge:6.3,wall:'stone',roof:'slate',shutter:'shutterGreen',chimney:'left',yard:{w:7,d:5,oz:4.5}},
- {id:'farm-c',kind:'farm',x:55,z:-139,yaw:-.48,w:7.8,d:5.6,eave:3.9,ridge:6.1,wall:'ochre',roof:'slate',shutter:'shutterGreen',chimney:'right',wing:{w:3,d:3.6,side:'right'},yard:{w:13,d:11,ox:3,oz:-5},boundary:'fence',boundaryEdges:[0,1]},
+ {id:'farm-c',kind:'farm',x:55,z:-139,yaw:-.48,w:7.8,d:5.6,eave:3.9,ridge:6.1,wall:'ochre',roof:'slate',shutter:'shutterGreen',chimney:'right',porch:true,wing:{w:3,d:3.6,side:'right'},yard:{w:13,d:11,ox:3,oz:-5},boundary:'fence',boundaryEdges:[0,1]},
  {id:'barn-e',kind:'barn',x:64,z:-155,yaw:-.65,w:8.4,d:5.2,eave:2.7,ridge:4.8,wall:'redTimber',roof:'slate',shutter:'door'},
  {id:'shed-f',kind:'shed',x:17,z:-151,yaw:.35,w:4,d:3,eave:1.9,ridge:2.8,wall:'honeyTimber',roof:'shingle',shutter:'door'},
 ];
@@ -31,7 +31,22 @@ function doorOut(b, out = 0.9) {
 }
 export const HAMLET_DOORS = Object.fromEntries(HAMLET_BUILDINGS.map((b) => [b.id, doorOut(b)]));
 
-export const HAMLET_APRON={x:41.5,z:-114.8,radius:1.05};
+export const HAMLET_APRON={x:39.8,z:-114.6,radius:1.3};
+// A grassy shared common, not a paved plaza; no change to the protected landform.
+export const HAMLET_COMMON={x:38,z:-116,rx:6.2,rz:3.5};
+export function tendedGrowth(x,z){
+  let growth=0;
+  for(const b of HAMLET_BUILDINGS){
+    if(!b.yard)continue;
+    const {w,d,ox=0}=b.yard,oz=b.yard.oz??(d/2-b.d/2+.5);
+    const [lx,lz]=rotate2(x-b.x,z-b.z,-b.yaw);
+    const edge=.13*Math.sin(x*.63+z*.37)+.09*Math.sin(z*.91-x*.4);
+    const r=Math.pow(Math.pow(Math.abs((lx-ox)/(w*.5)),4)+Math.pow(Math.abs((lz-oz)/(d*.5)),4),.25);
+    const t=Math.max(0,Math.min(1,(1.24+edge-r)/.48));growth=Math.max(growth,t*t*(3-2*t));
+  }
+  const c=HAMLET_COMMON,r=Math.hypot((x-c.x)/c.rx,(z-c.z)/c.rz);
+  const t=Math.max(0,Math.min(1,(1.3-r)/.55));return Math.max(growth,t*t*(3-2*t));
+}
 // Deliberately retain the approved valley's protection region. Vegetation and
 // paths have their own compact bounds; redesigning those must not move relief.
 export const HAMLET_TERRAIN_BOUNDS=Object.freeze({minX:8.2,maxX:80.35089297217868,minZ:-182,maxZ:-25});
@@ -50,6 +65,8 @@ export const HAMLET_LANES=[
 ];
 // Existing foreground tree is preserved; this pass adds no woodland system.
 export const HAMLET_TREES=[];
+// One small domestic line off the lane, sheltered beside the cottage.
+export const HAMLET_LINEN_LINE={a:[13.8,-131.7],b:[15.1,-127.9],height:1.85};
 
 export function rotate2(x, z, yaw) { const c = Math.cos(yaw), s = Math.sin(yaw); return [x * c + z * s, -x * s + z * c]; }
 
@@ -125,7 +142,8 @@ export function createHamletClearing() {
     if (x < bounds.minX - 4.3 || x > bounds.maxX + 4.3 || z < bounds.minZ - 4.3 || z > bounds.maxZ + 4.3) return 1;
     if (!grid) build();
     if (tended(x, z)) return 0;
-    for(const yard of yards)if(pointInPolygon(x,z,yard))return .38;
+    const growth=tendedGrowth(x,z);
+    if(growth>.001)return 1-.62*growth;
     for (const [r, k] of [[1.2, 0.35], [2.6, 0.55], [4.2, 0.78]]) for (const [dx, dz] of ring) if (tended(x + dx * r, z + dz * r)) return k;
     return 1;
   };
