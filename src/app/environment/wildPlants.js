@@ -1,0 +1,137 @@
+import * as THREE from 'three';
+import { applyBlenderDisplay, applyFlowerResponse } from './alpineParityMaterials.js';
+import { habitatHash, smooth } from './meadowHabitat.js';
+import { FRAME_HALF_ANGLE } from './meadowHabitatGrowth.js';
+
+// Wild plants: procedural, instanced, cheap (a few hundred triangles a plant, a few hundred plants of each kind), lit and swayed like the meadow
+// (the flower response and wind of alpineParityMaterials.js). Geometry is built once per kind in a few variants; each plant is an instance with its
+// own turn and size. ?wildplants=off removes them all.
+export const WILD_PLANTS_WANTED = typeof window === 'undefined' || new URLSearchParams(window.location.search).get('wildplants') !== 'off';
+const CAMERA = [-3, 10];
+
+// ---------------------------------------------------------------- geometry
+const hex = (c) => new THREE.Color(c);
+function builder() {
+  const P = [], N = [], C = []; const idx = [];
+  const vert = (p, n, c) => { P.push(p[0], p[1], p[2]); N.push(n[0], n[1], n[2]); C.push(c.r, c.g, c.b); return P.length / 3 - 1; };
+  return {
+    // a tapered, curving blade: root at base, rising to height h, leaning out along dir by lean (m at the tip), width w at the root
+    blade(base, dir, h, lean, w, root, tip, segs = 3, tipShade = null) {
+      const side = [-dir[1], 0, dir[0]]; let prev = null;
+      for (let s = 0; s <= segs; s += 1) {
+        const t = s / segs; const out = lean * t * t; const y = h * (t - 0.18 * lean / Math.max(h, 0.01) * t * t);
+        const cx = base[0] + dir[0] * out, cz = base[2] + dir[1] * out, cy = base[1] + y; const half = w * 0.5 * (1 - 0.92 * t);
+        const n = [dir[0] * 0.35, 1, dir[1] * 0.35]; const col = (tipShade && t > 0.8 ? tipShade : root).clone().lerp(tip, t);
+        const a = vert([cx - side[0] * half, cy, cz - side[2] * half], n, col), b = vert([cx + side[0] * half, cy, cz + side[2] * half], n, col);
+        if (prev) idx.push(prev[0], prev[1], b, prev[0], b, a); prev = [a, b];
+      }
+    },
+    // a flat disc of n wedges (leaf blades, petals), centred at c, tilted by normal nrm, radius r
+    disc(c, nrm, r, n, col, rim = null, stretch = [1, 1]) {
+      const up = new THREE.Vector3(...nrm).normalize(); const t1 = new THREE.Vector3(1, 0, 0).cross(up); if (t1.lengthSq() < 1e-4) t1.set(0, 0, 1); t1.normalize(); const t2 = up.clone().cross(t1);
+      const centre = vert(c, nrm, col); const ring = [];
+      for (let k = 0; k < n; k += 1) { const a = (k / n) * Math.PI * 2; const p = new THREE.Vector3(...c).addScaledVector(t1, Math.cos(a) * r * stretch[0]).addScaledVector(t2, Math.sin(a) * r * stretch[1]); ring.push(vert(p.toArray(), nrm, rim ?? col)); }
+      for (let k = 0; k < n; k += 1) idx.push(centre, ring[k], ring[(k + 1) % n]);
+    },
+    // a tiny round floret: three small discs at right angles, so it reads as a round dot from any side (never a square)
+    puff(c, r, col) { for (const n of [[0, 1, 0], [1, 0.2, 0], [0, 0.2, 1]]) this.disc(c, n, r, 6, col); },
+    geometry() { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setIndex(idx); g.computeBoundingSphere(); return g; },
+  };
+}
+const mulberry = (seed) => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+
+// Soft rush (Juncus): a dense upright clump of thin round dark-green stems, a few with a brown flower tuft near the top and straw tips.
+function rushGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 30 + Math.floor(r() * 12);
+  for (let i = 0; i < n; i += 1) {
+    const a = r() * Math.PI * 2, spread = 0.02 + r() * 0.07; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.55 + r() * 0.45;
+    b.blade([dir[0] * spread, 0, dir[1] * spread], dir, h, 0.04 + r() * 0.16, 0.009, hex('#2f4a22'), hex(r() < 0.3 ? '#8a8455' : '#4d6b2c'), 3, null);
+    if (r() < 0.18) for (let k = 0; k < 4; k += 1) b.puff([dir[0] * (spread + 0.03 + k * 0.006), h * (0.76 + k * 0.025), dir[1] * (spread + 0.03 + k * 0.006)], 0.006, hex('#6e5536')); // a small brown flower tuft on the stem
+  }
+  return b.geometry();
+}
+// The taller, darker fringe of the bank: tussock sedge, arching, broad-leaved, olive to deep green.
+function sedgeGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 34 + Math.floor(r() * 14);
+  for (let i = 0; i < n; i += 1) {
+    const a = r() * Math.PI * 2, spread = 0.03 + r() * 0.1; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.5 + r() * 0.5;
+    b.blade([dir[0] * spread, 0, dir[1] * spread], dir, h, 0.15 + r() * 0.35, 0.02, hex('#2b4320'), hex(r() < 0.25 ? '#7d7a45' : '#56702f'), 3);
+  }
+  return b.geometry();
+}
+// Meadowsweet: tall stems with a few leaves, each topped by a frothy cream plume.
+function meadowsweetGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const stems = 2 + Math.floor(r() * 3);
+  for (let s = 0; s < stems; s += 1) {
+    const a = r() * Math.PI * 2, off = r() * 0.12; const base = [Math.cos(a) * off, 0, Math.sin(a) * off]; const h = 0.75 + r() * 0.45; const lean = (r() - 0.5) * 0.12; const dir = [Math.cos(a), Math.sin(a)];
+    b.blade(base, dir, h, lean, 0.012, hex('#3c5a2a'), hex('#5a6e34'), 3);
+    b.blade(base, [-dir[1], dir[0]], h, lean, 0.012, hex('#3c5a2a'), hex('#5a6e34'), 3);
+    for (let k = 0; k < 4; k += 1) { const t = 0.2 + k * 0.15; const la = a + k * 2.1; b.disc([base[0] + Math.cos(la) * 0.06, h * t, base[2] + Math.sin(la) * 0.06], [Math.cos(la) * 0.6, 1, Math.sin(la) * 0.6], 0.06, 5, hex('#33502a'), hex('#4b6a33'), [1.6, 0.6]); }
+    const top = [base[0] + dir[0] * lean, h, base[2] + dir[1] * lean]; const cream = hex('#efe6c8');
+    // the plume: many tiny florets in a loose, irregular dome (frothy, not a ball)
+    for (let k = 0; k < 26; k += 1) { const fa = r() * Math.PI * 2, fr = Math.sqrt(r()) * 0.08; b.puff([top[0] + Math.cos(fa) * fr, top[1] + (0.07 - fr * 0.7) * r() + 0.01, top[2] + Math.sin(fa) * fr], 0.008 + r() * 0.008, cream.clone().lerp(hex('#d9cc98'), r() * 0.6)); }
+  }
+  return b.geometry();
+}
+// Marsh marigold: a low mound of round, glossy, dark leaves with buttery-yellow cups held just above.
+function marigoldGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const leaves = 7 + Math.floor(r() * 5);
+  for (let i = 0; i < leaves; i += 1) { const a = r() * Math.PI * 2, d = 0.04 + r() * 0.1; const y = 0.06 + r() * 0.12; b.blade([0, 0, 0], [Math.cos(a), Math.sin(a)], y, d, 0.006, hex('#2c4a22'), hex('#335426'), 2); b.disc([Math.cos(a) * d, y, Math.sin(a) * d], [Math.cos(a) * 0.35, 1, Math.sin(a) * 0.35], 0.045 + r() * 0.02, 7, hex('#2e5226'), hex('#3d6430')); }
+  const flowers = 3 + Math.floor(r() * 4);
+  for (let i = 0; i < flowers; i += 1) { const a = r() * Math.PI * 2, d = r() * 0.1; const y = 0.16 + r() * 0.1; b.blade([0, 0, 0], [Math.cos(a), Math.sin(a)], y, d, 0.005, hex('#3a5a2a'), hex('#4a6a30'), 2); b.disc([Math.cos(a) * d, y, Math.sin(a) * d], [0, 1, 0], 0.022, 5, hex('#e7a812'), hex('#f6cf2a')); }
+  return b.geometry();
+}
+export const WILD_KINDS = {
+  rush: { make: rushGeometry, variants: 3 },
+  sedge: { make: sedgeGeometry, variants: 3 },
+  meadowsweet: { make: meadowsweetGeometry, variants: 3 },
+  marigold: { make: marigoldGeometry, variants: 3 },
+};
+
+// ---------------------------------------------------------------- placement
+// The water's edge: the band of dry ground just above the water. The water map also covers dry banks (the delivered mesh runs under them), so the
+// bank is found by height: ground a little above the local water level, close to water. Each kind has its own place in that band and grows in
+// patches (low-frequency noise), so the bank reads as stands of rush and sedge broken by clumps of marigold and meadowsweet, not an even trim.
+export function planWaterEdge({ habitat, groundAt, clearing = null, from = 3.5, to = 150, cell = 0.5 }) {
+  const out = { rush: [], sedge: [], meadowsweet: [], marigold: [] };
+  const patch = (x, z, s, k) => { const v = Math.sin(x * s + k) * Math.cos(z * s * 1.3 - k * 0.7) + Math.sin((x + z) * s * 0.6 + k * 2.1) * 0.6; return v * 0.5 + 0.5; };
+  for (let j = Math.floor((CAMERA[1] - to) / cell); j <= Math.floor((CAMERA[1] - from) / cell); j += 1) for (let i = Math.floor((CAMERA[0] - to) / cell); i <= Math.floor((CAMERA[0] + to) / cell); i += 1) {
+    const x = (i + habitatHash(i, j, 71)) * cell, z = (j + habitatHash(i, j, 72)) * cell, dx = x - CAMERA[0], dz = z - CAMERA[1], d = Math.hypot(dx, dz);
+    if (d < from || d > to || Math.atan2(Math.abs(dx), -dz) > FRAME_HALF_ANGLE) continue;
+    const h = habitat.sample(x, z); if (h.waterDistance > 3.5) continue; if (clearing && clearing.softness(x, z) < 0.7) continue;
+    const y = groundAt(x, z, d); if (!(y === y)) continue; const above = y - h.waterLevel; if (above < 0.02 || above > 0.7) continue;
+    const thin = (1 - 0.55 * smooth(40, 140, d)) * (d < 9 ? 0.35 : 1); // fewer far away (they merge) and only a few right at the camera, so the pool stays open
+    const roll = habitatHash(i, j, 73), pick = habitatHash(i, j, 74);
+    const wet = 1 - smooth(0.04, 0.3, above), mid = smooth(0.05, 0.2, above) * (1 - smooth(0.35, 0.65, above));
+    const cand = [
+      ['sedge', 0.55 * wet * smooth(0.45, 0.7, patch(x, z, 0.21, 1.3))],
+      ['rush', 0.5 * (wet * 0.6 + mid * 0.6) * smooth(0.4, 0.68, patch(x, z, 0.17, 4.1))],
+      ['marigold', 0.35 * wet * smooth(0.55, 0.75, patch(x, z, 0.33, 7.7))],
+      ['meadowsweet', 0.32 * mid * smooth(0.5, 0.72, patch(x, z, 0.12, 2.9)) * smooth(12, 18, d)], // tall plumes: not right at the camera, where they would wall off the view
+    ];
+    const total = cand.reduce((s, c) => s + c[1], 0) * thin; if (roll > total * cell * cell * 4) continue;
+    let acc = 0, kind = cand[0][0]; const target = pick * cand.reduce((s, c) => s + c[1], 0); for (const [k, w] of cand) { acc += w; if (target <= acc) { kind = k; break; } }
+    const size = (kind === 'meadowsweet' ? 0.85 : 0.8) + 0.45 * habitatHash(i, j, 75); const yaw = habitatHash(i, j, 76) * Math.PI * 2;
+    out[kind].push({ x, y: y - 0.02, z, yaw, size, variant: Math.floor(habitatHash(i, j, 77) * WILD_KINDS[kind].variants) });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- build
+export function buildWildPlants(plan, resources, name = 'Wild plants') {
+  const group = new THREE.Group(); group.name = name; const disposables = []; const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  for (const [kind, list] of Object.entries(plan)) {
+    if (!list.length || !WILD_KINDS[kind]) continue;
+    const spec = WILD_KINDS[kind];
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: kind === 'marigold' ? 0.55 : 0.85, metalness: 0 });
+    applyBlenderDisplay(material, resources); applyFlowerResponse(material); material.userData.lookRole = 'flowers'; material.userData.baseColor = material.color.clone(); disposables.push(material);
+    for (let v = 0; v < spec.variants; v += 1) {
+      const items = list.filter((it) => it.variant === v); if (!items.length) continue;
+      const geometry = spec.make(1000 + v * 97 + kind.length * 13); disposables.push(geometry);
+      const mesh = new THREE.InstancedMesh(geometry, material, items.length); mesh.name = `${name} / ${kind} ${v}`;
+      items.forEach((it, k) => { q.setFromAxisAngle(up, it.yaw); s.setScalar(it.size); p.set(it.x, it.y, it.z); m.compose(p, q, s); mesh.setMatrixAt(k, m); });
+      mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = true; mesh.frustumCulled = false; group.add(mesh); disposables.push(mesh);
+    }
+  }
+  return { group, dispose: () => disposables.forEach((d) => d.dispose?.()) };
+}
