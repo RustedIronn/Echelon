@@ -40,11 +40,15 @@ uniform sampler2D src; uniform vec2 sun; uniform float aspect; uniform float thr
 void main() {
   vec2 delta = (sun - vUv) / 40.0; vec2 uv = vUv; float decay = 1.0; vec3 sum = vec3(0.0);
   for (int i = 0; i < 40; i++) {
-    uv += delta; vec3 c = texture2D(src, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
+    uv += delta;
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) break; /* past the frame edge there is nothing to sample (clamping smeared the corner sky over everything) */
+    vec3 c = texture2D(src, uv).rgb;
     vec2 d = (uv - sun) * vec2(aspect, 1.0); float near = exp(-dot(d, d) * 9.0); /* only the sky around the sun throws shafts, not bright walls */
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); sum += c * max(l - threshold, 0.0) / max(l, 1e-4) * near * decay; decay *= 0.965;
   }
-  gl_FragColor = vec4(sum / 40.0, 1.0);
+  /* every ray ends at the sun, so without a falloff the glow would veil the whole frame: keep it around the sun */
+  vec2 fromSun = (vUv - sun) * vec2(aspect, 1.0);
+  gl_FragColor = vec4(sum / 40.0 * exp(-length(fromSun) * 2.4), 1.0);
 }`;
 
 export function createOptics(renderer) {
@@ -89,7 +93,7 @@ export function createOptics(renderer) {
             if (reach > 0.01 && chain.length) {
               shafts.uniforms.src.value = chain[0].texture; shafts.uniforms.sun.value.set(sx, sy); shafts.uniforms.aspect.value = w / h;
               shafts.uniforms.threshold.value = 2.0 * Math.max(0.2, SKY_UNIFORMS.uSkyGain?.value ?? 1); pass(shafts, shaftTarget);
-              out.shafts = shaftTarget.texture; out.shaftK = OPTICS.shafts.value * low * reach;
+              out.shafts = shaftTarget.texture; out.shaftK = 0.6 * OPTICS.shafts.value * low * reach;
             }
           }
         }
