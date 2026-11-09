@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { WIND } from './wind.js';
 import { SKY_UNIFORMS } from './skyShader.js';
 import { REACTIVE } from './taaReactive.js';
+import { createButterflies, createBirds } from './smallLifeMotion.js';
 
 // Small life: a few butterflies wandering over the foreground meadow on sunny hours, now and then a small flock of birds crossing the valley, and a
 // thread of smoke from a cottage chimney. All rare and subtle, so the world reads as inhabited rather than busy. Everything runs on the world clock
@@ -19,13 +20,12 @@ function makeButterflies(count) {
   const P = [0, 0, -s * 0.8, -s, 0, -s * 0.8, -s, 0, s * 0.8, 0, 0, s * 0.8, 0, 0, -s * 0.8, s, 0, -s * 0.8, s, 0, s * 0.8, 0, 0, s * 0.8];
   const side = [0, -1, -1, 0, 0, 1, 1, 0]; g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 1));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(8).fill([0, 1, 0]).flat(), 3)); g.setIndex([0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6]);
-  const phase = new Float32Array(count); for (let i = 0; i < count; i += 1) phase[i] = hash(i + 3) * 6.28; g.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
+  const wing = new THREE.InstancedBufferAttribute(new Float32Array(count).fill(1.45), 1); wing.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aWing', wing); // wing angle, set each frame (smallLifeMotion.js)
   const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, roughness: 0.8, alphaToCoverage: true });
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uLifeTime = WIND.time;
-    shader.vertexShader = `uniform float uLifeTime; attribute float aSide; attribute float aPhase; varying vec2 vWing;\n` + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    shader.vertexShader = `attribute float aSide; attribute float aWing; varying vec2 vWing;\n` + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
 vWing = vec2(abs(position.x), position.z) / ${s.toFixed(4)};
-{ float flap = 0.25 + 0.95 * (0.5 + 0.5 * sin(uLifeTime * 17.0 + aPhase)); float r = abs(transformed.x);
+{ float flap = aWing; float r = abs(transformed.x);
   transformed = vec3(sign(transformed.x) * r * cos(flap), r * sin(flap), transformed.z); }`);
     // wing outline: a broad forewing toward the head and a rounder hindwing behind, a dark border, a dark spot on the forewing, a darker root
     shader.fragmentShader = 'varying vec2 vWing;\n' + shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
@@ -47,13 +47,11 @@ function makeBirds(count) {
   const g = new THREE.BufferGeometry(); const s = 0.65; // x1.5 per instance: a 2 m span (a buzzard, a little generous) seen at 140-170 m, a small silhouette
   g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.09, 0, -s, 0.05, 0, 0, -0.07, 0, 0, 0.09, 0, s, 0.05, 0, 0, -0.07, 0], 3)); // an M seen from behind: wings in the view plane
   g.setAttribute('aSide', new THREE.Float32BufferAttribute([0, -1, 0, 0, 1, 0], 1));
-  const phase = new Float32Array(count); for (let i = 0; i < count; i += 1) phase[i] = hash(i + 41) * 6.28; g.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
+  const wing = new THREE.InstancedBufferAttribute(new Float32Array(count), 1); wing.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aWing', wing); // wing lift, set each frame (smallLifeMotion.js)
   const material = new THREE.MeshBasicMaterial({ color: '#1d2228', side: THREE.DoubleSide, transparent: true, opacity: 0.85, depthWrite: false });
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uLifeTime = WIND.time;
-    shader.vertexShader = 'uniform float uLifeTime; attribute float aSide; attribute float aPhase;\n' + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-{ float beat = step(0.62, fract(uLifeTime * 0.18 + aPhase * 0.159)) * sin(uLifeTime * 11.0 + aPhase); float lift = 0.22 + 0.55 * beat; // glide, then a few wingbeats
-  float r = abs(transformed.x); if (aSide != 0.0) transformed.y += r * lift; }`);
+    shader.vertexShader = 'attribute float aSide; attribute float aWing;\n' + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+{ float r = abs(transformed.x); if (aSide != 0.0) transformed.y += r * aWing; }`);
   };
   const mesh = new THREE.InstancedMesh(g, material, count); mesh.name = 'Small life / birds'; mesh.frustumCulled = false; mesh.renderOrder = 3;
   return mesh;
@@ -89,31 +87,30 @@ export default function SmallLife({ ground }) {
   const scene = useThree((s) => s.scene);
   const built = useMemo(() => {
     const group = new THREE.Group(); group.name = 'Small life';
-    const butterflies = makeButterflies(7), birds = makeBirds(5); butterflies.layers.enable(REACTIVE.layer); birds.layers.enable(REACTIVE.layer); group.add(butterflies, birds); return { group, butterflies, birds };
+    const butterflies = makeButterflies(7), birds = makeBirds(8); butterflies.layers.enable(REACTIVE.layer); birds.layers.enable(REACTIVE.layer); group.add(butterflies, birds); return { group, butterflies, birds };
   }, []);
   useEffect(() => () => { REACTIVE.active = false; for (const o of [built.butterflies, built.birds]) { o.geometry.dispose(); o.material.dispose(); o.dispose(); } }, [built]);
+  // behaviour (smallLifeMotion.js): butterflies keep to the near meadow left of the pool and perch only on dry ground
+  const life = useMemo(() => {
+    const groundAt = (x, z) => (ground ? ground.at(x, z) : NaN);
+    return { butterflies: createButterflies(7, { region: { minX: -9, maxX: 0.5, minZ: -6, maxZ: 2.5 }, groundAt, isLand: (x, z) => groundAt(x, z) > 1.88 }), birds: createBirds({ flockMax: 7, firstPass: 12, firstSoar: 30 }), last: null };
+  }, [ground]);
   const smokeRef = useRef(null);
-  const m = useMemo(() => new THREE.Matrix4(), []); const q = useMemo(() => new THREE.Quaternion(), []); const e = useMemo(() => new THREE.Euler(), []); const v = useMemo(() => new THREE.Vector3(), []); const one = useMemo(() => new THREE.Vector3(1, 1, 1), []);
+  const m = useMemo(() => new THREE.Matrix4(), []); const q = useMemo(() => new THREE.Quaternion(), []); const e = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []); const v = useMemo(() => new THREE.Vector3(), []); const sc = useMemo(() => new THREE.Vector3(), []);
   useFrame(() => {
-    const t = WIND.time.value; const sunY = SKY_UNIFORMS.uSunDir.value.y;
-    // butterflies: only in sunshine; each wanders over its own patch of the foreground meadow with erratic bobbing
-    const sunny = smooth(0.12, 0.3, sunY); built.butterflies.visible = sunny > 0.02;
-    if (built.butterflies.visible) for (let i = 0; i < built.butterflies.count; i += 1) {
-      const cx = -10 + 9 * hash(i + 7), cz = 5 - 8 * hash(i + 13), sp = 0.12 + 0.08 * hash(i + 21); // the near meadow, left of the pool: close enough for their flight to read
-      const x = cx + 3.2 * Math.sin(t * sp * 1.3 + i) + 1.1 * Math.sin(t * sp * 3.7 + i * 2.1), z = cz + 2.4 * Math.sin(t * sp * 1.1 + i * 1.7) + 0.9 * Math.cos(t * sp * 4.1 + i);
-      const gy = ground ? ground.at(x, z) : NaN; const y = Math.max(gy === gy ? gy : 2, 1.9) + 1.0 + 0.3 * Math.sin(t * 1.9 + i * 3.0) + 0.12 * Math.sin(t * 7.3 + i);
-      const dx = 3.2 * Math.cos(t * sp * 1.3 + i) * sp * 1.3, dz = 2.4 * Math.cos(t * sp * 1.1 + i * 1.7) * sp * 1.1; // heading along the path
-      e.set(0, Math.atan2(dx, dz), 0); q.setFromEuler(e); v.set(x, y, z); m.compose(v, q, one.setScalar(sunny > 0.5 ? 1 : sunny * 2)); built.butterflies.setMatrixAt(i, m); one.set(1, 1, 1);
-    }
-    built.butterflies.instanceMatrix.needsUpdate = true;
-    // birds: a pass every 150 s lasting 45 s, from left to right across the valley, daytime and dusk
-    const cycle = 150, pass = (t % cycle) / 45; const flying = pass < 1 && sunY > -0.06; built.birds.visible = flying;
-    if (flying) for (let i = 0; i < built.birds.count; i += 1) {
-      const lag = i * 0.035 + hash(i + 51) * 0.02; const k = pass - lag; const x = -200 + 400 * k, z = -140 - 25 * hash(i + 61) + 12 * Math.sin(k * 6 + i); /* ~9 m/s, 140-170 m out over the valley */
-      const y = 42 + 6 * Math.sin(k * 4 + i * 1.3) + 5 * hash(i + 71);
-      e.set(0, 0, 0.18 * Math.sin(k * 5 + i)); /* wings face the camera; a gentle bank as they go */ q.setFromEuler(e); v.set(x, y, z); m.compose(v, q, one.setScalar(1.5)); one.set(1, 1, 1); built.birds.setMatrixAt(i, m);
-    }
-    built.birds.instanceMatrix.needsUpdate = true;
+    const t = WIND.time.value; const sunY = SKY_UNIFORMS.uSunDir.value.y; const dt = life.last === null ? 0 : t - life.last; life.last = t; // the world clock: pauses with the wind
+    // butterflies
+    life.butterflies.step(dt, t, sunY); let anyB = false; const wingB = built.butterflies.geometry.attributes.aWing;
+    life.butterflies.list.forEach(({ out: o }, i) => {
+      e.set(o.pitch, o.yaw, o.roll); q.setFromEuler(e); v.set(o.x, o.y, o.z); m.compose(v, q, sc.setScalar(o.scale)); built.butterflies.setMatrixAt(i, m); wingB.setX(i, o.wing); if (o.scale > 0.01) anyB = true;
+    });
+    built.butterflies.visible = anyB; built.butterflies.instanceMatrix.needsUpdate = true; wingB.needsUpdate = true;
+    // birds: wings stay in the view plane, so the roll is a tilt of the silhouette
+    life.birds.step(dt, t, sunY, WIND.strength?.value ?? 0.4); let anyBird = false; const wingD = built.birds.geometry.attributes.aWing;
+    life.birds.out.forEach((o, i) => {
+      e.set(0, 0, o.roll); q.setFromEuler(e); v.set(o.x, o.y, o.z); m.compose(v, q, sc.setScalar(o.scale)); built.birds.setMatrixAt(i, m); wingD.setX(i, o.wing); if (o.scale > 0) anyBird = true;
+    });
+    built.birds.visible = anyBird; built.birds.instanceMatrix.needsUpdate = true; wingD.needsUpdate = true;
     REACTIVE.active = built.butterflies.visible || built.birds.visible; // keeps TAA from blending them away (taaReactive.js)
     // smoke: denser in the morning, evening and night (fires lit), a thin thread at midday; coloured by the horizon light
     if (!smokeRef.current) scene.traverse((o) => { if (o.name === 'Small life / chimney smoke') smokeRef.current = o; });
@@ -122,5 +119,6 @@ export default function SmallLife({ ground }) {
       smoke.material.uniforms.uDensity.value = density; smoke.material.uniforms.uColor.value.copy(SKY_UNIFORMS.uHor.value).multiplyScalar(SKY_UNIFORMS.uSkyGain.value * 0.7);
     }
   });
+  built.group.userData.life = life; // for diagnostics scripts
   return <primitive object={built.group} />;
 }
