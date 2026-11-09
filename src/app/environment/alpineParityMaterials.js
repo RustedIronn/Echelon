@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { addWind, addWindSheen, WIND_KINDS, WIND } from './wind.js';
 import { FLOW } from './waterFlow.js';
+import { FOAM_GLSL, FOAM_WANTED, MAX_FOAM_STONES } from './streamFoam.js';
 import { SKY_ACTIVE, SKY_UNIFORMS, SKY_UNIFORM_GLSL } from './skyShader.js';
 
 // Display transform comes from the saved Blender OCIO configuration, not a tint overlay.
@@ -346,6 +347,7 @@ function makeDepthResolvedWater(resources, normalTexture, refine = false, real =
       viewportSize: { value: new THREE.Vector2(2560, 1440) }, cameraRange: { value: new THREE.Vector2(.1, 1500) },
       // Look-dev hooks (neutral by default): reflection weight, reflection mip offset and ripple strength of the refined water.
       uReflectK: { value: 1 }, uLodBias: { value: 0 }, uRippleK: { value: 1 }, uWaterTime: WIND.time, uFlowRate: FLOW.rate, // flowing water shares the world clock (paused with the wind)
+      uStones: { value: Array.from({ length: MAX_FOAM_STONES }, () => new THREE.Vector4()) }, uStoneCount: { value: 0 }, // foam at stones (streamFoam.js)
       // Native water: absorption density .16, blue-green volume and lightly tinted transmission.
       extinction: { value: new THREE.Vector3(.240, .073, .113).multiplyScalar(refine ? WATER_REFINEMENT.extinctionScale : 1) },
     },
@@ -382,6 +384,7 @@ float roughPatches(vec2 p) {
   float m = mix(texture2D(ripple, (p - v * b) * 0.045 + 0.71).x, texture2D(ripple, (p - v * a) * 0.045 + 0.23).x, wa);
   return 0.5 + 1.0 * smoothstep(0.38, 0.72, m);
 }
+${FOAM_GLSL}
 float viewDepth(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(bedDepth, uv).r, cameraRange.x, cameraRange.y); }
 vec2 skyUV(vec3 direction) { return vec2(atan(direction.z,direction.x)*RECIPROCAL_PI2+0.5,asin(clamp(direction.y,-1.0,1.0))*RECIPROCAL_PI+0.5); }
 void main() {
@@ -444,7 +447,19 @@ void main() {
   radiance *= 1.0 + farWater * (wave.x*.8 + wave.y*.5) * .28;
   float glint = pow(max(dot(normalize(reflect(-V,N)), normalize(uSunDir)), 0.0), 90.0) * uGlowK * step(0.0, uSunDir.y) * uTodSky;
   radiance += uSunC * glint * (.5 + farWater);` : 'float shore = smoothstep(0.0,max(.012,fwidth(column)),column);'}
-  gl_FragColor=vec4(radiance,bedReady>.5 ? ${refine ? 'mix(shore, 1.0, smoothstep(18.0, 55.0, distanceToCamera) * .92)' : 'shore'} : .8);
+  float foamCover = 0.0;
+  ${FOAM_WANTED ? `{ vec2 fl = vFlow * uFlowRate; vec2 fd = stoneFoam(vWaterWorld.xz, fl);
+    if (fd.x + fd.y > 0.02) {
+      /* contact foam churns in place (fine, fast cross-faded noise); wake foam is drawn out into streaks carried down the current */
+      float churn = foamStreaks(vWaterWorld.xz * 2.4, fl * 0.6, 2.2, 0.9);
+      float streak = foamStreaks(vWaterWorld.xz, fl, 7.0, 2.2) * 0.65 + foamStreaks(vWaterWorld.xz * 2.3, fl, 5.0, 1.3) * 0.35;
+      float contact = smoothstep(0.3, 0.75, fd.x * (0.35 + 1.0 * churn));
+      float wake = smoothstep(0.18, 0.62, fd.y * (0.25 + 1.25 * streak));
+      foamCover = max(contact, wake * 0.85) * (1.0 - smoothstep(70.0, 150.0, distanceToCamera));
+      radiance = mix(radiance, uCloudC * (0.74 + 0.2 * max(churn, streak)) * mix(0.45, 1.0, smoothstep(-0.12, 0.08, uSunDir.y)), foamCover * 0.9); /* lit like cloud: white at noon, warm at dusk, dim at night */
+    } }` : ''}
+  gl_FragColor=vec4(radiance,max(foamCover, bedReady>.5 ? ${refine ? 'mix(shore, 1.0, smoothstep(18.0, 55.0, distanceToCamera) * .92)' : 'shore'} : .8));
+  ${typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('foamdebug') ? 'gl_FragColor = vec4(stoneFoam(vWaterWorld.xz, vFlow * uFlowRate).y, foamStreaks(vWaterWorld.xz, vFlow * uFlowRate, 7.0, 2.2), foamCover, 1.0);' : ''}
   ${typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('flowdebug') ? 'gl_FragColor = vec4(0.5 + 0.5 * normalize(vFlow + 1e-5).x, 0.5 + 0.5 * normalize(vFlow + 1e-5).y, length(vFlow) / 1.6, 1.0);' : ''}
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

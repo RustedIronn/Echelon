@@ -30,6 +30,7 @@ import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
 import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
+import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
@@ -243,6 +244,14 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       object.material = Array.isArray(object.material) ? materials : materials[0];
     }
   });
+  { // foam at the stones that break the water surface (streamFoam.js)
+    let water = null; const stones = []; group.traverse((o) => { if (!o.isMesh) return; const r = inheritedMetadata(o, 'echelonRole'); if (r === 'water') water = o; else if (r === 'stone' && o.name !== 'sediment') stones.push(o); });
+    if (!baseline && corridor && water?.material.uniforms?.uStones) { // riffle stones set into the channel (streamFoam.js; ?riffles=off)
+      const beds = []; group.traverse((o) => { if (o.isMesh && (o.name === 'sediment' || inheritedMetadata(o, 'terrainZone') === 'near')) beds.push(o); });
+      stones.push(...placeRiffleStones(group, water, stones.find((s) => s.name === 'Delivery_Embedded_limestone_anchor_02') ?? stones[0], beds));
+    }
+    if (FOAM_WANTED && water?.material.uniforms?.uStones) { const lines = findStoneWaterlines(stones, water); lines.forEach((s, i) => water.material.uniforms.uStones.value[i].set(s.x, s.z, s.r, s.level)); water.material.uniforms.uStoneCount.value = lines.length; water.material.userData.foamStones = lines; }
+  }
   if (bank?.relief && reliefMeshes.length) bank.relief.bindMesh(reliefMeshes); // from here on, anything standing on the ground follows the displaced mesh exactly
   return { group, dispose: () => { ownedMaterials.forEach((m) => m.dispose()); ownedGeometry.forEach((g) => g.dispose()); normal.dispose(); wetness?.texture.dispose(); } };
 }
