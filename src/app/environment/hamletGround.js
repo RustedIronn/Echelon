@@ -15,10 +15,10 @@ export function buildHamletGroundMask(cell=.2){
       const a=l.samples[k],b=l.samples[k+1],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),reach=l.width/2+1.1;
       for(let j=Math.max(0,Math.floor((Math.min(a[1],b[1])-reach-minZ)/cell));j<Math.min(height,Math.ceil((Math.max(a[1],b[1])+reach-minZ)/cell));j++)for(let i=Math.max(0,Math.floor((Math.min(a[0],b[0])-reach-minX)/cell));i<Math.min(width,Math.ceil((Math.max(a[0],b[0])+reach-minX)/cell));i++){
         const x=minX+(i+.5)*cell,z=minZ+(j+.5)*cell,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(length*length||1))),d=Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz);
-        const edge=.08*Math.sin(x*1.3+z*.4)+.05*Math.sin(z*2.7-x*.9),half=l.width/2+edge;
+        const edge=.08*Math.sin(x*1.3+z*.4)+.05*Math.sin(z*2.7-x*.9)+.12*Math.sin((along+t*length)*.19),half=l.width/2+edge;
         const end=l.id==='main'?smooth(0,l.fadeEnd,Math.min(along+t*length,total-along-t*length)):1;
         const coverage=(1-smooth(half-.2,half+.4,d))*end;
-        const wheel=l.id==='main'?.72+.28*smooth(.05,.55,d):1;
+        const wheel=l.id==='main'?.45+.55*Math.exp(-Math.pow((d-.6)/.32,2)):1;
         const at=(j*width+i)*4;data[at]=Math.max(data[at],Math.round(255*coverage*wheel));data[at+1]=Math.max(data[at+1],Math.round(100*(1-smooth(half,half+1,d))*end));
       }
       along+=length;
@@ -61,7 +61,7 @@ roughnessFactor=mix(roughnessFactor,.98,hamletGround.r);
 normal=normalize(mix(normal,nonPerturbedNormal,hamletGround.r*.85));
 #include <lights_physical_fragment>`);
       };
-      material.customProgramCacheKey=()=>previousKey.call(material)+'-hamlet-ground-2';material.needsUpdate=true;
+      material.customProgramCacheKey=()=>previousKey.call(material)+'-hamlet-ground-3';material.needsUpdate=true;
       restores.push(()=>{material.onBeforeCompile=previous;material.customProgramCacheKey=previousKey;material.needsUpdate=true;});
     }
   });

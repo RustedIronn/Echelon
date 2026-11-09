@@ -7,10 +7,11 @@ import { HeightField, buildHamlet } from './hamletGeometry.js';
 import { bankLowering } from './bankLowering.js';
 import { makeHamletTextures } from './hamletTextures.js';
 import { makeHamletLaundry } from './hamletLaundry.js';
+import { buildHamletShelter } from './hamletGreenery.js';
 import {applyWindowWarmth} from './hamletWindowLighting.js';
 import { attachHamletGround } from './hamletGround.js';
 import { makeGroundTexture, applyWeathering, buildContactSkirt } from './hamletWeathering.js';
-import { HAMLET_BUILDINGS, footprint } from './hamletLayout.js';
+import { HAMLET_BUILDINGS, HAMLET_SHELTER_WANTED, footprint } from './hamletLayout.js';
 import { makeChimneySmoke, lifeWanted } from './SmallLife.jsx';
 
 // Top of a building's chimney in world space (matches cottageShell and buildHamlet in hamletGeometry.js).
@@ -63,11 +64,13 @@ export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
       const mesh = new THREE.Mesh(geometry, material); mesh.name = `Hamlet / ${key}`; mesh.castShadow = key !== 'lane' && key !== 'soil'; mesh.receiveShadow = true; group.add(mesh); materials.push(material);
     }
     const skirt = weather ? buildContactSkirt(field) : null; if (skirt) group.add(skirt);
+    const shelter = mode !== 'blockout' && HAMLET_SHELTER_WANTED ? buildHamletShelter(terrain,field,resources) : null;
+    if(shelter)group.add(shelter.group);
     const laundry = mode !== 'blockout' && lifeWanted() ? makeHamletLaundry(field) : null;
     if(laundry){applyBlenderDisplay(laundry.material,resources);group.add(laundry);}
     const top = mode !== 'blockout' && lifeWanted() ? chimneyTop(field, 'cottage-a') : null; const smoke = top ? makeChimneySmoke(top) : null; if (smoke) group.add(smoke); // one hearth lit
-    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); ground?.texture.dispose(); skirt?.geometry.dispose(); skirt?.material.dispose(); smoke?.geometry.dispose(); smoke?.material.dispose(); laundry?.geometry.dispose(); laundry?.material.dispose(); } };
-  }, [field, resources, mode, windowGlow]);
+    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); ground?.texture.dispose(); skirt?.geometry.dispose(); skirt?.material.dispose(); smoke?.geometry.dispose(); smoke?.material.dispose(); laundry?.geometry.dispose(); laundry?.material.dispose(); shelter?.dispose(); } };
+  }, [field, resources, mode, windowGlow, terrain]);
   useEffect(() => { if(!terrain)return; const restore=attachHamletGround(terrain,built.textures.lane); invalidate(); return restore; }, [terrain,built,invalidate]);
   useEffect(() => () => built.dispose(), [built]);
   return <primitive object={built.group}/>;

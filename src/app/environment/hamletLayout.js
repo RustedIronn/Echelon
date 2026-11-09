@@ -34,6 +34,8 @@ export const HAMLET_DOORS = Object.fromEntries(HAMLET_BUILDINGS.map((b) => [b.id
 export const HAMLET_APRON={x:39.8,z:-114.6,radius:1.3};
 // A grassy shared common, not a paved plaza; no change to the protected landform.
 export const HAMLET_COMMON={x:38,z:-116,rx:6.2,rz:3.5};
+export const HAMLET_SHELTER=Object.freeze({x:69,z:-139,height:8.4,yaw:.85});
+export const HAMLET_SHELTER_WANTED=typeof window==='undefined'||new URLSearchParams(window.location.search).get('hamletshelter')!=='off';
 export function tendedGrowth(x,z){
   let growth=0;
   for(const b of HAMLET_BUILDINGS){
@@ -43,6 +45,11 @@ export function tendedGrowth(x,z){
     const edge=.13*Math.sin(x*.63+z*.37)+.09*Math.sin(z*.91-x*.4);
     const r=Math.pow(Math.pow(Math.abs((lx-ox)/(w*.5)),4)+Math.pow(Math.abs((lz-oz)/(d*.5)),4),.25);
     const t=Math.max(0,Math.min(1,(1.24+edge-r)/.48));growth=Math.max(growth,t*t*(3-2*t));
+  }
+  if(HAMLET_SHELTER_WANTED){
+    const shelter=HAMLET_SHELTER,r=Math.hypot((x-shelter.x)/1.1,z-shelter.z);
+    const edge=.16*Math.sin(x*.9+z*.6),t=Math.max(0,Math.min(1,(2.5+edge-r)/2));
+    growth=Math.max(growth,.56*t*t*(3-2*t)); // quieter grass beneath the canopy, never a bare circle
   }
   const c=HAMLET_COMMON,r=Math.hypot((x-c.x)/c.rx,(z-c.z)/c.rz);
   const t=Math.max(0,Math.min(1,(1.3-r)/.55));return Math.max(growth,t*t*(3-2*t));
@@ -125,10 +132,9 @@ export function createHamletClearing() {
     },
   };
   // 0 inside the tended ground, rising to 1 about 5 m outside it: grass is cut short near yards and lanes and grows back into the meadow.
-  const ring = [[1, 0], [0.7, 0.7], [0, 1], [-0.7, 0.7], [-1, 0], [-0.7, -0.7], [0, -1], [0.7, -0.7]];
-  // softness is asked for every blade, flower and terrain vertex (hundreds of thousands of times at load), so the tended ground is rasterised once (25 cm cells,
-  // stamped from the footprints, yards and lane segments) and softness looks the ring probes up in that raster instead of re-testing every polygon and lane.
-  const CELL = 0.25, PAD = 4.5; let grid = null, gw = 0, gh = 0, gx0 = 0, gz0 = 0;
+  // Softness is asked for every blade and flower at load. Rasterise the lane
+  // and foundation cores once, then sample a continuous distance field.
+  const CELL = 0.25, PAD = 4.5; let grid = null, distance = null, gw = 0, gh = 0, gx0 = 0, gz0 = 0;
   const build = () => {
     gx0 = bounds.minX - PAD; gz0 = bounds.minZ - PAD; gw = Math.ceil((bounds.maxX - bounds.minX + 2 * PAD) / CELL); gh = Math.ceil((bounds.maxZ - bounds.minZ + 2 * PAD) / CELL); grid = new Uint8Array(gw * gh);
     const cx = (i) => gx0 + (i + 0.5) * CELL, cz = (j) => gz0 + (j + 0.5) * CELL;
@@ -136,16 +142,33 @@ export function createHamletClearing() {
     for (const polygon of footprints) box(Math.min(...polygon.map((p) => p[0])), Math.max(...polygon.map((p) => p[0])), Math.min(...polygon.map((p) => p[1])), Math.max(...polygon.map((p) => p[1])), (x, z) => pointInPolygon(x, z, polygon));
     for (const lane of lanes) for (let i = 0; i < lane.samples.length - 1; i += 1) { const a = lane.samples[i], b = lane.samples[i + 1]; box(Math.min(a[0], b[0]) - lane.half, Math.max(a[0], b[0]) + lane.half, Math.min(a[1], b[1]) - lane.half, Math.max(a[1], b[1]) + lane.half, (x, z) => distanceToSegment(x, z, a, b) < lane.half); }
     box(HAMLET_APRON.x - HAMLET_APRON.radius - 1, HAMLET_APRON.x + HAMLET_APRON.radius + 1, HAMLET_APRON.z - HAMLET_APRON.radius - 1, HAMLET_APRON.z + HAMLET_APRON.radius + 1, (x, z) => Math.hypot(x - HAMLET_APRON.x, z - HAMLET_APRON.z) < HAMLET_APRON.radius + 0.8);
+    // A two-pass distance field replaces the old stepped rings around lanes.
+    // Grass grows back continuously, rather than jumping between four heights.
+    distance=Float32Array.from(grid,v=>v?0:1e4);const diagonal=CELL*Math.SQRT2;
+    for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){
+      const k=j*gw+i;
+      if(i)distance[k]=Math.min(distance[k],distance[k-1]+CELL);
+      if(j)distance[k]=Math.min(distance[k],distance[k-gw]+CELL);
+      if(i&&j)distance[k]=Math.min(distance[k],distance[k-gw-1]+diagonal);
+      if(i<gw-1&&j)distance[k]=Math.min(distance[k],distance[k-gw+1]+diagonal);
+    }
+    for(let j=gh-1;j>=0;j--)for(let i=gw-1;i>=0;i--){
+      const k=j*gw+i;
+      if(i<gw-1)distance[k]=Math.min(distance[k],distance[k+1]+CELL);
+      if(j<gh-1)distance[k]=Math.min(distance[k],distance[k+gw]+CELL);
+      if(i<gw-1&&j<gh-1)distance[k]=Math.min(distance[k],distance[k+gw+1]+diagonal);
+      if(i&&j<gh-1)distance[k]=Math.min(distance[k],distance[k+gw-1]+diagonal);
+    }
+    grid=null;
   };
-  const tended = (x, z) => { const i = Math.floor((x - gx0) / CELL), j = Math.floor((z - gz0) / CELL); return i >= 0 && j >= 0 && i < gw && j < gh && grid[j * gw + i] === 1; };
   api.softness = (x, z) => {
     if (x < bounds.minX - 4.3 || x > bounds.maxX + 4.3 || z < bounds.minZ - 4.3 || z > bounds.maxZ + 4.3) return 1;
-    if (!grid) build();
-    if (tended(x, z)) return 0;
-    const growth=tendedGrowth(x,z);
-    if(growth>.001)return 1-.62*growth;
-    for (const [r, k] of [[1.2, 0.35], [2.6, 0.55], [4.2, 0.78]]) for (const [dx, dz] of ring) if (tended(x + dx * r, z + dz * r)) return k;
-    return 1;
+    if (!distance) build();
+    const fx=Math.max(0,Math.min(gw-1,(x-gx0)/CELL-.5)),fz=Math.max(0,Math.min(gh-1,(z-gz0)/CELL-.5));
+    const i=Math.min(gw-2,Math.floor(fx)),j=Math.min(gh-2,Math.floor(fz)),tx=fx-i,tz=fz-j,k=j*gw+i;
+    const d=(distance[k]*(1-tx)+distance[k+1]*tx)*(1-tz)+(distance[k+gw]*(1-tx)+distance[k+gw+1]*tx)*tz;
+    const t=Math.max(0,Math.min(1,d/4.2)),natural=t*t*(3-2*t);
+    return Math.min(natural,1-.62*tendedGrowth(x,z));
   };
   return api;
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {windowWarmth} from './hamletWindowLighting.js';
-import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_LINEN_LINE, HAMLET_PALETTE, mulberry32, sampleCurve, footprint, yardPolygon, distanceToSegment, pointInPolygon } from './hamletLayout.js';
+import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_LINEN_LINE, HAMLET_PALETTE, HAMLET_SHELTER_WANTED, mulberry32, sampleCurve, footprint, yardPolygon, distanceToSegment, pointInPolygon } from './hamletLayout.js';
 
 // Procedural hamlet geometry. Everything is built as flat-shaded "soups" (positions, normals, metric UVs, vertex colours that carry the
 // palette and a cheap ambient-occlusion shade) grouped by material, so the whole settlement is a dozen draw calls. Pure functions
@@ -234,6 +234,9 @@ function inhabitedEdges(S,field,rng){
   for(const [x,z,r,h]of[[16.5,-124.8,.35,.36],[17.2,-124.7,.4,.4],[18,-124.5,.34,.32],[16.8,-124,.38,.3],[18,-123.9,.33,.34],
     [31.7,-112.8,.65,.72],[32.6,-113.1,.55,.61],[33.2,-112.6,.44,.51],[44,-121,.55,.65],[44.9,-121.5,.65,.75],[45.6,-121.2,.43,.52],
     [59.8,-134,.6,.64],[60.7,-134.4,.52,.58]])herb(S,field,x,z,r,h,rng);
+  // An irregular living edge joins the farm boundary to its shelter tree.
+  // A few overlapping masses, not another collection of isolated field props.
+  if(HAMLET_SHELTER_WANTED)for(const [x,z,r,h]of[[66.9,-137.4,.65,.75],[67.6,-138.1,.72,.8],[68.1,-138.8,.62,.65],[68.8,-139.1,.65,.62],[69.3,-139.5,.7,.55]])herb(S,field,x,z,r,h,rng);
   // A low village well/trough and chapel noticeboard give the common a purpose.
   const x=32.7,z=-115.1,y=field.at(x,z);
   for(const dx of[-.72,.72])S.stone.box(x+dx,y-.08,z,.22,.59,.9,{color:PAL.stone});
