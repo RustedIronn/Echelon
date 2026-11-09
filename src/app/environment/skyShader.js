@@ -5,7 +5,7 @@ import { WIND } from './wind.js';
 // Clouds are a flat layer (no volumetrics): a domain-warped billowy layer with sun-side self shadowing, darker dense cores, brighter thin edges and a
 // silver lining toward the sun, plus a thin high cirrus layer.
 // ?sunpath=front puts the sun in view all day (timeOfDay.js): its glow is drawn tighter then, so the sun reads as a sun, not a blown-out patch of sky.
-const SUN_IN_VIEW = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sunpath') === 'front';
+const SUN_IN_VIEW = typeof window === 'undefined' || (new URLSearchParams(window.location.search).get('sunpath') || 'front') === 'front';
 export const SKY_UNIFORM_GLSL = `
 uniform vec3 uSunDir; uniform vec3 uMoonDir; uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uBelt; uniform vec3 uSunC; uniform vec3 uCloudC;
 uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uSkyTime; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc; uniform float uMoonIllum;

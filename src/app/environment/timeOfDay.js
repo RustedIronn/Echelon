@@ -19,7 +19,7 @@ export function solarDay(date) {
   const season = Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365); const dayLength = 12.4 + 1.0 * season; const noon = 12.75;
   return { dayLength, noon, sunrise: noon - dayLength / 2, sunset: noon + dayLength / 2, maxElevation: 50 + 14 * season };
 }
-const SUN_PATH = typeof window === 'undefined' ? 'behind' : (new URLSearchParams(window.location.search).get('sunpath') || 'behind');
+const SUN_PATH = typeof window === 'undefined' ? 'front' : (new URLSearchParams(window.location.search).get('sunpath') || 'front'); // the sun in view by default (chosen 2026-11-09); ?sunpath=behind for the earlier path
 // The sun rises behind and to the left of the camera, climbs through the open sky and sets in front, behind the mountains.
 export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;

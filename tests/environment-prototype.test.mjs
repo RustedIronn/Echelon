@@ -564,10 +564,10 @@ test('hamlet is a gated flag: preview default is procedural and pass=previous re
 import { applyTodQuery, currentMoment, formatHour, getTod, moodState, moonIllumination, moonPhase, setTod, solarDay, sunPose, wrapHour } from '../src/app/environment/timeOfDay.js';
 const at = (y, mo, d, h) => new Date(y, mo - 1, d, Math.floor(h), Math.round((h % 1) * 60));
 
-test('the solar day follows the calendar: longer in summer, sun rises behind the camera and sets in front', () => {
+test('the solar day follows the calendar: longer in summer, the sun crosses low in front of the camera while the mood keeps the full daylight curve', () => {
   const summer = solarDay(at(2026, 6, 21, 12)), winter = solarDay(at(2026, 12, 21, 12));
   assert.ok(summer.dayLength > winter.dayLength + 1.8 && summer.maxElevation > winter.maxElevation);
-  const noon = sunPose(at(2026, 6, 21, summer.noon)); assert.ok(noon.elevation > 55);
+  const noon = sunPose(at(2026, 6, 21, summer.noon)); assert.ok(noon.mood > 55 && noon.elevation > 20 && noon.elevation < 30); /* in view: low real arc, full daylight mood */
   assert.ok(Math.abs(sunPose(at(2026, 6, 21, summer.sunrise)).elevation) < 1 && Math.abs(sunPose(at(2026, 6, 21, summer.sunset - 0.001)).elevation) < 1.5);
   assert.ok(sunPose(at(2026, 6, 21, 0.5)).elevation < -30);
 });
