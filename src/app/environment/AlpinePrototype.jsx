@@ -610,7 +610,7 @@ function Measurements({ manifest, pipeline, onReady }) {
       })(),
       timerAvailable: Boolean(context.getExtension('EXT_disjoint_timer_query_webgl2')),
       camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov },
-      cameraObject: camera, // for diagnostics scripts that project world points to the screen
+      cameraObject: camera, three: THREE, // for diagnostics scripts (projecting points, raycasting the skyline)
     };
     onReady();
     return () => { delete window.__echelonPrototype; };

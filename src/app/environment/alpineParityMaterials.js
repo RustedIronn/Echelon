@@ -68,7 +68,7 @@ normal = normalize(mix(normal, normalize(mat3(viewMatrix) * vec3(0.0, 1.0, 0.0))
         `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
          reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * 0.16 * smoothstep(0.05, 0.7, vLeafHeight);
          // backlight: looking toward the sun, thin blades glow with the light coming through them (a warm-green halo on the tips), shadowed like the rest
-         reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * vec3(1.05, 1.2, 0.55) * 0.55 * uLeafBacklight * smoothstep(0.25, 0.95, vLeafHeight);`,
+         reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * vec3(1.0, 1.08, 0.78) * 0.55 * uLeafBacklight * smoothstep(0.25, 0.95, vLeafHeight);`,
       );
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_physical_pars_fragment>', leafLighting);
       shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>

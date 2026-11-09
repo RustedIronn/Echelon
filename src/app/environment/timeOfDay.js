@@ -20,11 +20,16 @@ export function solarDay(date) {
   return { dayLength, noon, sunrise: noon - dayLength / 2, sunset: noon + dayLength / 2, maxElevation: 50 + 14 * season };
 }
 const SUN_PATH = typeof window === 'undefined' ? 'front' : (new URLSearchParams(window.location.search).get('sunpath') || 'front'); // the sun in view by default (chosen 2026-11-09); ?sunpath=behind for the earlier path
+const SUN_IN_VIEW_PATH = SUN_PATH === 'front';
 // The default arc is composed for the saved 39.76-degree vertical hero view.
 // "In front" is not sufficient: the former 215..290-degree / 28-degree-high
 // arc left the image at morning and noon. Keep the complete disc inside the
 // desktop framing, with room for its glow and gentle future camera parallax.
-const FRONT_SUN_ARC = Object.freeze({riseAzimuth:248,setAzimuth:290,peakElevation:14.5,seasonalElevation:1.5});
+// Being in frame is not enough either: the land must not hide it. Seen from the camera the skyline is low hills (1-3 degrees) left of 243 degrees and
+// mountains (5-9 degrees) from 244 to 292 (measured with perf/skyline.mjs; SKYLINE in tests/day-cycle.test.mjs). So the sun rises over the low hills
+// at 238 degrees, near the left edge of a 16:9 frame, and climbs quickly at first (risePower < 1 makes the arc steep near the horizon, then a long flat
+// top): it clears the hills within half an hour of sunrise and stays above the mountains until it sets behind the right-hand peaks.
+const FRONT_SUN_ARC = Object.freeze({riseAzimuth:238,setAzimuth:290,peakElevation:14.5,seasonalElevation:1.5,risePower:.55});
 export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;
   // ?sunpath=side (experiment): the same sunrise and sunset points, but the sun crosses the sky in FRONT of the camera (to the left at noon) instead of behind it,
@@ -37,7 +42,7 @@ export function sunPose(date) {
   let mood = null;
   if (into <= solar.dayLength) {
     const f = into / solar.dayLength; const arc = Math.sin(Math.PI * f);
-    if (front) { elevation = (FRONT_SUN_ARC.peakElevation + FRONT_SUN_ARC.seasonalElevation * Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365)) * arc; mood = solar.maxElevation * arc; azimuth = (FRONT_SUN_ARC.riseAzimuth + (FRONT_SUN_ARC.setAzimuth - FRONT_SUN_ARC.riseAzimuth) * f) * DEG; }
+    if (front) { elevation = (FRONT_SUN_ARC.peakElevation + FRONT_SUN_ARC.seasonalElevation * Math.sin((2 * Math.PI * (dayOfYear(date) - 80)) / 365)) * Math.pow(arc, FRONT_SUN_ARC.risePower); mood = solar.maxElevation * arc; azimuth = (FRONT_SUN_ARC.riseAzimuth + (FRONT_SUN_ARC.setAzimuth - FRONT_SUN_ARC.riseAzimuth) * f) * DEG; }
     else { elevation = solar.maxElevation * arc; azimuth = (side ? 160 + 130 * f : 160 - 230 * f) * DEG; }
   } else { const g = (into - solar.dayLength) / (24 - solar.dayLength); elevation = -45 * Math.sin(Math.PI * g); azimuth = (front ? FRONT_SUN_ARC.setAzimuth + (360 + FRONT_SUN_ARC.riseAzimuth - FRONT_SUN_ARC.setAzimuth) * g : side ? 290 + 230 * g : -70 - 230 * g) * DEG; }
   const e = elevation * DEG; return { elevation, mood: mood ?? elevation, azimuth, solar, hour: h, dir: [Math.cos(e) * Math.cos(azimuth), Math.sin(e), Math.cos(e) * Math.sin(azimuth)] };
@@ -173,7 +178,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   const s = sampledState ?? moodState(date);
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 0.55; } /* a full moon lights the meadow but leaves it darker than the sky, as night should be */
-  LEAF_LIGHT.backlight.value = 0.2 + 0.8 * smooth(-4, 4, s.sun.elevation); // the warm sunlit glow through the blades: only a trace under the moon
+  LEAF_LIGHT.backlight.value = (0.2 + 0.8 * smooth(-4, 4, s.sun.elevation)) * (SUN_IN_VIEW_PATH ? 0.5 : 1); /* with the sun in front all day, the glow through the blades would be on all day: half of it, or the meadow turns neon */ // the warm sunlit glow through the blades: only a trace under the moon
   FLOWER_LIGHT.close.value = 1 - smooth(-3, 7, s.sun.elevation); FLOWER_LIGHT.lean.value = smooth(-1, 8, s.sun.elevation); // daisies shut for the night and open in the morning sun; heads follow the sun by day
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe; FLOW.rate.value = flowRateAt(s.sun.hour); // the stream runs fuller in the afternoon (snowmelt)

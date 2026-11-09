@@ -57,23 +57,40 @@ test('the approved look restores lighting, grade, mist and window emission after
 });
 
 
+// The skyline seen from the hero camera: [azimuth, highest land elevation] in degrees, measured by raycasting the delivered terrain, mountains,
+// sediment, hamlet and spruce (design-reference/environment/webgl-prototype/perf/skyline.mjs). Low hills left of 243, mountains 244-292.
+const SKYLINE=[[226,1.31],[230,2.09],[234,2.71],[238,2.95],[242,2.73],[244,5.02],[246,3.93],[248,5.45],[250,6.82],[252,6],[254,5.9],[256,4.57],[258,6.7],[260,7.87],[262,7.03],[264,7.56],[266,6.86],[268,7.17],[270,7.62],[272,8.32],[274,9.26],[276,5.96],[278,5.51],[280,5.82],[282,6.19],[284,6.95],[286,7.79],[288,7.34],[290,5.47],[292,3.75],[294,4.98],[298,4.3],[300,3.16]];
+const skylineAt=(az)=>{let best=0;for(const[a,e]of SKYLINE)if(Math.abs(a-az)<=2.01)best=Math.max(best,e);return best;}; // the highest land within 2 degrees either side
+
+test('the sun is not hidden by the land: it clears the skyline within half an hour of sunrise and stays clear until it nears the right-hand peaks',()=>{
+ // In frame was not enough: an arc rising at 248 degrees sat behind the left-hand mountains until about 9:30 in November.
+ for(let month=0;month<12;month++){
+  const midnight=new Date(2026,month,21),solar=solarDay(midnight);
+  for(let step=0;step<=80;step++){
+   const hour=solar.sunrise+.5+(solar.dayLength-2)*step/80,sun=sunPose(new Date(+midnight+hour*3600000));const az=((sun.azimuth*180/Math.PI)%360+360)%360;
+   assert.ok(sun.elevation>skylineAt(az)+.6,`sun behind the land: month ${month+1}, hour ${hour.toFixed(2)}, azimuth ${az.toFixed(1)}, elevation ${sun.elevation.toFixed(2)}`);
+  }
+ }
+});
+
 test('the entire front sun arc fits the actual hero camera through every season, including morning and noon',()=>{
  const manifest=JSON.parse(readFileSync(new URL('../public/assets/environment/alpine-prototype/manifest.json',import.meta.url)));
  // The previous test only checked an arbitrary elevation range and missed
  // both the left-edge morning exit and the summer-noon exit above the frame.
- for(const aspect of[16/9,16/10,4/3]){
+ // The sun rises over the low hills at the left edge of a 16:9 frame, so narrower windows pick it up a little later in the morning.
+ for(const[aspect,from]of[[2.56,.5],[16/9,.5],[16/10,1.5],[4/3,2.5]]){
   const camera=authoredCamera(manifest,aspect);
   for(let month=0;month<12;month++){
    const midnight=new Date(2026,month,21),solar=solarDay(midnight);
    for(let step=0;step<=60;step++){
-    const hour=solar.sunrise+solar.dayLength*step/60,date=new Date(+midnight+hour*3600000),sun=sunPose(date);
+    const hour=solar.sunrise+from+(solar.dayLength-from)*step/60,date=new Date(+midnight+hour*3600000),sun=sunPose(date);
     const projected=new THREE.Vector3(...sun.dir).multiplyScalar(1000).add(camera.position).project(camera);
     assert.ok(Math.abs(projected.x)<.92,`sun leaves the horizontal frame: month ${month+1}, hour ${hour}, aspect ${aspect}`);
     assert.ok(Math.abs(projected.y)<.86,`sun leaves the vertical frame: month ${month+1}, hour ${hour}, aspect ${aspect}`);
     assert.ok(projected.z>-1&&projected.z<1,'sun remains in front of the saved camera');
    }
-   near(sunPose(new Date(+midnight+solar.sunrise*3600000)).elevation,0,.001);
-   near(sunPose(new Date(+midnight+solar.sunset*3600000)).elevation,0,.001);
+   near(sunPose(new Date(+midnight+solar.sunrise*3600000)).elevation,0,.01); /* the steep rise magnifies sub-second rounding at the horizon */
+   near(sunPose(new Date(+midnight+solar.sunset*3600000)).elevation,0,.01);
   }
  }
 });

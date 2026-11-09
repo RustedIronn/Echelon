@@ -57,7 +57,7 @@ vec3 skyRadiance(vec3 d){
     vec2 p=d.xz/(y+0.16)*1.1+vec2(uCloudShift,0.0)+vec2(0.0035,0.0012)*uSkyTime; // clouds drift across the sky in real time
     vec2 w=vec2(fbm(p*0.8+3.1+uSkyTime*0.0011),fbm(p*0.8+7.7-uSkyTime*0.0009))-0.5; /* and slowly change shape as they go */
     float detail=fbm(p*4.5+w*1.7); float n=fbm(p+w*0.9)*0.65+detail*0.35;
-    float body=smoothstep(1.0-uCover-0.04,1.0-uCover+0.14,n); cm=body*smoothstep(0.012,0.17,y);
+    float body=smoothstep(1.0-uCover-0.04,1.0-uCover+0.14,n); cm=body*smoothstep(0.012,0.17,y)${SUN_IN_VIEW ? '*(1.0-0.75*smoothstep(0.985,0.998,sd))' : ''}; /* with the sun in view, cloud thins round it to a light veil, so the disc is seldom lost */
     vec2 sl=normalize(uSunDir.xz+vec2(1e-4)); float n2=fbm(p+sl*0.30+w*0.9)*0.65+detail*0.35;
     float lit=clamp(0.58+(n-n2)*6.0,0.25,1.1); float thick=smoothstep(1.0-uCover,1.0-uCover+0.55,n);
     vec3 shade=mix(uCloudC*0.38,uZen*0.6,0.25);
