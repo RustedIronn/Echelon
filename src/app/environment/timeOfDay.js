@@ -129,7 +129,7 @@ export function createLiveMoodSampler(period=30000) {
 // ---- store (mode: approved | manual | live)
 const pad = (n) => String(n).padStart(2, '0');
 export const todayString = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const listeners = new Set(); let state = { mode: 'approved', hour: 12, date: todayString() };
+const listeners = new Set(); let state = { mode: 'live', hour: 12, date: todayString() }; // the live clock by default; the earlier static renderer stays one click away ('Approved' in the look-dev panel)
 const emit = () => listeners.forEach((l) => l());
 export const getTod = () => state;
 export function setTod(next) {

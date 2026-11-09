@@ -613,8 +613,8 @@ test('the cycle is continuous: nothing jumps between ten-minute steps on any sea
   }
 });
 
-test('time of day store: approved by default, manual and live modes, query parsing and wrapping', () => {
-  assert.equal(getTod().mode, 'approved'); assert.equal(currentMoment(), null);
+test('time of day store: the live clock by default, manual and live modes, query parsing and wrapping', () => {
+  assert.equal(getTod().mode, 'live'); assert.ok(currentMoment() instanceof Date); setTod({ mode: 'approved' }); assert.equal(currentMoment(), null); /* the earlier renderer stays available */
   setTod({ mode: 'manual', hour: 25.5, date: '2026-06-21' }); const m = currentMoment(); assert.equal(m.getHours(), 1); assert.equal(m.getDate(), 21); assert.equal(formatHour(13.75), '13:45');
   setTod({ mode: 'live' }); const now = new Date(2026, 0, 1, 7, 30); assert.equal(currentMoment(now), now);
   applyTodQuery('?tod=19.5&date=2026-12-24'); assert.equal(getTod().mode, 'manual'); assert.equal(getTod().hour, 19.5); assert.equal(getTod().date, '2026-12-24');
