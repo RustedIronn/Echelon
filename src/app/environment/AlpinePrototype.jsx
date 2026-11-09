@@ -31,9 +31,10 @@ import Wind from './Wind.jsx';
 import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
-import { planWaterEdge, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
+import { planWaterEdge, planMeadow, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
 import Airborne, { airborneWanted } from './Airborne.jsx';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
+import { characterTint, characterHeight, pathAt, pathThins } from './meadowCharacter.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
@@ -329,6 +330,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
             if(h.density<.025 && layer.synthetic)continue;
             if(layer.layer>=2 && habitatHash(records[offset],records[offset+1],91)>.40+.92*h.density)continue;
           }
+          if(!baseline && pathThins(records[offset],-records[offset+1],habitatHash(records[offset],records[offset+1],97)))continue; // worn to earth on the path (meadowCharacter.js)
           const soft=clearing?clearing.softness(records[offset],-records[offset+1]):1; if(soft===0)continue; // mown ground (Blender y is Three -z); shorter grass in the ring around it
           if(corridor && !baseline) {
             if(layer.layer>=2 || layer.synthetic) {
@@ -365,6 +367,8 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
             const leafWidth=1+.55*habitatSmooth(32,125,reach);
             placed.elements[8]*=leafWidth;placed.elements[9]*=leafWidth;placed.elements[10]*=leafWidth;
           }
+          const cx = records[offset], cz = -records[offset + 1]; const moisture = habitat && !baseline ? habitat.sample(cx, cz).moisture : 0; // meadow character (meadowCharacter.js)
+          if (!baseline) { const k = characterHeight(cx, cz, moisture); if (k !== 1) { placed.elements[4] *= k; placed.elements[5] *= k; placed.elements[6] *= k; } }
           mesh.setMatrixAt(i, placed);
           tint.fromArray(manifest.grassPalette[records[offset + 6]]);
           if (meadowDetail && !habitat && (layer.layer >= 2 || layer.synthetic)) tint.multiplyScalar(meadowBladeTint(records[offset], -records[offset + 1], layer.file.includes('fill')));
@@ -379,6 +383,7 @@ function Grass({ manifest, gltf, resources, baseline, refinement, corridor, stri
             const bx=records[offset],bz=-records[offset+1];
             if(Math.hypot(bx+3,bz-10)>38){const hs=habitat.sample(bx,bz);const c=communityAt(bx,bz,hs.moisture);if(c.strength>.08&&habitatHash(bx,bz,131)<c.strength*.7*Math.min(1.5,scatterDensity(bx,bz))*(1+.9*slopeFacing(bankLowering.current,bx,bz)))tint.lerp(driftColor.setRGB(...COMMUNITIES[c.kind].rgb),.45+.3*habitatHash(bx,bz,132));}
           }
+          if (!baseline) characterTint(tint, cx, cz, moisture);
           mesh.setColorAt(i, tint);
         });
         mesh.computeBoundingBox(); mesh.computeBoundingSphere(); mesh.receiveShadow = new URLSearchParams(window.location.search).get('grassshadow') !== '0';
@@ -427,6 +432,7 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
       if (extra?.[species]) records = records.concat(extra[species]);
       const lod = inheritedMetadata(source, 'lod') ?? 0;
       if (clearing) records = records.filter((record) => clearing.softness(record[12], record[14]) > 0.7);
+      if (!baseline) records = records.filter((record) => pathAt(record[12], record[14]) < 0.4); // nothing flowers on the trodden path
       if (!baseline) records = records.filter((record) => {
         const distance = Math.hypot(record[12] - manifest.camera.matrix[12], record[14] - manifest.camera.matrix[14]);
         return (distance < 26 ? 0 : distance < 65 ? 1 : 2) === lod;
@@ -697,7 +703,7 @@ function WildPlants({ habitat, farMeta, farRaw, clearing, resources }) {
   const built = useMemo(() => {
     const field = new HeightField(farMeta, new Float32Array(farRaw)); const bank = bankLowering.current; const near = habitat.nearGround;
     const groundAt = (x, z, d) => { const n = d < 30 && near ? near.at(x, z) : NaN; if (n === n) return n; const y = field.at(x, z); return y + (bank ? bank.offsetAt(x, z, y) : 0); };
-    return buildWildPlants(planWaterEdge({ habitat, groundAt, clearing }), resources);
+    return buildWildPlants({ ...planWaterEdge({ habitat, groundAt, clearing }), ...planMeadow({ habitat, groundAt, clearing, avoid: pathAt }) }, resources);
   }, [habitat, farMeta, farRaw, clearing, resources]);
   useEffect(() => () => built.dispose(), [built]);
   return <primitive object={built.group} />;

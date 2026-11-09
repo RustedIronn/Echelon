@@ -81,12 +81,80 @@ function marigoldGeometry(seed) {
   for (let i = 0; i < flowers; i += 1) { const a = r() * Math.PI * 2, d = r() * 0.1; const y = 0.16 + r() * 0.1; b.blade([0, 0, 0], [Math.cos(a), Math.sin(a)], y, d, 0.005, hex('#3a5a2a'), hex('#4a6a30'), 2); b.disc([Math.cos(a) * d, y, Math.sin(a) * d], [0, 1, 0], 0.022, 5, hex('#e7a812'), hex('#f6cf2a')); }
   return b.geometry();
 }
+// Moor-grass tussock: a dense mound of fine arching blades, the older ones straw-coloured.
+function tussockGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 46 + Math.floor(r() * 16);
+  for (let i = 0; i < n; i += 1) { const a = r() * Math.PI * 2, spread = Math.sqrt(r()) * 0.12; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.28 + r() * 0.3; const dry = r() < 0.35;
+    b.blade([dir[0] * spread, 0, dir[1] * spread], dir, h, 0.12 + r() * 0.22, 0.012, hex(dry ? '#7b7448' : '#4b6530'), hex(dry ? '#c2b47c' : '#86954f'), 3); }
+  return b.geometry();
+}
+// Seeding grasses (cocksfoot, Yorkshire fog): a few tall thin stems standing above the meadow, each topped by a soft spike of tiny straw-toned
+// florets that catches the low sun.
+function seedGrassGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const stems = 3 + Math.floor(r() * 4);
+  for (let s = 0; s < stems; s += 1) {
+    const a = r() * Math.PI * 2, off = r() * 0.06; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.65 + r() * 0.35; const lean = 0.04 + r() * 0.12;
+    b.blade([dir[0] * off, 0, dir[1] * off], dir, h, lean, 0.006, hex('#5d7036'), hex('#9a9a5c'), 4);
+    const top = [dir[0] * (off + lean), h, dir[1] * (off + lean)]; const tint = r() < 0.5 ? hex('#c9b98a') : hex('#b8a7b0'); // straw, or the pinkish-grey of Yorkshire fog
+    for (let k = 0; k < 16; k += 1) b.puff([top[0] + (r() - 0.5) * 0.022 + dir[0] * k * 0.002, top[1] - k * 0.008, top[2] + (r() - 0.5) * 0.022 + dir[1] * k * 0.002], 0.0035 + r() * 0.003, tint.clone().lerp(hex('#8f8a5a'), 0.35 + r() * 0.3));
+  }
+  return b.geometry();
+}
+// Bracken: fronds on stiff stalks, each a triangle of paired leaflets along a midrib, arching outward; the green of late summer.
+function brackenGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const fronds = 3 + Math.floor(r() * 3);
+  for (let f = 0; f < fronds; f += 1) {
+    const a = r() * Math.PI * 2; const dir = [Math.cos(a), Math.sin(a)]; const side = [-dir[1], dir[0]]; const stalk = 0.35 + r() * 0.25, len = 0.45 + r() * 0.3;
+    b.blade([0, 0, 0], dir, stalk, 0.05, 0.01, hex('#5a4a2c'), hex('#5c6a2e'), 2);
+    for (let k = 0; k < 8; k += 1) { const t = k / 8; const along = 0.05 + t * len; const y = stalk + 0.06 - t * t * 0.18; const w = (1 - t) * 0.16 + 0.03; const c = [dir[0] * along, y, dir[1] * along]; const green = hex(r() < 0.12 ? '#8a7a3a' : '#4f6b26').lerp(hex('#6f8a34'), t * 0.6);
+      for (const sgn of [-1, 1]) b.disc([c[0] + side[0] * sgn * w * 0.5, c[1], c[2] + side[1] * sgn * w * 0.5], [dir[0] * 0.3, 1, dir[1] * 0.3], w * 0.5, 5, green, green, [1.0, 0.35]); }
+  }
+  return b.geometry();
+}
+// Gorse: a dense dark spiny mound, flecked all over with coconut-yellow flowers.
+function gorseGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 120 + Math.floor(r() * 40);
+  for (let i = 0; i < n; i += 1) { const a = r() * Math.PI * 2, el = Math.acos(1 - r()); const rad = 0.45 + r() * 0.12; const c = [Math.cos(a) * Math.sin(el) * rad, 0.15 + Math.cos(el) * rad * 0.9, Math.sin(a) * Math.sin(el) * rad];
+    b.blade([c[0] * 0.6, c[1] * 0.4, c[2] * 0.6], [Math.cos(a), Math.sin(a)], c[1] * 0.65, rad * 0.45, 0.04, hex('#1f3318'), hex('#34502a'), 2); }
+  for (let i = 0; i < 70; i += 1) { const a = r() * Math.PI * 2, el = Math.acos(1 - r() * 0.95); const rad = 0.5 + r() * 0.06; b.puff([Math.cos(a) * Math.sin(el) * rad, 0.15 + Math.cos(el) * rad * 0.9, Math.sin(a) * Math.sin(el) * rad], 0.02, hex('#f0c419').lerp(hex('#e0a510'), r())); }
+  return b.geometry();
+}
 export const WILD_KINDS = {
   rush: { make: rushGeometry, variants: 3 },
   sedge: { make: sedgeGeometry, variants: 3 },
   meadowsweet: { make: meadowsweetGeometry, variants: 3 },
   marigold: { make: marigoldGeometry, variants: 3 },
+  tussock: { make: tussockGeometry, variants: 3 },
+  seedgrass: { make: seedGrassGeometry, variants: 4 },
+  bracken: { make: brackenGeometry, variants: 3 },
+  gorse: { make: gorseGeometry, variants: 2 },
 };
+
+// The open meadow: tussocks and seeding grasses through it in patches, bracken in stands on the dry, rising ground of the middle distance, and a
+// few gorse bushes. Kept off the water's edge (that band has its own plants), the hamlet's tended ground and the worn path.
+export function planMeadow({ habitat, groundAt, clearing = null, avoid = () => 0, from = 5, to = 160, cell = 0.7 }) {
+  const out = { tussock: [], seedgrass: [], bracken: [], gorse: [] };
+  const patch = (x, z, s, k) => { const v = Math.sin(x * s + k) * Math.cos(z * s * 1.3 - k * 0.7) + Math.sin((x + z) * s * 0.6 + k * 2.1) * 0.6; return v * 0.5 + 0.5; };
+  for (let j = Math.floor((CAMERA[1] - to) / cell); j <= Math.floor((CAMERA[1] - from) / cell); j += 1) for (let i = Math.floor((CAMERA[0] - to) / cell); i <= Math.floor((CAMERA[0] + to) / cell); i += 1) {
+    const x = (i + habitatHash(i, j, 81)) * cell, z = (j + habitatHash(i, j, 82)) * cell, dx = x - CAMERA[0], dz = z - CAMERA[1], d = Math.hypot(dx, dz);
+    if (d < from || d > to || Math.atan2(Math.abs(dx), -dz) > FRAME_HALF_ANGLE) continue;
+    const h = habitat.sample(x, z); if (h.density < 0.08 || h.waterDistance < 4) continue; if (clearing && clearing.softness(x, z) < 0.9) continue; if (avoid(x, z) > 0.2) continue;
+    const roll = habitatHash(i, j, 83), pick = habitatHash(i, j, 84);
+    const near = d < 12 ? 0.4 : 1; // keep the first metres open: these stand taller than the meadow
+    const cand = [
+      ['tussock', 0.25 * smooth(0.55, 0.75, patch(x, z, 0.09, 5.3)) * (0.4 + h.moisture) * near],
+      ['seedgrass', 0.42 * smooth(0.4, 0.65, patch(x, z, 0.13, 1.7)) * (1.1 - h.bloom * 0.6) * smooth(9, 14, d)], // they stand above the meadow: not in the first metres
+      ['bracken', 0.6 * smooth(0.68, 0.82, patch(x, z, 0.045, 3.3)) * smooth(30, 55, d) * (1 - h.moisture)],
+      ['gorse', 0.035 * smooth(0.78, 0.86, patch(x, z, 0.03, 8.1)) * smooth(25, 45, d) * (1 - h.moisture)],
+    ];
+    const total = cand.reduce((s, c) => s + c[1], 0); if (roll > total * cell * cell * (1 - 0.5 * smooth(60, 160, d))) continue;
+    let acc = 0, kind = cand[0][0]; const target = pick * total; for (const [k, w] of cand) { acc += w; if (target <= acc) { kind = k; break; } }
+    const y = groundAt(x, z, d); if (!(y === y)) continue;
+    const size = (kind === 'gorse' ? 1.6 : kind === 'bracken' ? 1.15 : 0.85) + 0.4 * habitatHash(i, j, 85);
+    out[kind].push({ x, y: y - 0.02, z, yaw: habitatHash(i, j, 86) * Math.PI * 2, size, variant: Math.floor(habitatHash(i, j, 87) * WILD_KINDS[kind].variants) });
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------- placement
 // The water's edge: the band of dry ground just above the water. The water map also covers dry banks (the delivered mesh runs under them), so the

@@ -5,6 +5,7 @@ import { TUFTS } from './tufts.js';
 import { FOLIAGE_A2C } from './antialias.js';
 import {isMeadowFlowerEnabled} from './flowerPalette.js';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
+import { pathAt } from './meadowCharacter.js';
 
 // Real flower models (the delivered meshes, at their lowest level of detail) for the middle ground, at the positions of the flower clumps chosen by tufts.js.
 // Counts are capped so the triangle budget stays small (the models are 36-900 triangles at their lowest level of detail).
@@ -19,7 +20,7 @@ export function planRealFlowers(placed, { maxFlowers = 3500, naturalScale = fals
     for (let k = 0; k < placed.counts[cell]; k += 1) {
       if (hash(k + cell * 100003, 1) > keep) continue; const m = placed.matrices[cell]; const o = k * 16;
       let r = hash(k + cell * 7919, 2), acc = 0, species = speciesMix[cell][0][0]; for (const [name, weight] of speciesMix[cell]) { acc += weight; if (r <= acc) { species = name; break; } }
-      if(!isMeadowFlowerEnabled(species))continue;
+      if(!isMeadowFlowerEnabled(species))continue; if(pathAt(m[o+12],m[o+14])>.4)continue; // not on the trodden path (meadowCharacter.js)
       const yaw = hash(k + cell * 1301, 3) * Math.PI * 2; const distance = Math.hypot(m[o + 12] - TUFTS.camera[0], m[o + 14] - TUFTS.camera[1]); const grow = Math.max(0, Math.min(1, (distance - 30) / 40)); const authoredScale = Math.hypot(m[o],m[o+1],m[o+2]); const scale = keepScale ? authoredScale : (naturalScale ? authoredScale * (1 + .22 * grow) : 1 + 0.55 * grow * grow * (3 - 2 * grow)) * (0.85 + 0.3 * hash(k, 4)); // authored scale is retained; at most 22% silhouette compensation in the middle distance
       const c = Math.cos(yaw) * scale, s = Math.sin(yaw) * scale; if (!lists.has(species)) lists.set(species, []); lists.get(species).push(c, 0, -s, 0, 0, scale, 0, 0, s, 0, c, 0, m[o + 12], m[o + 13] + 0.02, m[o + 14], 1);
     }
