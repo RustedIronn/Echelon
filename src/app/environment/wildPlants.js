@@ -34,7 +34,7 @@ function builder() {
       for (let k = 0; k < n; k += 1) idx.push(centre, ring[k], ring[(k + 1) % n]);
     },
     // a tiny round floret: three small discs at right angles, so it reads as a round dot from any side (never a square)
-    puff(c, r, col) { for (const n of [[0, 1, 0], [1, 0.2, 0], [0, 0.2, 1]]) this.disc(c, n, r, 6, col); },
+    puff(c, r, col) { for (const n of [[0.6, 1, 0], [-0.4, 0.3, 1]]) this.disc(c, n, r, 4, col); }, // two small crossed diamonds: 8 triangles
     geometry() { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setIndex(idx); g.computeBoundingSphere(); return g; },
   };
 }
@@ -45,7 +45,7 @@ function rushGeometry(seed) {
   const r = mulberry(seed), b = builder(); const n = 30 + Math.floor(r() * 12);
   for (let i = 0; i < n; i += 1) {
     const a = r() * Math.PI * 2, spread = 0.02 + r() * 0.07; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.55 + r() * 0.45;
-    b.blade([dir[0] * spread, 0, dir[1] * spread], dir, h, 0.04 + r() * 0.16, 0.009, hex('#2f4a22'), hex(r() < 0.3 ? '#8a8455' : '#4d6b2c'), 3, null);
+    b.blade([dir[0] * spread, 0, dir[1] * spread], dir, h, 0.04 + r() * 0.16, 0.009, hex('#2f4a22'), hex(r() < 0.3 ? '#8a8455' : '#4d6b2c'), 2, null); // rush stems are near-straight: two segments
     if (r() < 0.18) for (let k = 0; k < 4; k += 1) b.puff([dir[0] * (spread + 0.03 + k * 0.006), h * (0.76 + k * 0.025), dir[1] * (spread + 0.03 + k * 0.006)], 0.006, hex('#6e5536')); // a small brown flower tuft on the stem
   }
   return b.geometry();
@@ -96,7 +96,7 @@ function seedGrassGeometry(seed) {
     const a = r() * Math.PI * 2, off = r() * 0.06; const dir = [Math.cos(a), Math.sin(a)]; const h = 0.65 + r() * 0.35; const lean = 0.04 + r() * 0.12;
     b.blade([dir[0] * off, 0, dir[1] * off], dir, h, lean, 0.006, hex('#5d7036'), hex('#9a9a5c'), 4);
     const top = [dir[0] * (off + lean), h, dir[1] * (off + lean)]; const tint = r() < 0.5 ? hex('#c9b98a') : hex('#b8a7b0'); // straw, or the pinkish-grey of Yorkshire fog
-    for (let k = 0; k < 16; k += 1) b.puff([top[0] + (r() - 0.5) * 0.022 + dir[0] * k * 0.002, top[1] - k * 0.008, top[2] + (r() - 0.5) * 0.022 + dir[1] * k * 0.002], 0.0035 + r() * 0.003, tint.clone().lerp(hex('#8f8a5a'), 0.35 + r() * 0.3));
+    for (let k = 0; k < 8; k += 1) b.puff([top[0] + (r() - 0.5) * 0.022 + dir[0] * k * 0.004, top[1] - k * 0.016, top[2] + (r() - 0.5) * 0.022 + dir[1] * k * 0.004], 0.005 + r() * 0.004, tint.clone().lerp(hex('#8f8a5a'), 0.35 + r() * 0.3));
   }
   return b.geometry();
 }
@@ -119,7 +119,56 @@ function gorseGeometry(seed) {
   for (let i = 0; i < 70; i += 1) { const a = r() * Math.PI * 2, el = Math.acos(1 - r() * 0.95); const rad = 0.5 + r() * 0.06; b.puff([Math.cos(a) * Math.sin(el) * rad, 0.15 + Math.cos(el) * rad * 0.9, Math.sin(a) * Math.sin(el) * rad], 0.02, hex('#f0c419').lerp(hex('#e0a510'), r())); }
   return b.geometry();
 }
+// The ground layer under the near meadow: white clover (trefoil leaves, the odd white-pink head), flat leaf rosettes (plantain), cushions of moss,
+// pebbles, and a few fallen petals. All low (under 10 cm), so they show in the gaps between blades and along the trodden path.
+function cloverGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 8 + Math.floor(r() * 6);
+  for (let i = 0; i < n; i += 1) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.12; const c = [Math.cos(a) * d, 0.03 + r() * 0.04, Math.sin(a) * d]; const g = hex('#3f6d2c').lerp(hex('#5d8a3c'), r());
+    for (let k = 0; k < 3; k += 1) { const la = r() * 0.4 + k * 2.09; b.disc([c[0] + Math.cos(la) * 0.012, c[1], c[2] + Math.sin(la) * 0.012], [0, 1, 0], 0.011, 6, g, g.clone().lerp(hex('#a9c48a'), 0.25)); } }
+  if (r() < 0.55) { const c = [(r() - 0.5) * 0.1, 0.09 + r() * 0.03, (r() - 0.5) * 0.1]; for (let k = 0; k < 7; k += 1) b.puff([c[0] + (r() - 0.5) * 0.016, c[1] + (r() - 0.5) * 0.012, c[2] + (r() - 0.5) * 0.016], 0.006, hex('#f1ece0').lerp(hex('#e3b9c2'), r() * 0.6)); }
+  return b.geometry();
+}
+function rosetteGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 6 + Math.floor(r() * 4);
+  for (let i = 0; i < n; i += 1) { const a = (i / n) * Math.PI * 2 + r() * 0.3; const len = 0.07 + r() * 0.05; b.disc([Math.cos(a) * len * 0.55, 0.012, Math.sin(a) * len * 0.55], [Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25], len * 0.5, 6, hex('#3b5f2a'), hex('#557a37'), [1.0, 0.38]); }
+  return b.geometry();
+}
+function mossGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 5 + Math.floor(r() * 5);
+  for (let i = 0; i < n; i += 1) { const c = [(r() - 0.5) * 0.18, 0.012 + r() * 0.012, (r() - 0.5) * 0.18]; b.disc(c, [r() - 0.5, 2, r() - 0.5], 0.04 + r() * 0.04, 7, hex('#4f6a24'), hex('#7d8f36')); }
+  return b.geometry();
+}
+function pebbleGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 2 + Math.floor(r() * 4);
+  for (let i = 0; i < n; i += 1) { const c = [(r() - 0.5) * 0.2, 0.008, (r() - 0.5) * 0.2]; const g = hex('#8b8780').lerp(hex('#b3ada0'), r()); const s = 0.012 + r() * 0.02;
+    b.disc([c[0], c[1] + s * 0.4, c[2]], [0, 1, 0], s, 7, g.clone().lerp(hex('#d0cbc0'), 0.2), g); b.disc([c[0], c[1] + s * 0.15, c[2]], [0.4, 1, 0.2], s * 1.05, 7, g, g.clone().multiplyScalar(0.8)); }
+  return b.geometry();
+}
+function petalsGeometry(seed) {
+  const r = mulberry(seed), b = builder(); const n = 4 + Math.floor(r() * 5);
+  for (let i = 0; i < n; i += 1) b.disc([(r() - 0.5) * 0.25, 0.01 + r() * 0.03, (r() - 0.5) * 0.25], [r() - 0.5, 1.5, r() - 0.5], 0.006 + r() * 0.004, 5, r() < 0.7 ? hex('#f2efe6') : hex('#d77aa0'), null, [1.6, 0.6]);
+  return b.geometry();
+}
+export function planGroundLayer({ groundAt, habitat, avoidWater = 0.06, from = 2.4, to = 14, cell = 0.3, path = () => 0 }) {
+  const out = { clover: [], rosette: [], moss: [], pebble: [], petals: [] };
+  for (let j = Math.floor((CAMERA[1] - to) / cell); j <= Math.floor((CAMERA[1] - from) / cell); j += 1) for (let i = Math.floor((CAMERA[0] - to) / cell); i <= Math.floor((CAMERA[0] + to) / cell); i += 1) {
+    const x = (i + habitatHash(i, j, 91)) * cell, z = (j + habitatHash(i, j, 92)) * cell, dx = x - CAMERA[0], dz = z - CAMERA[1], d = Math.hypot(dx, dz);
+    if (d < from || d > to || Math.atan2(Math.abs(dx), -dz) > FRAME_HALF_ANGLE) continue;
+    const y = groundAt(x, z, d); if (!(y === y)) continue; const h = habitat.sample(x, z); if (h.waterDistance < 3 && y < h.waterLevel + avoidWater) continue;
+    const p = path(x, z); const roll = habitatHash(i, j, 93), pick = habitatHash(i, j, 94);
+    const cand = [['clover', 0.9 * (1 - p * 0.5)], ['rosette', 0.5 + 0.8 * p], ['moss', 0.35 * (0.4 + h.moisture)], ['pebble', 0.15 + 1.6 * p], ['petals', 0.12 * (1 - p)]];
+    const total = cand.reduce((s, c) => s + c[1], 0); if (roll > total * cell * cell * 1.6 * (1 - smooth(8, 14, d) * 0.6)) continue;
+    let acc = 0, kind = cand[0][0]; const target = pick * total; for (const [k, w] of cand) { acc += w; if (target <= acc) { kind = k; break; } }
+    out[kind].push({ x, y: y - 0.005, z, yaw: habitatHash(i, j, 95) * Math.PI * 2, size: 0.8 + 0.5 * habitatHash(i, j, 96), variant: Math.floor(habitatHash(i, j, 97) * WILD_KINDS[kind].variants) });
+  }
+  return out;
+}
 export const WILD_KINDS = {
+  clover: { make: cloverGeometry, variants: 4 },
+  rosette: { make: rosetteGeometry, variants: 3 },
+  moss: { make: mossGeometry, variants: 3 },
+  pebble: { make: pebbleGeometry, variants: 4 },
+  petals: { make: petalsGeometry, variants: 3 },
   rush: { make: rushGeometry, variants: 3 },
   sedge: { make: sedgeGeometry, variants: 3 },
   meadowsweet: { make: meadowsweetGeometry, variants: 3 },
@@ -143,8 +192,8 @@ export function planMeadow({ habitat, groundAt, clearing = null, avoid = () => 0
     const near = d < 12 ? 0.4 : 1; // keep the first metres open: these stand taller than the meadow
     const cand = [
       ['tussock', 0.25 * smooth(0.55, 0.75, patch(x, z, 0.09, 5.3)) * (0.4 + h.moisture) * near],
-      ['seedgrass', 0.42 * smooth(0.4, 0.65, patch(x, z, 0.13, 1.7)) * (1.1 - h.bloom * 0.6) * smooth(9, 14, d)], // they stand above the meadow: not in the first metres
-      ['bracken', 0.6 * smooth(0.68, 0.82, patch(x, z, 0.045, 3.3)) * smooth(30, 55, d) * (1 - h.moisture)],
+      ['seedgrass', 0.28 * smooth(0.4, 0.65, patch(x, z, 0.13, 1.7)) * (1.1 - h.bloom * 0.6) * smooth(9, 14, d) * (1 - smooth(70, 90, d))], // they stand above the meadow: not in the first metres; past 90 m they are sub-pixel
+      ['bracken', 0.6 * smooth(0.68, 0.82, patch(x, z, 0.045, 3.3)) * smooth(30, 55, d) * (1 - h.moisture) * (1 - smooth(110, 130, d))],
       ['gorse', 0.035 * smooth(0.78, 0.86, patch(x, z, 0.03, 8.1)) * smooth(25, 45, d) * (1 - h.moisture)],
     ];
     const total = cand.reduce((s, c) => s + c[1], 0); if (roll > total * cell * cell * (1 - 0.5 * smooth(60, 160, d))) continue;
@@ -160,7 +209,7 @@ export function planMeadow({ habitat, groundAt, clearing = null, avoid = () => 0
 // The water's edge: the band of dry ground just above the water. The water map also covers dry banks (the delivered mesh runs under them), so the
 // bank is found by height: ground a little above the local water level, close to water. Each kind has its own place in that band and grows in
 // patches (low-frequency noise), so the bank reads as stands of rush and sedge broken by clumps of marigold and meadowsweet, not an even trim.
-export function planWaterEdge({ habitat, groundAt, clearing = null, from = 3.5, to = 150, cell = 0.5 }) {
+export function planWaterEdge({ habitat, groundAt, clearing = null, from = 3.5, to = 110, cell = 0.5 }) {
   const out = { rush: [], sedge: [], meadowsweet: [], marigold: [] };
   const patch = (x, z, s, k) => { const v = Math.sin(x * s + k) * Math.cos(z * s * 1.3 - k * 0.7) + Math.sin((x + z) * s * 0.6 + k * 2.1) * 0.6; return v * 0.5 + 0.5; };
   for (let j = Math.floor((CAMERA[1] - to) / cell); j <= Math.floor((CAMERA[1] - from) / cell); j += 1) for (let i = Math.floor((CAMERA[0] - to) / cell); i <= Math.floor((CAMERA[0] + to) / cell); i += 1) {
@@ -168,7 +217,7 @@ export function planWaterEdge({ habitat, groundAt, clearing = null, from = 3.5, 
     if (d < from || d > to || Math.atan2(Math.abs(dx), -dz) > FRAME_HALF_ANGLE) continue;
     const h = habitat.sample(x, z); if (h.waterDistance > 3.5) continue; if (clearing && clearing.softness(x, z) < 0.7) continue;
     const y = groundAt(x, z, d); if (!(y === y)) continue; const above = y - h.waterLevel; if (above < 0.02 || above > 0.7) continue;
-    const thin = (1 - 0.55 * smooth(40, 140, d)) * (d < 9 ? 0.35 : 1); // fewer far away (they merge) and only a few right at the camera, so the pool stays open
+    const thin = (1 - 0.7 * smooth(30, 100, d)) * (d < 9 ? 0.35 : 1); // fewer far away (they merge) and only a few right at the camera, so the pool stays open
     const roll = habitatHash(i, j, 73), pick = habitatHash(i, j, 74);
     const wet = 1 - smooth(0.04, 0.3, above), mid = smooth(0.05, 0.2, above) * (1 - smooth(0.35, 0.65, above));
     const cand = [
@@ -198,7 +247,7 @@ export function buildWildPlants(plan, resources, name = 'Wild plants') {
       const geometry = spec.make(1000 + v * 97 + kind.length * 13); disposables.push(geometry);
       const mesh = new THREE.InstancedMesh(geometry, material, items.length); mesh.name = `${name} / ${kind} ${v}`;
       items.forEach((it, k) => { q.setFromAxisAngle(up, it.yaw); s.setScalar(it.size); p.set(it.x, it.y, it.z); m.compose(p, q, s); mesh.setMatrixAt(k, m); });
-      mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = true; mesh.frustumCulled = false; group.add(mesh); disposables.push(mesh);
+      mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = false; /* the soft-shadow lookups cost more than they add on thin plants; cloud shadows still reach them (they dim the light itself) */ mesh.frustumCulled = false; group.add(mesh); disposables.push(mesh);
     }
   }
   return { group, dispose: () => disposables.forEach((d) => d.dispose?.()) };

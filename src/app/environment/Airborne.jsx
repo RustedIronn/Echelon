@@ -47,7 +47,7 @@ void main() {
   }
   vec4 mv = viewMatrix * vec4(p, 1.0); float px = size * uPx / max(-mv.z, 0.1) * 2.5; /* the sprite holds a soft glow 2.5x the mote itself */
   // never smaller than a pixel: shrink the light instead, so sub-pixel points fade rather than flicker
-  vColor = col * (k > 1.5 && k < 2.5 ? 1.0 : min(1.0, px * px / 6.25)) * uSkyGain; /* dew glints are specular points: bright even below a pixel */ vAlpha = alpha; gl_PointSize = max(px, k > 1.5 && k < 2.5 ? 2.5 : 1.0); /* a glint is a little star of light even when the drop is far smaller */
+  vColor = col * (k > 1.5 && k < 2.5 ? 1.0 : min(1.0, px * px / 6.25)) * uSkyGain; /* dew glints are specular points: bright even below a pixel */ vAlpha = alpha; gl_PointSize = clamp(px, k > 1.5 && k < 2.5 ? 2.5 : 1.0, 20.0); /* capped: a mote right at the lens must not flood the screen with overdraw */ /* a glint is a little star of light even when the drop is far smaller */
   gl_Position = projectionMatrix * mv; if (dot(col, col) < 1e-6) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }`;
 const FRAGMENT = `varying vec3 vColor; varying float vAlpha;

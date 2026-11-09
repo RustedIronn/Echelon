@@ -31,7 +31,8 @@ import Wind from './Wind.jsx';
 import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
-import { planWaterEdge, planMeadow, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
+import { planWaterEdge, planMeadow, planGroundLayer, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
+import { buildNativeTrees, NATIVE_TREES_WANTED } from './nativeTrees.js';
 import Airborne, { airborneWanted } from './Airborne.jsx';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 import { characterTint, characterHeight, pathAt, pathThins } from './meadowCharacter.js';
@@ -703,7 +704,9 @@ function WildPlants({ habitat, farMeta, farRaw, clearing, resources }) {
   const built = useMemo(() => {
     const field = new HeightField(farMeta, new Float32Array(farRaw)); const bank = bankLowering.current; const near = habitat.nearGround;
     const groundAt = (x, z, d) => { const n = d < 30 && near ? near.at(x, z) : NaN; if (n === n) return n; const y = field.at(x, z); return y + (bank ? bank.offsetAt(x, z, y) : 0); };
-    return buildWildPlants({ ...planWaterEdge({ habitat, groundAt, clearing }), ...planMeadow({ habitat, groundAt, clearing, avoid: pathAt }) }, resources);
+    const plants = buildWildPlants({ ...planWaterEdge({ habitat, groundAt, clearing }), ...planMeadow({ habitat, groundAt, clearing, avoid: pathAt }), ...planGroundLayer({ habitat, groundAt, path: pathAt }) }, resources);
+    const trees = NATIVE_TREES_WANTED ? buildNativeTrees(resources, (x, z) => groundAt(x, z, 99)) : null; if (trees) plants.group.add(trees.group); // native broadleaves (nativeTrees.js)
+    return { group: plants.group, dispose: () => { plants.dispose(); trees?.dispose(); } };
   }, [habitat, farMeta, farRaw, clearing, resources]);
   useEffect(() => () => built.dispose(), [built]);
   return <primitive object={built.group} />;
