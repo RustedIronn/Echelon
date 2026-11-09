@@ -28,6 +28,8 @@ import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
 import Wind from './Wind.jsx';
+import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
+const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
@@ -219,12 +221,13 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
           if (hamletNew && pathMask && role === 'terrain' && inheritedMetadata(object, 'terrainZone') === 'near' && material.map) material.map = clearBakedPath(material.map, pathMask);
           if (refinement && (role === 'terrain' || role === 'hamlet')) {
             material.aoMap = role === 'hamlet' ? resources.hamletAO : inheritedMetadata(object, 'terrainZone') === 'near' ? resources.nearAO : resources.rangeAO;
-            material.aoMapIntensity = .8;
+            material.aoMapIntensity = inheritedMetadata(object, 'terrainZone') !== 'near' && MOUNTAIN_DETAIL ? 1.15 : .8; // deeper creases on the range
           }
           applyBlenderDisplay(material, resources);
           if (role === 'tree' && treeStyle !== 'previous') { material.alphaToCoverage = true; applyFoliageStyle(material, treeCenter(object)); }
           if (object.name === 'sediment') applyWetSediment(material, refinement, corridor);
           if (role === 'terrain') applyDistantCanopy(material, resources, refinement, corridor);
+          if (role === 'terrain' && MOUNTAIN_DETAIL && inheritedMetadata(object, 'terrainZone') !== 'near') applyMountainDetail(material);
           if (role === 'terrain' && meadowDetail && corridor && inheritedMetadata(object, 'terrainZone') === 'near') applyMeadowDetail(material); // meadow ground only, never the mountains
           if (role === 'terrain' && wetness) applyBankWetness(material, wetness);
         }
