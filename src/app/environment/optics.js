@@ -92,8 +92,11 @@ export function createOptics(renderer) {
             const reach = 1 - smoothstep(0.15, 0.7, Math.max(Math.max(-sx, sx - 1), Math.max(-sy, sy - 1), 0)); // fades as the sun leaves the frame
             if (reach > 0.01 && chain.length) {
               shafts.uniforms.src.value = chain[0].texture; shafts.uniforms.sun.value.set(sx, sy); shafts.uniforms.aspect.value = w / h;
-              shafts.uniforms.threshold.value = 2.0 * Math.max(0.2, SKY_UNIFORMS.uSkyGain?.value ?? 1); pass(shafts, shaftTarget);
-              out.shafts = shaftTarget.texture; out.shaftK = 0.6 * OPTICS.shafts.value * low * reach;
+              // with the sun inside the frame the bright patch round it is large, and the blur gathered it into a white flood over everything near
+              // it: then only the brightest sky feeds the rays, and they are gentler, so the sun stays a crisp disc with faint rays
+              const inView = sx > 0.02 && sx < 0.98 && sy > 0.02 && sy < 0.98;
+              shafts.uniforms.threshold.value = (inView ? 7.0 : 2.0) * Math.max(0.2, SKY_UNIFORMS.uSkyGain?.value ?? 1); pass(shafts, shaftTarget);
+              out.shafts = shaftTarget.texture; out.shaftK = 0.6 * OPTICS.shafts.value * low * reach * (inView ? 0.35 : 1);
             }
           }
         }
