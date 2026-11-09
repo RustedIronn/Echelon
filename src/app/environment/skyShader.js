@@ -25,7 +25,7 @@ float moonAlbedo(vec2 q){
   m = max(m, moonMare(q, vec2(-0.18, -0.30), vec2(0.18, 0.13), n));         // Nubium
   m = max(m, moonMare(q, vec2(-0.48, -0.33), vec2(0.09, 0.08), n));         // Humorum
   m = max(m, moonMare(q, vec2(-0.04, 0.73), vec2(0.42, 0.07), n) * 0.8);    // Frigoris
-  float a = mix(1.0, 0.56, m) * (0.9 + 0.14 * vnoise(q * 11.0) + 0.06 * vnoise(q * 27.0));
+  float a = mix(1.0, 0.66, m) * (0.9 + 0.14 * vnoise(q * 11.0) + 0.06 * vnoise(q * 27.0));
   vec2 t = q - vec2(-0.12, -0.72); float tl = length(t);                   // Tycho and its rays
   a += 0.4 * exp(-tl * tl * 500.0) + 0.1 * pow(abs(sin(atan(t.y, t.x) * 7.0 + 0.6)), 14.0) * exp(-tl * 2.6) * (1.0 - m);
   vec2 cp = q - vec2(-0.3, 0.16); a += 0.25 * exp(-dot(cp, cp) * 900.0);   // Copernicus
@@ -78,10 +78,11 @@ vec3 skyRadiance(vec3 d){
     float night=1.0-smoothstep(-0.1,0.12,uSunDir.y); float low=smoothstep(-0.02,0.3,uMoonDir.y);
     vec3 tint=mix(vec3(1.0,0.74,0.5),vec3(1.0,0.97,0.92),low); // a low moon is warmer and dimmer, seen through more air
     // the glow around the moon (brighter the fuller it is); it also lights the clouds that drift in front of it
-    if(md>0.9){
-      float glow=(pow(md,500.0)*0.09+pow(md,70.0)*0.025+pow(md,14.0)*0.006)*uMoonIllum*night*smoothstep(0.9,0.97,md);
+    { /* exponential falloffs with no cut-off radius, so the glow has no visible rim */
+      float x=max(1.0-md,0.0);
+      float glow=(exp(-x*3000.0)*0.08+exp(-x*260.0)*0.022+exp(-x*35.0)*0.006)*uMoonIllum*night;
       col+=tint*vec3(0.66,0.72,0.88)*glow*uMoonVis*(1.0-cm*0.4);
-      col+=uCloudC*cm*pow(md,40.0)*0.35*uMoonIllum*night*uMoonVis; // silver edges on clouds near the moon
+      col+=uCloudC*cm*exp(-x*70.0)*0.3*uMoonIllum*night*uMoonVis; /* silver edges on clouds near the moon */
     }
     if(md>0.98){
       vec3 r=normalize(cross(uMoonDir,vec3(0.0,1.0,0.0))); vec3 u=cross(r,uMoonDir); float rad=0.012; vec2 q=vec2(dot(d,r),dot(d,u))/(rad*md); float q2=dot(q,q);
@@ -92,7 +93,7 @@ vec3 skyRadiance(vec3 d){
         vec2 s2=vec2(dot(uSunDir,r),dot(uSunDir,u)); s2=normalize((length(s2)>1e-3?normalize(s2):vec2(1.0,0.0))+vec2(1.1,0.0)); /* leaning toward the sun but mostly sideways, so the terminator never lies flat */
         float a=6.2831853*uMoonPhase; vec3 L=normalize(vec3(s2*abs(sin(a)),-cos(a)));
         float lit=smoothstep(-0.035,0.07,dot(n,L)); float alb=moonAlbedo(q);
-        float bright=mix(0.32,2.3,night)*mix(0.5,1.0,low); /* by day a pale ghost of itself; at night bright, but short of clipping so the maria show */
+        float bright=mix(0.32,2.05,night)*mix(0.5,1.0,low); /* by day a pale ghost of itself; at night bright, but short of clipping so the maria show */
         vec3 surface=tint*alb*(0.84+0.16*n.z)*bright*lit;
         vec3 earthshine=vec3(0.32,0.38,0.52)*alb*0.045*bright*smoothstep(0.3,0.05,uMoonIllum)*night*(1.0-lit); // only a crescent shows its dark part, lit by the Earth
         col+=(surface+earthshine)*cover*uMoonVis*(1.0-cm*0.85); // moonlight adds to the sky in front of it: a daytime moon looks washed, as it should
