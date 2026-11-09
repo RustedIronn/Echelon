@@ -81,6 +81,7 @@ export function moodState(date) {
   const sun = sunPose(date); const moon = moonPose(date, sun); const evening = smooth(sun.solar.noon - 1.5, sun.solar.noon + 1.5, sun.hour);
   const m = mixStops(sample(MORNING, sun.elevation), sample(EVENING, sun.elevation), evening);
   const moonVisible = smooth(-1, 6, moon.elevation) * clamp01(m.moon);
+  const moonDisc = smooth(-1, 6, moon.elevation) * Math.max(clamp01(m.moon), 0.7); /* the disc may show by day too (a pale afternoon moon); its light stays a night thing (moonVisible) */
   const e = sun.elevation; const gain = e <= -12 ? 0.32 : e <= -4 ? 0.32 + 0.6 * ((e + 12) / 8) : e <= 4 ? 0.92 + 0.13 * ((e + 4) / 8) : e <= 18 ? 1.05 - 0.07 * ((e - 4) / 14) : 0.98;
   // valley mist: thickest just after sunrise, gone by mid-morning; only a trace at dusk
   const morningMist = smooth(-6, 0, e) * (1 - smooth(0.5, 11, e)), duskMist = 0.2 * smooth(-9, -3, e) * (1 - smooth(-1, 6, e)); const mist = (1 - evening) * morningMist + evening * duskMist;
@@ -90,14 +91,14 @@ export function moodState(date) {
   const haze = 1 + 0.4 * dayK;
   // night: colours drain toward moonlit blue-grey (the eye loses colour in the dark), so the grass stops reading as daytime green
   const nightK = 1 - smooth(-14, -4, e);
-  return { ...m, gain, mist, mistColor, haze, sat: SAT_BASE * (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
+  return { ...m, gain, mist, mistColor, haze, sat: SAT_BASE * (1 + 0.1 * dayK) * (1 - 0.28 * nightK), contrast: 1 + 0.1 * dayK, toe: 0.12 * dayK, /* daylight: deeper darks and a little more punch (0.24 made the gaps between blades crunchy); dusk and night keep the soft grade */ sun, moon, moonVisible, moonDisc, moonLight: moonVisible * moon.illumination, cloudShift: (date.getTime() - Date.UTC(2026, 0, 1)) / 3600000 * 0.0125 };
 }
 
 // Sample the lighting model twice per 30-second interval. Cheap interpolated
 // uniforms advance at display cadence without rebuilding environment maps.
 export function interpolateMood(a,b,t) {
   t=clamp01(t);const out=mixStops(a,b,t),lerp=(x,y)=>x+(y-x)*t;
-  for(const k of ['gain','mist','haze','sat','contrast','toe','moonVisible','moonLight','cloudShift'])out[k]=lerp(a[k],b[k]);
+  for(const k of ['gain','mist','haze','sat','contrast','toe','moonVisible','moonDisc','moonLight','cloudShift'])out[k]=lerp(a[k],b[k]);
   out.mistColor=a.mistColor.clone().lerp(b.mistColor,t);
   for(const key of ['sun','moon']){
     const av=a[key],bv=b[key],dir=av.dir.map((v,i)=>lerp(v,bv.dir[i])),length=Math.hypot(...dir)||1;

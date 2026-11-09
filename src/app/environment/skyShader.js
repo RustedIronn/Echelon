@@ -6,10 +6,31 @@ import { WIND } from './wind.js';
 // silver lining toward the sun, plus a thin high cirrus layer.
 export const SKY_UNIFORM_GLSL = `
 uniform vec3 uSunDir; uniform vec3 uMoonDir; uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uBelt; uniform vec3 uSunC; uniform vec3 uCloudC;
-uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uSkyTime; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc;
+uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uSkyTime; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc; uniform float uMoonIllum;
 float hash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float vnoise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash21(i),hash21(i+vec2(1.0,0.0)),f.x),mix(hash21(i+vec2(0.0,1.0)),hash21(i+vec2(1.0,1.0)),f.x),f.y); }
 float fbm(vec2 p){ float a=0.5; float s=0.0; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=0.5; } return s; }
+// The moon's face (q: position on the disc, x right, y up, unit radius): the dark maria in roughly their real places, crater speckle in the
+// highlands, and Tycho's bright ray system in the south. Returns albedo, 1 for the bright highlands.
+float moonMare(vec2 q, vec2 c, vec2 r, float n){ return 1.0 - smoothstep(0.35, 1.05, length((q - c) / r) + n); }
+float moonAlbedo(vec2 q){
+  float n = (vnoise(q * 5.0) - 0.5) * 0.7 + (vnoise(q * 13.0) - 0.5) * 0.25;
+  float m = moonMare(q, vec2(-0.55, 0.08), vec2(0.30, 0.50), n);            // Oceanus Procellarum
+  m = max(m, moonMare(q, vec2(-0.24, 0.44), vec2(0.27, 0.21), n));          // Imbrium
+  m = max(m, moonMare(q, vec2(0.17, 0.42), vec2(0.15, 0.14), n));           // Serenitatis
+  m = max(m, moonMare(q, vec2(0.32, 0.12), vec2(0.21, 0.17), n));           // Tranquillitatis
+  m = max(m, moonMare(q, vec2(0.68, 0.33), vec2(0.10, 0.09), n));           // Crisium
+  m = max(m, moonMare(q, vec2(0.55, -0.12), vec2(0.12, 0.17), n));          // Fecunditatis
+  m = max(m, moonMare(q, vec2(0.36, -0.22), vec2(0.08, 0.07), n));          // Nectaris
+  m = max(m, moonMare(q, vec2(-0.18, -0.30), vec2(0.18, 0.13), n));         // Nubium
+  m = max(m, moonMare(q, vec2(-0.48, -0.33), vec2(0.09, 0.08), n));         // Humorum
+  m = max(m, moonMare(q, vec2(-0.04, 0.73), vec2(0.42, 0.07), n) * 0.8);    // Frigoris
+  float a = mix(1.0, 0.56, m) * (0.9 + 0.14 * vnoise(q * 11.0) + 0.06 * vnoise(q * 27.0));
+  vec2 t = q - vec2(-0.12, -0.72); float tl = length(t);                   // Tycho and its rays
+  a += 0.4 * exp(-tl * tl * 500.0) + 0.1 * pow(abs(sin(atan(t.y, t.x) * 7.0 + 0.6)), 14.0) * exp(-tl * 2.6) * (1.0 - m);
+  vec2 cp = q - vec2(-0.3, 0.16); a += 0.25 * exp(-dot(cp, cp) * 900.0);   // Copernicus
+  return a;
+}
 vec3 skyRadiance(vec3 d){
   float y=d.y;
   vec3 col=mix(uHor,uZen,pow(smoothstep(-0.03,0.50,y),0.65));
@@ -17,7 +38,13 @@ vec3 skyRadiance(vec3 d){
   col=mix(col,uHor,exp(-max(y,0.0)*7.0)*0.3);
   float sd=max(dot(d,uSunDir),0.0); float up=smoothstep(-0.25,0.05,uSunDir.y);
   col+=uSunC*(pow(sd,6.0)*0.10+pow(sd,48.0)*0.7)*uGlowK*up;
-  col+=uSunC*smoothstep(0.99970,0.99993,sd)*uGlowK*5.0*uSunDisc;
+  // the sun's disc: crisp, darker toward its limb, a little flattened by refraction near the horizon, bright enough to bloom
+  if(sd>0.999){
+    vec3 rs=normalize(cross(uSunDir,vec3(0.0,1.0,0.0))+vec3(1e-5)); vec3 us=cross(rs,uSunDir); float squash=1.0-0.16*(1.0-smoothstep(-0.01,0.07,uSunDir.y));
+    vec2 sq=vec2(dot(d,rs),dot(d,us)/squash)/0.0105; float sr=length(sq);
+    float disc=1.0-smoothstep(0.93,1.0,sr); float limbD=0.58+0.42*sqrt(max(1.0-sr*sr,0.0));
+    col+=uSunC*disc*limbD*uGlowK*9.0*uSunDisc;
+  }
   // A broad warm band that rises well above the horizon on the sun's side near sunrise and sunset: the tight halo above hides behind the mountains, but the afterglow must be seen over them.
   float band=pow(sd,2.0)*exp(-max(y,0.0)*8.0); col+=uSunC*band*uGlowK*0.35*smoothstep(-0.38,-0.02,uSunDir.y)*(1.0-smoothstep(0.1,0.5,uSunDir.y));
   vec2 hd=normalize(d.xz+vec2(1e-4)); vec2 ad=normalize(-uSunDir.xz+vec2(1e-4));
@@ -48,15 +75,28 @@ vec3 skyRadiance(vec3 d){
   if(uStarK>0.0 && y>0.0){ float mw=exp(-pow(dot(d,normalize(vec3(0.55,0.4,-0.75)))*2.6,2.0)); float tex=0.35+0.65*fbm(d.xz/(y+0.4)*2.3); col+=vec3(0.34,0.4,0.62)*mw*tex*uStarK*0.075*smoothstep(0.04,0.4,y)*(1.0-cm); }
   if(uMoonVis>0.0){
     float md=dot(d,uMoonDir);
-    if(md>0.9) col+=vec3(0.5,0.58,0.78)*(pow(md,90.0)*0.055+pow(md,24.0)*0.01)*uMoonVis*(1.0-cm*0.7)*smoothstep(0.9,0.97,md);
+    float night=1.0-smoothstep(-0.1,0.12,uSunDir.y); float low=smoothstep(-0.02,0.3,uMoonDir.y);
+    vec3 tint=mix(vec3(1.0,0.74,0.5),vec3(1.0,0.97,0.92),low); // a low moon is warmer and dimmer, seen through more air
+    // the glow around the moon (brighter the fuller it is); it also lights the clouds that drift in front of it
+    if(md>0.9){
+      float glow=(pow(md,500.0)*0.09+pow(md,70.0)*0.025+pow(md,14.0)*0.006)*uMoonIllum*night*smoothstep(0.9,0.97,md);
+      col+=tint*vec3(0.66,0.72,0.88)*glow*uMoonVis*(1.0-cm*0.4);
+      col+=uCloudC*cm*pow(md,40.0)*0.35*uMoonIllum*night*uMoonVis; // silver edges on clouds near the moon
+    }
     if(md>0.98){
       vec3 r=normalize(cross(uMoonDir,vec3(0.0,1.0,0.0))); vec3 u=cross(r,uMoonDir); float rad=0.012; vec2 q=vec2(dot(d,r),dot(d,u))/(rad*md); float q2=dot(q,q);
-      if(q2<1.0){
-        vec3 n=vec3(q,sqrt(1.0-q2)); float a=6.2831853*uMoonPhase; vec3 L=vec3(sin(a),0.0,-cos(a)); float lit=smoothstep(-0.03,0.14,dot(n,L));
-        vec3 mc=mix(vec3(0.05,0.06,0.09),vec3(1.0,0.96,0.86),lit)*(0.88+0.12*fbm(q*5.0));
-        col=mix(col,mc*2.4,uMoonVis*(1.0-cm*0.8)*mix(0.08,1.0,lit)); // the unlit side of a thin moon stays almost invisible against a bright sky
+      float cover=1.0-smoothstep(0.95,1.0,sqrt(q2));
+      if(cover>0.0){
+        vec3 n=vec3(q,sqrt(max(1.0-q2,0.0)));
+        // the bright limb faces the sun (so a dusk crescent tilts toward where the sun went down); the calendar phase sets how much is lit
+        vec2 s2=vec2(dot(uSunDir,r),dot(uSunDir,u)); s2=normalize((length(s2)>1e-3?normalize(s2):vec2(1.0,0.0))+vec2(1.1,0.0)); /* leaning toward the sun but mostly sideways, so the terminator never lies flat */
+        float a=6.2831853*uMoonPhase; vec3 L=normalize(vec3(s2*abs(sin(a)),-cos(a)));
+        float lit=smoothstep(-0.035,0.07,dot(n,L)); float alb=moonAlbedo(q);
+        float bright=mix(0.32,2.3,night)*mix(0.5,1.0,low); /* by day a pale ghost of itself; at night bright, but short of clipping so the maria show */
+        vec3 surface=tint*alb*(0.84+0.16*n.z)*bright*lit;
+        vec3 earthshine=vec3(0.32,0.38,0.52)*alb*0.045*bright*smoothstep(0.3,0.05,uMoonIllum)*night*(1.0-lit); // only a crescent shows its dark part, lit by the Earth
+        col+=(surface+earthshine)*cover*uMoonVis*(1.0-cm*0.85); // moonlight adds to the sky in front of it: a daytime moon looks washed, as it should
       }
-      col+=vec3(0.55,0.62,0.8)*pow(max(md,0.0),600.0)*0.12*uMoonVis*(1.0-cm);
     }
   }
   return col*uSkyGain;
@@ -67,11 +107,11 @@ export const SKY_ACTIVE = { value: 0 };
 export const SKY_UNIFORMS = {
   uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uMoonDir: { value: new THREE.Vector3(0, -1, 0) }, uZen: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
   uBelt: { value: new THREE.Color() }, uSunC: { value: new THREE.Color() }, uCloudC: { value: new THREE.Color() }, uBeltK: { value: 0 }, uGlowK: { value: 0 }, uCover: { value: 0.4 },
-  uCloudShift: { value: 0 }, uSkyTime: WIND.time, uStarK: { value: 0 }, uMoonVis: { value: 0 }, uMoonPhase: { value: 0 }, uSkyGain: { value: 1 }, uSunDisc: { value: 0 },
+  uCloudShift: { value: 0 }, uSkyTime: WIND.time, uStarK: { value: 0 }, uMoonVis: { value: 0 }, uMoonPhase: { value: 0 }, uSkyGain: { value: 1 }, uSunDisc: { value: 0 }, uMoonIllum: { value: 0 },
 };
 export const createSkyUniforms = () => SKY_UNIFORMS;
 export function writeSkyUniforms(u, s) {
   u.uSunDir.value.fromArray(s.sun.dir); u.uMoonDir.value.fromArray(s.moon.dir); u.uZen.value.copy(s.zen); u.uHor.value.copy(s.hor); u.uBelt.value.copy(s.belt); u.uSunC.value.copy(s.sunC); u.uCloudC.value.copy(s.cloud);
-  u.uBeltK.value = s.beltK; u.uGlowK.value = s.glowK; u.uCover.value = s.cover; u.uCloudShift.value = s.cloudShift; u.uStarK.value = s.stars; u.uMoonVis.value = s.moonVisible; u.uMoonPhase.value = s.moon.phase;
+  u.uBeltK.value = s.beltK; u.uGlowK.value = s.glowK; u.uCover.value = s.cover; u.uCloudShift.value = s.cloudShift; u.uStarK.value = s.stars; u.uMoonVis.value = s.moonDisc ?? s.moonVisible; u.uMoonPhase.value = s.moon.phase; u.uMoonIllum.value = s.moon.illumination ?? 0;
   u.uSunDisc.value = THREE.MathUtils.smoothstep(s.sun.elevation, -1.5, 2.5); u.uSkyGain.value = s.gain;
 }

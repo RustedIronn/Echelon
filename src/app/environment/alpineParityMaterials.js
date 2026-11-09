@@ -446,7 +446,10 @@ void main() {
   radiance = mix(radiance, vec3(dot(radiance, vec3(0.2126, 0.7152, 0.0722))), ${WATER_REFINEMENT.farDesaturate} * farWater) * mix(1.0, ${WATER_REFINEMENT.farEdgeDarken}, farEdge);
   radiance *= 1.0 + farWater * (wave.x*.8 + wave.y*.5) * .28;
   float glint = pow(max(dot(normalize(reflect(-V,N)), normalize(uSunDir)), 0.0), 90.0) * uGlowK * step(0.0, uSunDir.y) * uTodSky;
-  radiance += uSunC * glint * (.5 + farWater);` : 'float shore = smoothstep(0.0,max(.012,fwidth(column)),column);'}
+  radiance += uSunC * glint * (.5 + farWater);
+  /* moonlight glitter: the ripples break the moon's reflection into a path of sparkles across the water toward it */
+  float moonGlint = pow(max(dot(normalize(reflect(-V,N)), uMoonDir), 0.0), 140.0) * uMoonVis * uMoonIllum * (1.0 - smoothstep(-0.1, 0.1, uSunDir.y)) * uTodSky;
+  radiance += vec3(0.86, 0.9, 1.0) * moonGlint * 0.9 * (.5 + farWater);` : 'float shore = smoothstep(0.0,max(.012,fwidth(column)),column);'}
   float foamCover = 0.0;
   ${FOAM_WANTED ? `{ vec2 fl = vFlow * uFlowRate; vec2 fd = stoneFoam(vWaterWorld.xz, fl);
     if (fd.x + fd.y > 0.02) {
