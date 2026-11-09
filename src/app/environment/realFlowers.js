@@ -35,6 +35,7 @@ const PROXY = {
   Dandelion: { petal: '#f2c21a', centre: '#e2a612', head: 0.12 },
   'Carthusian Pink': { petal: '#d6457c', centre: '#9e2958', head: 0.075 },
 };
+const PROXY_SINK = 0.4; // fraction of the flower's height the far heads are lowered into the sward
 let proxyTexture = null;
 function proxyAtlas() { // one small texture: a row of round heads (petals and centre), plus a green strip for the stems
   if (proxyTexture) return proxyTexture;
@@ -45,10 +46,10 @@ function proxyAtlas() { // one small texture: a row of round heads (petals and c
 }
 function proxyGeometry(species, parts) {
   const box = new THREE.Box3(); for (const source of parts) box.union(new THREE.Box3().setFromBufferAttribute(source.geometry.attributes.position).applyMatrix4(source.matrixWorld));
-  const names = Object.keys(PROXY); const i = names.indexOf(species); const H = box.max.y - box.min.y; const base = box.min.y; const r = H * (PROXY[species]?.head ?? 0.1) * 0.85; /* a touch smaller than the head: a flat-coloured proxy reads stronger than the shaded model */ const y = box.max.y - r; const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+  const names = Object.keys(PROXY); const i = names.indexOf(species); const H = box.max.y - box.min.y; const base = box.min.y; const r = H * (PROXY[species]?.head ?? 0.1) * 0.85; /* a touch smaller than the head: a flat-coloured proxy reads stronger than the shaded model */ const y = box.max.y - r - H * PROXY_SINK; /* the head sits down in the grass: on a full stem it stood above the sward as a pale stick and ball */ const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
   const u0 = i / (names.length + 1), u1 = (i + 1) / (names.length + 1), su = (names.length + 0.5) / (names.length + 1); const w = Math.max(H * 0.012, 0.002);
   const P = [], U = [], idx = []; const quad = (a, b, c, d, ua, ub, uc, ud) => { const o = P.length / 3; P.push(...a, ...b, ...c, ...d); U.push(...ua, ...ub, ...uc, ...ud); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
-  quad([cx - w, base, cz], [cx + w, base, cz], [cx + w, y, cz], [cx - w, y, cz], [su, 0.1], [su, 0.1], [su, 0.9], [su, 0.9]); // stem
+  // no stem: beyond 70 m a stem is never seen against the grass, only as a pale stick above it
   quad([cx - r, y - r, cz], [cx + r, y - r, cz], [cx + r, y + r, cz], [cx - r, y + r, cz], [u0, 0], [u1, 0], [u1, 1], [u0, 1]); // head, two upright crossed quads and one flat one
   quad([cx, y - r, cz - r], [cx, y - r, cz + r], [cx, y + r, cz + r], [cx, y + r, cz - r], [u0, 0], [u1, 0], [u1, 1], [u0, 1]);
   quad([cx - r, y, cz - r], [cx + r, y, cz - r], [cx + r, y, cz + r], [cx - r, y, cz + r], [u0, 0], [u1, 0], [u1, 1], [u0, 1]);
