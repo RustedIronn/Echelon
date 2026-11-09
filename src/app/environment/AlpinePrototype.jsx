@@ -32,6 +32,7 @@ import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
 import { planWaterEdge, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
+import Airborne, { airborneWanted } from './Airborne.jsx';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
@@ -755,7 +756,8 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     {!baseline && <CloudShadows />}
     {!baseline && <Wind />}
     {!baseline && vegetation && lifeWanted() && <SmallLife ground={habitat?.nearGround} />}
-    {!baseline && vegetation && habitat && WILD_PLANTS_WANTED && <WildPlants habitat={habitat} farMeta={farMeta} farRaw={farRaw} clearing={clearing} resources={resources} />}
+    {!baseline && vegetation && airborneWanted() && <Airborne ground={habitat?.nearGround} />}
+    {!baseline && vegetation && habitat && WILD_PLANTS_WANTED &&<WildPlants habitat={habitat} farMeta={farMeta} farRaw={farRaw} clearing={clearing} resources={resources} />}
     <LookDevBridge baseline={baseline} resources={resources} manifest={manifest} />
     <BankReflection geography={geometry} corridor={corridor} waterRefine={waterRefine} reflectionMode={reflectionMode} enabled={!baseline && refinement && waterMode === 'fresnel'} />
     <Measurements key={`${vegetation}-${waterMode}-${look}-${surfaceDetail}-${refinement}-${corridor}-${resolve}`} manifest={manifest} pipeline={pipeline} onReady={onReady} />

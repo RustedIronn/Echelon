@@ -95,7 +95,7 @@ vec3 skyRadiance(vec3 d){
         float lit=smoothstep(-0.035,0.07,dot(n,L)); float alb=moonAlbedo(q);
         float bright=mix(0.32,2.05,night)*mix(0.5,1.0,low); /* by day a pale ghost of itself; at night bright, but short of clipping so the maria show */
         vec3 surface=tint*alb*(0.84+0.16*n.z)*bright*lit;
-        vec3 earthshine=vec3(0.32,0.38,0.52)*alb*0.045*bright*smoothstep(0.3,0.05,uMoonIllum)*night*(1.0-lit); // only a crescent shows its dark part, lit by the Earth
+        vec3 earthshine=vec3(0.32,0.38,0.52)*alb*0.045*bright*(1.0-smoothstep(0.05,0.3,uMoonIllum))*night*(1.0-lit); // only a crescent shows its dark part, lit by the Earth
         col+=(surface+earthshine)*cover*uMoonVis*(1.0-cm*0.85); // moonlight adds to the sky in front of it: a daytime moon looks washed, as it should
       }
     }

@@ -77,7 +77,7 @@ vec2 stoneFoam(vec2 p, vec2 flow) {
     if (dist > r * 8.0 + 3.0) continue;
     float along = dot(d, dir) / r, across = dot(d, side) / r; /* in stone radii: + downstream */
     float ring = exp(-max(dist, 0.0) / (0.02 + 0.04 * speed + 0.05 * r));
-    float pillow = smoothstep(0.3, -0.9, along) * exp(-max(dist, 0.0) / (0.05 + 0.1 * speed + 0.12 * r)); /* water piles against the upstream face */
+    float pillow = (1.0 - smoothstep(-0.9, 0.3, along)) * exp(-max(dist, 0.0) / (0.05 + 0.1 * speed + 0.12 * r)); /* water piles against the upstream face */
     contact = max(contact, max(ring * 0.8, pillow) * mix(0.7, 1.0, energy));
     float spread = 0.6 + 0.5 * clamp(along / 5.0, 0.0, 1.0); /* the wake widens a little as it trails off */
     float tail = smoothstep(-0.3, 0.8, along) * exp(-pow(abs(across) / spread, 2.0)) * exp(-max(along, 0.0) / (2.0 + 7.0 * speed));

@@ -2,6 +2,7 @@ import { DEFAULT_MSAA } from './antialias.js';
 import * as THREE from 'three';
 import { REACTIVE } from './taaReactive.js';
 import { createOptics, OPTICS } from './optics.js';
+import { OVERLAY } from './overlay.js';
 
 // Optional comparison path. The default framebuffer resolves MSAA after the Blender display transform has already been
 // applied per fragment, so sub-pixel highlights (petals, blade tips) are averaged in display space and lose energy.
@@ -76,6 +77,7 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
     vertexShader: RESOLVE_VERTEX, fragmentShader: RESOLVE_FRAGMENT,
   });
   const optics = createOptics(renderer); let opticsFrame = 0;
+  const drawOverlay = (sceneCamera) => { if (!OVERLAY.scene.children.length) return; const ac = renderer.autoClear; renderer.autoClear = false; try { renderer.render(OVERLAY.scene, sceneCamera); } finally { renderer.autoClear = ac; } }; // into the current target, after TAA (overlay.js)
   const finish = (radianceTexture, w, h, sceneCamera) => { // optics, then the display transform and grade to the screen
     const o = optics.prepare(radianceTexture, w, h, sceneCamera);
     const u = material.uniforms; u.radiance.value = radianceTexture; u.exposure.value = renderer.toneMappingExposure; u.uBloom.value = o.bloom; u.uBloomK.value = o.bloomK; u.uBloomLevels.value = o.levels;
@@ -108,7 +110,7 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
         target = new THREE.WebGLRenderTarget(size.x, size.y, packed ? { type: THREE.UnsignedInt101111Type, format: THREE.RGBFormat, samples: resolveSamples(renderer.capabilities.maxSamples), depthBuffer: true } : { type: THREE.HalfFloatType, samples: resolveSamples(renderer.capabilities.maxSamples), depthBuffer: true });
       }
       renderer.setRenderTarget(target);
-      try { renderer.render(sourceScene, sourceCamera); } finally { renderer.setRenderTarget(null); }
+      try { renderer.render(sourceScene, sourceCamera); drawOverlay(sourceCamera); } finally { renderer.setRenderTarget(null); }
       finish(target.texture, size.x, size.y, sourceCamera);
     },
     renderTaa(sourceScene, sourceCamera) {
@@ -139,7 +141,7 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
       const read = histories[frame % 2], write = histories[(frame + 1) % 2];
       taaMaterial.uniforms.current.value = target.texture; taaMaterial.uniforms.history.value = read.texture;
       taaMaterial.uniforms.unjitter.value.set(jitter ? UNJITTER_SIGN[0] * jx / size.x : 0, jitter ? UNJITTER_SIGN[1] * jy / size.y : 0);
-      renderer.setRenderTarget(write); renderer.render(taaScene, camera); renderer.setRenderTarget(null);
+      renderer.setRenderTarget(write); renderer.render(taaScene, camera); drawOverlay(sourceCamera); renderer.setRenderTarget(null);
       taaMaterial.uniforms.historyValid.value = 1;
       finish(write.texture, size.x, size.y, sourceCamera);
       // a still scene renders only on change: keep accumulating for a moment so it converges
