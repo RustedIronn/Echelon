@@ -6,6 +6,7 @@ import { ALPINE_ASSET_ROOT } from './alpinePrototypeData.js';
 import { HeightField, buildHamlet } from './hamletGeometry.js';
 import { bankLowering } from './bankLowering.js';
 import { makeHamletTextures } from './hamletTextures.js';
+import { makeHamletLaundry } from './hamletLaundry.js';
 import {applyWindowWarmth} from './hamletWindowLighting.js';
 import { attachHamletGround } from './hamletGround.js';
 import { makeGroundTexture, applyWeathering, buildContactSkirt } from './hamletWeathering.js';
@@ -62,8 +63,10 @@ export default function Hamlet({ terrain, resources, mode = 'detailed' }) {
       const mesh = new THREE.Mesh(geometry, material); mesh.name = `Hamlet / ${key}`; mesh.castShadow = key !== 'lane' && key !== 'soil'; mesh.receiveShadow = true; group.add(mesh); materials.push(material);
     }
     const skirt = weather ? buildContactSkirt(field) : null; if (skirt) group.add(skirt);
+    const laundry = mode !== 'blockout' && lifeWanted() ? makeHamletLaundry(field) : null;
+    if(laundry){applyBlenderDisplay(laundry.material,resources);group.add(laundry);}
     const top = mode !== 'blockout' && lifeWanted() ? chimneyTop(field, 'cottage-a') : null; const smoke = top ? makeChimneySmoke(top) : null; if (smoke) group.add(smoke); // one hearth lit
-    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); ground?.texture.dispose(); skirt?.geometry.dispose(); skirt?.material.dispose(); smoke?.geometry.dispose(); smoke?.material.dispose(); } };
+    return { group, triangles, textures, dispose: () => { Object.values(geometries).forEach(g=>g.dispose()); materials.forEach((m) => m.dispose()); Object.values(textures).forEach((t) => t.dispose()); ground?.texture.dispose(); skirt?.geometry.dispose(); skirt?.material.dispose(); smoke?.geometry.dispose(); smoke?.material.dispose(); laundry?.geometry.dispose(); laundry?.material.dispose(); } };
   }, [field, resources, mode, windowGlow]);
   useEffect(() => { if(!terrain)return; const restore=attachHamletGround(terrain,built.textures.lane); invalidate(); return restore; }, [terrain,built,invalidate]);
   useEffect(() => () => built.dispose(), [built]);

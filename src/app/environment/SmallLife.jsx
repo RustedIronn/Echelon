@@ -58,24 +58,27 @@ function makeBirds(count) {
 }
 
 // ---- chimney smoke: soft camera-facing puffs rising, growing and bending downwind, fading as they go
-export function makeChimneySmoke(top, count = 26) {
+export function makeChimneySmoke(top, count = 22) {
   const g = new THREE.PlaneGeometry(1, 1); const seed = new Float32Array(count); for (let i = 0; i < count; i += 1) seed[i] = i / count; g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 1));
   const material = new THREE.ShaderMaterial({ transparent: true, depthWrite: false,
-    uniforms: { uLifeTime: WIND.time, uTop: { value: new THREE.Vector3(...top) }, uColor: { value: new THREE.Color() }, uDensity: { value: 0 } },
-    vertexShader: `uniform float uLifeTime; uniform vec3 uTop; attribute float aSeed; varying vec2 vUv; varying float vAge;
+    uniforms: { uLifeTime: WIND.time, uWindStrength: WIND.strength, uTop: { value: new THREE.Vector3(...top) }, uColor: { value: new THREE.Color() }, uDensity: { value: 0 } },
+    vertexShader: `uniform float uLifeTime; uniform float uWindStrength; uniform vec3 uTop; attribute float aSeed; varying vec2 vUv; varying float vAge;
 void main() {
   float age = fract(aSeed + uLifeTime / 14.0); vAge = age; vUv = uv; // each puff takes 14 s to rise and fade
-  vec2 drift = normalize(vec2(0.8, -0.6)) * (age * age * 7.0 + age * 1.5);
-  vec3 p = uTop + vec3(drift.x, age * 6.5 + sin(uLifeTime * 0.7 + aSeed * 31.0) * 0.25 * age, drift.y);
-  float size = 0.35 + age * 3.2;
+  vec2 dir=normalize(vec2(0.8,-0.6));
+  vec2 drift = dir * (age*age*mix(1.4,5.5,clamp(uWindStrength,0.0,1.0)) + age*.6);
+  drift += vec2(-dir.y,dir.x)*sin(uLifeTime*.21-aSeed*8.0)*age*.28;
+  vec3 p = uTop + vec3(drift.x, age * 5.2 + sin(uLifeTime * 0.45 + aSeed * 31.0) * 0.14 * age, drift.y);
+  float size = 0.18 + age * 1.65;
   vec4 mv = viewMatrix * vec4(p, 1.0); mv.xy += position.xy * size; gl_Position = projectionMatrix * mv;
 }`,
     fragmentShader: `uniform vec3 uColor; uniform float uDensity; varying vec2 vUv; varying float vAge;
 float h(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
 void main() {
   vec2 q = vUv - 0.5; float r = length(q) * 2.0; float soft = 1.0 - smoothstep(0.35, 1.0, r);
-  float breakup = 0.75 + 0.25 * h(floor(vUv * 6.0 + vAge * 3.0));
-  float a = soft * breakup * smoothstep(0.0, 0.06, vAge) * (1.0 - smoothstep(0.45, 1.0, vAge)) * 0.32 * uDensity;
+  float breakup = 0.65 + 0.35 * noise(vUv * 5.0 + vAge * 3.0);
+  float a = soft * breakup * smoothstep(0.0, 0.06, vAge) * (1.0 - smoothstep(0.45, 1.0, vAge)) * 0.24 * uDensity;
   gl_FragColor = vec4(uColor, a);
 }` });
   const mesh = new THREE.InstancedMesh(g, material, count); mesh.name = 'Small life / chimney smoke'; mesh.frustumCulled = false; mesh.renderOrder = 3;
@@ -115,7 +118,8 @@ export default function SmallLife({ ground }) {
     // smoke: denser in the morning, evening and night (fires lit), a thin thread at midday; coloured by the horizon light
     if (!smokeRef.current) scene.traverse((o) => { if (o.name === 'Small life / chimney smoke') smokeRef.current = o; });
     const smoke = smokeRef.current; if (smoke) {
-      const midday = smooth(0.35, 0.75, sunY); const density = 0.35 + 0.65 * (1 - midday);
+      const midday = smooth(0.35, 0.75, sunY); const hearth=.72+.28*Math.sin(t*.07+.8)*Math.sin(t*.11+1.2);
+      const density = (0.28 + 0.62 * (1 - midday))*hearth;
       smoke.material.uniforms.uDensity.value = density; smoke.material.uniforms.uColor.value.copy(SKY_UNIFORMS.uHor.value).multiplyScalar(SKY_UNIFORMS.uSkyGain.value * 0.7);
     }
   });

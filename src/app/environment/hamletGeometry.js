@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {windowWarmth} from './hamletWindowLighting.js';
-import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_PALETTE, mulberry32, sampleCurve, footprint, yardPolygon, distanceToSegment, pointInPolygon } from './hamletLayout.js';
+import { HAMLET_BUILDINGS, HAMLET_LANES, HAMLET_LINEN_LINE, HAMLET_PALETTE, mulberry32, sampleCurve, footprint, yardPolygon, distanceToSegment, pointInPolygon } from './hamletLayout.js';
 
 // Procedural hamlet geometry. Everything is built as flat-shaded "soups" (positions, normals, metric UVs, vertex colours that carry the
 // palette and a cheap ambient-occlusion shade) grouped by material, so the whole settlement is a dozen draw calls. Pure functions
@@ -116,7 +116,24 @@ function facade(S, {origin, tangent, normal, width, height, color, material='pla
     const up=[0,1,0],box=(x,y,w,h,d,col,soup=S.trim)=>soup.obox(at(x,y,d),tangent,up,normal,w,h,.065,{color:col});
     if(o.door){
       rect(S.wood,l+.025,r-.025,b,t,-depth,PAL.door);
-      box(o.x,t+.09,o.w+.27,.16,.015,stone,S.stone);
+      if(o.arch){
+        const radius=o.w/2,cy=t-radius,steps=12;
+        // Fill the rectangular opening's upper corners back to a semicircle.
+        // Separate triangles avoid collapsed faces at the crown of the arch.
+        for(let k=0;k<steps;k++){
+          const x0=l+o.w*k/steps,x1=l+o.w*(k+1)/steps;
+          const y0=cy+Math.sqrt(Math.max(0,radius*radius-(x0-o.x)**2));
+          const y1=cy+Math.sqrt(Math.max(0,radius*radius-(x1-o.x)**2));
+          if(t-y0>1e-5)S[material].tri(at(x0,y0),at(x1,y1),at(x0,t),{color,facing:normal});
+          if(t-y1>1e-5)S[material].tri(at(x1,y1),at(x1,t),at(x0,t),{color,facing:normal});
+          const angle0=k/steps*Math.PI,angle1=(k+1)/steps*Math.PI;
+          const ring=(r,a)=>at(o.x+Math.cos(a)*r,cy+Math.sin(a)*r,.035);
+          S.stone.quad(ring(radius,angle0),ring(radius+.18,angle0),ring(radius+.18,angle1),ring(radius,angle1),{color:stone,facing:normal,scale:.8});
+        }
+        for(const x of[l-.09,r+.09])box(x,b+(cy-b)/2,.18,cy-b,.025,stone,S.stone);
+        // Two restrained oak panels read as a door rather than an empty black aperture.
+        for(const y of[b+.25,b+.95])box(o.x,y,o.w-.12,.065,-.14,PAL.honeyTimber,S.wood);
+      }else box(o.x,t+.09,o.w+.27,.16,.015,stone,S.stone);
       S.stone.obox(at(o.x,.035,.16),tangent,up,normal,o.w+.35,.09,.46,{color:stone});
       if(!o.barn)box(o.x+o.w*.33,b+o.h*.48,.045,.075,-.14,PAL.honeyTimber);
       else box(o.x,(b+t)/2,.07,o.h,-.14,PAL.honeyTimber,S.wood);
@@ -156,6 +173,84 @@ function cottageShell(S,b,rng){
   if(b.porch){const x=front.find(o=>o.door).x;roofSlab(S.roofSlate,[[x-1.05,2.2,hd+1.25],[x+1.05,2.2,hd+1.25],[x+1.05,2.63,hd],[x-1.05,2.63,hd]],.09,roof);for(const s of[-1,1])S.wood.box(x+s*.92,0,hd+1.12,.1,2.2,.1,{color:PAL.honeyTimber});}
   if(b.wing){const local=newSoups(),w=b.wing; cottageShell(local,{...b,w:w.w,d:w.d,eave:2.4,ridge:3.8,kind:'shed',wing:null,chimney:null,porch:false},rng);appendAt(S,local,(b.w/2+w.w/2-.2)*(w.side==='left'?-1:1),0,-b.d/2+w.d/2);}
 }
+// Domestic details share the existing material batches. Their dimensions remain
+// human-scale; no oversized hero props are used to force distant readability.
+function homeDetails(S,b){
+  if(b.kind!=='house'&&b.kind!=='farm')return;
+  const n=Math.max(2,Math.floor(b.w/2.1)),slot=Math.floor(n/2),col=PAL[b.shutter];
+  for(let k=0;k<n;k++){
+    if(k===slot)continue;
+    const x=-b.w/2+(k+.5)*b.w/n;
+    for(const side of[-1,1]){
+      S.wood.box(x+side*.59,.96,b.d/2+.045,.25,1.05,.065,{color:col});
+      for(const y of[1.15,1.68])S.wood.box(x+side*.59,y,b.d/2+.09,.23,.055,.025,{color:PAL.honeyTimber});
+    }
+  }
+  if(b.id==='cottage-a'){
+    // A small front dormer breaks the uninterrupted cottage roof. Its side
+    // walls intersect the existing roof below the window, leaving the ridge intact.
+    const local=newSoups(),x=-1.75,z=1.3,y=3.5,w=1.35,d=1.2,eave=.77,ridge=1.31;
+    facade(local,{origin:[0,0,d/2],tangent:[1,0,0],normal:[0,0,1],width:w,height:eave,color:PAL.cream,openings:[{x:0,y:.12,w:.65,h:.52}]});
+    for(const sign of[-1,1])local.plaster.quad([sign*w/2,0,-d/2],[sign*w/2,0,d/2],[sign*w/2,eave,d/2],[sign*w/2,eave,-d/2],{color:PAL.cream,facing:[sign,0,0]});
+    local.plaster.tri([-w/2,eave,d/2],[w/2,eave,d/2],[0,ridge,d/2],{color:PAL.cream,facing:[0,0,1]});
+    roofSlab(local.roofSlate,[[-w/2-.12,eave-.04,d/2+.13],[-w/2-.12,eave-.04,-d/2],[0,ridge,-d/2],[0,ridge,d/2+.13]],.065,PAL.slate);
+    roofSlab(local.roofSlate,[[w/2+.12,eave-.04,-d/2],[w/2+.12,eave-.04,d/2+.13],[0,ridge,d/2+.13],[0,ridge,-d/2]],.065,PAL.slate);
+    appendAt(S,local,x,y,z);
+  }
+  // Sheltered firewood under the side eave, rather than decorative piles in the meadow.
+  if(b.id==='cottage-a'||b.id==='farm-c'){
+    const x=-b.w/2-.34;
+    for(let row=0;row<3;row++)for(let k=0;k<5-row;k++){
+      const z=-1+k*.27+row*.13,y=.12+row*.22;
+      S.wood.box(x,y,z,.55,.19,.22,{color:mix(PAL.honeyTimber,PAL.door,k*.07),shade:.88});
+    }
+    roofSlab(S.roofSlate,[[x-.44,1.08,-1.45],[x+.38,1.23,-1.45],[x+.38,1.23,.7],[x-.44,1.08,.7]],.055,PAL.slate);
+  }
+}
+
+// Small rounded herb masses soften the tended edges without adding a tree system.
+function herb(S,field,x,z,r,h,rng){
+  const y=field.at(x,z)-.07,segments=9,rings=4,col=jitterColor(hex('#728348'),rng,.12);
+  const p=(j,k)=>{const a=k/segments*Math.PI*2,t=j/rings*Math.PI/2,rr=Math.sin(t)*r*(1+.09*Math.sin(k*2.3+j));return[x+Math.cos(a)*rr,y+Math.cos(t)*h,z+Math.sin(a)*rr];};
+  for(let j=0;j<rings;j++)for(let k=0;k<segments;k++){
+    const a=p(j,k),b=p(j+1,k),c=p(j+1,k+1),d=p(j,k+1),shade=[.95-j*.075,.88-j*.075,.88-j*.075,.95-j*.075];
+    const facing=[Math.cos((k+.5)/segments*Math.PI*2),.3,Math.sin((k+.5)/segments*Math.PI*2)];
+    if(j===0)S.foliage.tri(a,b,c,{color:col,shade:[shade[0],shade[1],shade[2]],facing,scale:1.1});
+    else S.foliage.quad(a,b,c,d,{color:col,shade,facing,scale:1.1});
+  }
+}
+function inhabitedEdges(S,field,rng){
+  const line=HAMLET_LINEN_LINE;
+  for(const [x,z]of[line.a,line.b])S.wood.box(x,field.at(x,z)-.12,z,.075,line.height+.12,.075,{color:PAL.honeyTimber});
+  const a=[line.a[0],field.at(...line.a)+line.height,line.a[1]],b=[line.b[0],field.at(...line.b)+line.height,line.b[1]];
+  const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2-.13,(a[2]+b[2])/2];
+  rail(S.wood,a,mid,.008,PAL.door);rail(S.wood,mid,b,.008,PAL.door);
+  // A kitchen garden belongs to one cottage, not every building in a repeated grid.
+  const garden=[[16.1,-125.4],[18.9,-124.9],[18.65,-123.3],[15.9,-123.8]];
+  for(let i=0;i<4;i++){
+    const a=garden[i],b=garden[(i+1)%4];rail(S.wood,[a[0],field.at(...a)+.1,a[1]],[b[0],field.at(...b)+.1,b[1]],.055,PAL.honeyTimber);
+  }
+  S.soil.quad(...garden.map(([x,z])=>[x,field.at(x,z)+.025,z]),{color:hex('#77674e'),facing:[0,1,0],scale:.7});
+  for(const [x,z,r,h]of[[16.5,-124.8,.35,.36],[17.2,-124.7,.4,.4],[18,-124.5,.34,.32],[16.8,-124,.38,.3],[18,-123.9,.33,.34],
+    [31.7,-112.8,.65,.72],[32.6,-113.1,.55,.61],[33.2,-112.6,.44,.51],[44,-121,.55,.65],[44.9,-121.5,.65,.75],[45.6,-121.2,.43,.52],
+    [59.8,-134,.6,.64],[60.7,-134.4,.52,.58]])herb(S,field,x,z,r,h,rng);
+  // A low village well/trough and chapel noticeboard give the common a purpose.
+  const x=32.7,z=-115.1,y=field.at(x,z);
+  for(const dx of[-.72,.72])S.stone.box(x+dx,y-.08,z,.22,.59,.9,{color:PAL.stone});
+  for(const dz of[-.36,.36])S.stone.box(x,y-.08,z+dz,1.45,.59,.18,{color:PAL.stone});
+  S.stone.box(x,y-.08,z,1.5,.2,.9,{color:PAL.stone});
+  const bx=42.5,bz=-116.8,by=field.at(bx,bz);
+  for(const dx of[-.46,.46])S.wood.box(bx+dx,by-.1,bz,.09,1.55,.1,{color:PAL.door});
+  S.wood.box(bx,by+.84,bz,.99,.62,.09,{color:PAL.honeyTimber});
+  S.trim.box(bx-.18,by+.95,bz+.054,.23,.32,.012,{color:PAL.cream});
+  S.trim.box(bx+.15,by+.93,bz+.054,.22,.28,.012,{color:PAL.whitewash});
+  // A simple gate marks entry to the cottage yard; the approach stays open.
+  const gateX=23.5,gateZ=-124.5,gy=field.at(gateX,gateZ);
+  for(const dx of[-.65,.65])S.wood.box(gateX+dx,gy-.12,gateZ,.1,1.03,.1,{color:PAL.honeyTimber});
+  // Gate is folded back along the boundary, never blocking an access route.
+  for(const h of[.36,.72])rail(S.wood,[gateX+.65,gy+h,gateZ],[gateX+1.7,field.at(gateX+1.7,gateZ-1)+h,gateZ-1],.035,PAL.honeyTimber);
+}
+
 function chapel(S,b){
   const col=PAL.whitewash,hw=b.w/2,hd=b.d/2,roof=PAL.slate;
   for(const sign of[-1,1]){
@@ -167,7 +262,7 @@ function chapel(S,b){
   roofSlab(S.roofSlate,[[-hw-.28,b.eave-.1,-hd-.23],[-hw-.28,b.eave-.1,hd+.23],[0,b.ridge,hd+.23],[0,b.ridge,-hd-.23]],.12,roof);
   const tw=b.tower.w,th=b.tower.height,tz=hd+tw/2-.2;
   for(const [origin,tangent,normal,front] of[[[0,0,tz+tw/2],[1,0,0],[0,0,1],true],[[tw/2,0,tz],[0,0,-1],[1,0,0]],[[0,0,tz-tw/2],[-1,0,0],[0,0,-1]],[[-tw/2,0,tz],[0,0,1],[-1,0,0]]]){
-    const openings=[{x:0,y:th-1.65,w:.83,h:1.05,louver:true}];if(front)openings.push({x:0,y:0,w:1.3,h:2.25,door:true},{x:0,y:3.3,w:.54,h:.88});
+    const openings=[{x:0,y:th-1.65,w:.83,h:1.05,louver:true}];if(front)openings.push({x:0,y:0,w:1.3,h:2.25,door:true,arch:true},{x:0,y:3.3,w:.54,h:.88});
     facade(S,{origin,tangent,normal,width:tw,height:th,color:col,openings});
     for(const sign of[-1,1])S.stone.obox([origin[0]+tangent[0]*sign*(tw/2-.12),th/2,origin[2]+tangent[2]*sign*(tw/2-.12)],tangent,[0,1,0],normal,.24,th,.09,{color:PAL.stone,scale:.7});
   }
@@ -209,7 +304,7 @@ export function buildHamlet(field,{seed=20260107}={}){
   const routes=HAMLET_LANES.map(l=>({half:l.width/2+.28,samples:sampleCurve(l.points,.5)}));
   for(const b of HAMLET_BUILDINGS){
     const local=newSoups(),br=mulberry32(seed+b.id.length*131+Math.round(b.x*10));
-    if(b.kind==='chapel')chapel(local,b);else cottageShell(local,b,br);
+    if(b.kind==='chapel')chapel(local,b);else {cottageShell(local,b,br);homeDetails(local,b);}
     const glazing=local.glass.position;
     for(let i=0;i<glazing.length;i+=12){const centre=[0,0,0];for(let v=0;v<4;v++)for(let axis=0;axis<3;axis++)centre[axis]+=glazing[i+v*3+axis]/4;
       const weight=windowWarmth(b,centre);windowWeights.push(weight,weight,weight,weight);}
@@ -243,11 +338,12 @@ export function buildHamlet(field,{seed=20260107}={}){
   }
   // A bench at the chapel green and a working timber rack by the farm imply
   // habitation with a few coherent silhouettes rather than scattered props.
-  for(const [x,z]of[[34,-117.2],[53,-133.5]]){
+  for(const [x,z]of[[35,-112.2],[58,-132]]){
     const y=field.at(x,z);S.wood.box(x,y+.43,z,1.7,.09,.42,{color:PAL.honeyTimber});
     for(const s of[-1,1])S.wood.box(x+s*.61,y,z,.1,.47,.34,{color:PAL.door});
     S.wood.box(x,y+.75,z-.2,1.7,.25,.06,{color:PAL.honeyTimber});
   }
+  inhabitedEdges(S,field,rng);
   const geometries={};let triangles=0;for(const k of KEYS)if(S[k].triangles){geometries[k]=S[k].toGeometry();triangles+=S[k].triangles;}
   if(geometries.glass)geometries.glass.setAttribute('aWindowWarmth',new THREE.Float32BufferAttribute(windowWeights,1));
   return{geometries,placed,triangles};

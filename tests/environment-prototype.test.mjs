@@ -521,7 +521,11 @@ test('hamlet clearing removes grass from buildings and lanes but preserves the o
 test('hamlet geometry builds deterministic, grounded, budgeted triangles per material', () => {
   const a = buildHamlet(heightField), b = buildHamlet(heightField);
   assert.equal(a.triangles, b.triangles); assert.ok(a.triangles > 1000 && a.triangles < 40000, `triangle budget ${a.triangles}`);
-  for (const [key, g] of Object.entries(a.geometries)) { const p = g.attributes.position.array; assert.ok(p.every(Number.isFinite), `${key} finite`); assert.equal(g.attributes.normal.count, g.attributes.position.count); assert.ok(g.index.count % 3 === 0); }
+  for (const [key, g] of Object.entries(a.geometries)) { const p = g.attributes.position.array; assert.ok(p.every(Number.isFinite), `${key} finite`); assert.equal(g.attributes.normal.count, g.attributes.position.count); assert.ok(g.index.count % 3 === 0);
+    // A zero normal on a collapsed planting-cap face can poison HDR bloom/TAA
+    // without producing a WebGL compile error; check the actual geometry.
+    const normals=g.attributes.normal;
+    for(let i=0;i<normals.count;i++)assert.ok(Math.hypot(normals.getX(i),normals.getY(i),normals.getZ(i))>.99,`${key} has a valid surface normal`); }
   for (const placed of a.placed) assert.ok(Math.abs(placed.floorY - heightField.at(placed.x, placed.z)) < 1.2, `${placed.id} floor sits near the terrain`);
   assert.ok(Object.keys(a.geometries).length <= 13, 'about a dozen draw calls');
 });
