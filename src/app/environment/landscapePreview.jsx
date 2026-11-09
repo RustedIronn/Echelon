@@ -3,6 +3,7 @@ import AlpinePrototype from './AlpinePrototype.jsx';
 import { ALPINE_ASSET_ROOT } from './alpinePrototypeData.js';
 import './alpinePrototype.css';
 import LookDevPanel from './LookDevPanel.jsx';
+import ViewerBar from './ViewerBar.jsx';
 import { SUPERSAMPLE } from './antialias.js';
 import { applyLookQuery } from './lookDev.js';
 
@@ -49,6 +50,12 @@ export default function LandscapePreview() {
   const [dprChoice, setDprChoice] = useState(params.get('dpr') || 'auto');
   const dpr = dprChoice === 'auto' ? Math.min(2.5, (window.devicePixelRatio || 1) * SUPERSAMPLE) : Math.min(2.5, Math.max(.5, Number(dprChoice) || 1)); // auto renders 1.25x the screen's pixels (antialias.js)
   const onReady = useCallback(() => setReady(true), [setReady]);
+  // The viewer bar by default; the developer panels (look-dev and profiling) with ?dev or the D key.
+  const [dev, setDev] = useState(params.has('dev'));
+  useEffect(() => {
+    const key = (event) => { if (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) && event.target.type !== 'range') return; if (!event.repeat && (event.key === 'd' || event.key === 'D')) setDev((v) => !v); };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+  }, []);
   useEffect(() => {
     function update(event) { setMetrics(event.detail); }
     window.addEventListener('echelon-prototype-metrics', update);
@@ -57,10 +64,11 @@ export default function LandscapePreview() {
   return <div className={`alpine-prototype${compare ? ' comparison-mode' : ''}`}>
     <div className="prototype-world"><PreviewBoundary><AlpinePrototype vegetation={vegetation} waterMode={waterMode} look={look} surfaceDetail={surfaceDetail} benchmark={benchmark} dpr={dpr} onReady={onReady} stripNormals={stripNormals} flowerFilter={flowerFilter} resolve={resolve} waterPass={waterPass} terrainFilter={terrainFilter} fillRoots={fillRoots} treeStyle={treeStyle} flowerStyle={flowerStyle} reflectionMode={reflectionMode} hamletStyle={hamletStyle} meadowStyle={meadowStyle} refinement={params.get('refinement') !== 'previous'} corridor={params.get('corridor') !== '0' && params.get('refinement') !== 'previous'} /></PreviewBoundary></div>
     {compare && <><img className="prototype-reference" src={`${ALPINE_ASSET_ROOT}/blender-reference.jpg`} alt="Complete approved Blender hero-camera reference" /><div className="prototype-comparison-labels"><span>Blender reference</span><span>WebGL prototype</span></div></>}
-    {!capture && <LookDevPanel />}
-    {!capture && <aside className="prototype-panel">
+    {!capture && !dev && <ViewerBar />}
+    {!capture && dev && <LookDevPanel />}
+    {!capture && dev && <aside className="prototype-panel">
       <strong>Echelon · Blender-authored WebGL prototype</strong>
-      <span>{ready ? 'Saved hero camera · sampled authored vegetation · static afternoon' : 'Loading local delivery assets…'}</span>
+      <span>{ready ? 'Developer tools · press D for the viewer' : 'Loading local delivery assets…'}</span>
       <div className="prototype-controls">
         <button onClick={() => setCompare(!compare)}>{compare ? 'WebGL only' : 'Compare complete frames'}</button>
         <label><input type="checkbox" checked={benchmark} onChange={(e) => setBenchmark(e.target.checked)} /> Profile continuously</label><label><input type="checkbox" checked={vegetation} onChange={(e) => setVegetation(e.target.checked)} /> Vegetation</label>
