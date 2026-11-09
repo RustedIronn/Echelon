@@ -1,6 +1,7 @@
 import { DEFAULT_MSAA } from './antialias.js';
 import * as THREE from 'three';
 import { REACTIVE } from './taaReactive.js';
+import { createOptics, OPTICS } from './optics.js';
 
 // Optional comparison path. The default framebuffer resolves MSAA after the Blender display transform has already been
 // applied per fragment, so sub-pixel highlights (petals, blade tips) are averaged in display space and lose energy.
@@ -18,15 +19,23 @@ export const RESOLVE_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Posi
 
 export const RESOLVE_FRAGMENT = `
 uniform sampler2D radiance; uniform highp sampler3D displayLut; uniform vec3 displayDomain; uniform float exposure; uniform float uSat; uniform float uContrast; uniform float uToe;
+uniform sampler2D uBloom; uniform float uBloomK; uniform float uBloomLevels; uniform sampler2D uShafts; uniform float uShaftK; uniform float uVignette; uniform float uGrain; uniform float uFrame; uniform float uAspect;
 varying vec2 vUv;
+float grainHash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 void main() {
   vec3 linearColor = texture2D(radiance, vUv).rgb;
+  /* optics (optics.js): bloom as an energy-preserving mix of the blurred image, then the sun's shafts through the haze */
+  linearColor = mix(linearColor, texture2D(uBloom, vUv).rgb / uBloomLevels, uBloomK) + texture2D(uShafts, vUv).rgb * uShaftK;
   vec3 coordinate = clamp((log2(max(linearColor * exposure, vec3(1e-7))) - displayDomain.x) / (displayDomain.y - displayDomain.x), 0.0, 1.0);
   coordinate = (coordinate * (displayDomain.z - 1.0) + 0.5) / displayDomain.z;
   vec3 c = texture(displayLut, coordinate).rgb;
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); float chroma = length(c - vec3(l)) / max(l, 1e-3);
   c = mix(vec3(l), c, 1.0 + (uSat - 1.0) * (1.0 - clamp(chroma * 0.9, 0.0, 1.0)));
-  vec3 g = pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); g *= 1.0 - uToe * (1.0 - smoothstep(0.0, 0.62, g)); g = clamp((g - 0.5) * uContrast + 0.5, 0.0, 1.0); c = pow(g, vec3(2.2));
+  vec3 g = pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); g *= 1.0 - uToe * (1.0 - smoothstep(0.0, 0.62, g)); g = clamp((g - 0.5) * uContrast + 0.5, 0.0, 1.0);
+  /* lens: a soft vignette (the corners fall off gently, like a real lens) and fine grain, which also dithers away banding in the sky */
+  vec2 vq = (vUv - 0.5) * vec2(uAspect, 1.0) / (0.5 * sqrt(uAspect * uAspect + 1.0)); g *= 1.0 - uVignette * smoothstep(0.25, 1.05, dot(vq, vq));
+  float grain = grainHash(gl_FragCoord.xy + uFrame * vec2(37.0, 17.0)) + grainHash(gl_FragCoord.xy * 1.37 + uFrame * vec2(11.0, 53.0)) - 1.0; /* triangular, -1..1 */
+  g = clamp(g + grain * uGrain * (0.0045 + 0.012 * g * (1.0 - g)), 0.0, 1.0); c = pow(g, vec3(2.2));
   gl_FragColor = vec4(c, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -62,9 +71,17 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
     uniforms: {
       radiance: { value: null }, displayLut: { value: displayLut }, exposure: { value: 1 }, uSat: GRADE.sat, uContrast: GRADE.contrast, uToe: GRADE.toe,
       displayDomain: { value: new THREE.Vector3(display.logMin, display.logMax, display.size) },
+      uBloom: { value: null }, uBloomK: { value: 0 }, uBloomLevels: { value: 6 }, uShafts: { value: null }, uShaftK: { value: 0 }, uVignette: OPTICS.vignette, uGrain: OPTICS.grain, uFrame: { value: 0 }, uAspect: { value: 16 / 9 },
     },
     vertexShader: RESOLVE_VERTEX, fragmentShader: RESOLVE_FRAGMENT,
   });
+  const optics = createOptics(renderer); let opticsFrame = 0;
+  const finish = (radianceTexture, w, h, sceneCamera) => { // optics, then the display transform and grade to the screen
+    const o = optics.prepare(radianceTexture, w, h, sceneCamera);
+    const u = material.uniforms; u.radiance.value = radianceTexture; u.exposure.value = renderer.toneMappingExposure; u.uBloom.value = o.bloom; u.uBloomK.value = o.bloomK; u.uBloomLevels.value = o.levels;
+    u.uShafts.value = o.shafts; u.uShaftK.value = o.shaftK; u.uFrame.value = (opticsFrame = (opticsFrame + 1) % 997); u.uAspect.value = w / h;
+    renderer.render(scene, camera);
+  };
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material); quad.frustumCulled = false;
   const scene = new THREE.Scene(); scene.add(quad);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -92,8 +109,7 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
       }
       renderer.setRenderTarget(target);
       try { renderer.render(sourceScene, sourceCamera); } finally { renderer.setRenderTarget(null); }
-      material.uniforms.radiance.value = target.texture; material.uniforms.exposure.value = renderer.toneMappingExposure;
-      renderer.render(scene, camera);
+      finish(target.texture, size.x, size.y, sourceCamera);
     },
     renderTaa(sourceScene, sourceCamera) {
       renderer.getDrawingBufferSize(size);
@@ -125,13 +141,12 @@ export function createLinearResolve(renderer, displayLut, display, { taa = false
       taaMaterial.uniforms.unjitter.value.set(jitter ? UNJITTER_SIGN[0] * jx / size.x : 0, jitter ? UNJITTER_SIGN[1] * jy / size.y : 0);
       renderer.setRenderTarget(write); renderer.render(taaScene, camera); renderer.setRenderTarget(null);
       taaMaterial.uniforms.historyValid.value = 1;
-      material.uniforms.radiance.value = write.texture; material.uniforms.exposure.value = renderer.toneMappingExposure;
-      renderer.render(scene, camera);
+      finish(write.texture, size.x, size.y, sourceCamera);
       // a still scene renders only on change: keep accumulating for a moment so it converges
       const now = performance.now(); if (now - lastRender > 120) settled = 0; lastRender = now; // a render after an idle spell is a new change
       settled += 1; if (settled < SETTLE) invalidate?.();
     },
     noteChange() { settled = 0; }, // something changed; the next frames should accumulate again
-    dispose() { target?.dispose(); histories?.forEach((h) => h.dispose()); material.dispose(); quad.geometry.dispose(); taaMaterial?.dispose(); taaQuad?.geometry.dispose(); reactiveTarget?.dispose(); reactiveMaterial?.dispose(); },
+    dispose() { target?.dispose(); histories?.forEach((h) => h.dispose()); material.dispose(); quad.geometry.dispose(); taaMaterial?.dispose(); taaQuad?.geometry.dispose(); reactiveTarget?.dispose(); reactiveMaterial?.dispose(); optics.dispose(); },
   };
 }
