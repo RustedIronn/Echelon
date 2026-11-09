@@ -4,6 +4,7 @@ import { applyBlenderDisplay, applyFlowerResponse } from './alpineParityMaterial
 import { TUFTS } from './tufts.js';
 import { FOLIAGE_A2C } from './antialias.js';
 import {isMeadowFlowerEnabled} from './flowerPalette.js';
+import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 
 // Real flower models (the delivered meshes, at their lowest level of detail) for the middle ground, at the positions of the flower clumps chosen by tufts.js.
 // Counts are capped so the triangle budget stays small (the models are 36-900 triangles at their lowest level of detail).
@@ -74,10 +75,11 @@ export function buildRealFlowerGroup({ flowerScene, placed, resources, maxFlower
   }
   for (const [species, matrices] of lists) {
     const entry = sources.get(species); if (!entry) continue; const count = matrices.length / 16;
+    const head = flowerHeadInfo(flowerScene, species, (o) => entry.parts.includes(o)); // this level of detail's own parts (flowerBehaviour.js)
     for (const source of entry.parts) {
-      const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld); disposables.push(geometry);
+      const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld); if (CLOSING_SPECIES.has(species)) tagFlowerHeads(geometry, head); disposables.push(geometry);
       const originals = Array.isArray(source.material) ? source.material : [source.material];
-      const materials = originals.map((original) => { const m = original.clone(); m.transparent = false; m.alphaTest = 0.3; if (FOLIAGE_A2C) m.alphaToCoverage = true; m.side = THREE.DoubleSide; m.roughness = 0.8; applyBlenderDisplay(m, resources); applyFlowerResponse(m); m.userData.lookRole = 'flowers'; m.userData.baseColor = m.color.clone(); disposables.push(m); return m; });
+      const materials = originals.map((original) => { const m = original.clone(); m.transparent = false; m.alphaTest = 0.3; if (FOLIAGE_A2C) m.alphaToCoverage = true; m.side = THREE.DoubleSide; m.roughness = 0.8; applyBlenderDisplay(m, resources); applyFlowerResponse(m); applyFlowerBehaviour(m, species, head); m.userData.lookRole = 'flowers'; m.userData.baseColor = m.color.clone(); disposables.push(m); return m; });
       const mesh = new THREE.InstancedMesh(geometry, Array.isArray(source.material) ? materials : materials[0], count); mesh.name = `${species} (mid-ground)`;
       for (let k = 0; k < count; k += 1) { matrix.fromArray(matrices, k * 16); mesh.setMatrixAt(k, matrix); }
       mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = receiveShadow; mesh.frustumCulled = false; group.add(mesh); disposables.push(mesh);

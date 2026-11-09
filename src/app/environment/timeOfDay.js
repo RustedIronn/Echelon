@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GRADE } from './linearResolve.js';
 import { FLOW, flowRateAt } from './waterFlow.js';
-import { LEAF_LIGHT } from './leafLight.js';
+import { LEAF_LIGHT, FLOWER_LIGHT } from './leafLight.js';
 // Time of day for the living world: an artistically controlled solar cycle driven by the device clock, date and timezone (no location needed).
 // The four moods (morning, afternoon, evening, night) are colour anchors blended continuously by solar elevation along a rising (morning) and a
 // setting (evening) timeline, so there are no presets and no fixed-hour palette swaps. "Approved" keeps the earlier renderer for comparison.
@@ -161,6 +161,7 @@ export function applyTimeOfDay(scene, ref, date, base, { state: sampledState = n
   if (sun) { sun.position.set(s.sun.dir[0] * 180, s.sun.dir[1] * 180, s.sun.dir[2] * 180 - 70); sun.color.copy(s.sunC); sun.userData.baseIntensity = ref.sunEnergy * s.sunK; }
   if (moon) { moon.position.set(s.moon.dir[0] * 180, s.moon.dir[1] * 180, s.moon.dir[2] * 180 - 70); moon.intensity = s.moonLight * 0.55; } /* a full moon lights the meadow but leaves it darker than the sky, as night should be */
   LEAF_LIGHT.backlight.value = 0.2 + 0.8 * smooth(-4, 4, s.sun.elevation); // the warm sunlit glow through the blades: only a trace under the moon
+  FLOWER_LIGHT.close.value = 1 - smooth(-3, 7, s.sun.elevation); FLOWER_LIGHT.lean.value = smooth(-1, 8, s.sun.elevation); // daisies shut for the night and open in the morning sun; heads follow the sun by day
   if (hemi) { hemi.color.copy(s.hemiSky); hemi.groundColor.copy(s.ground); hemi.intensity = s.hemiK * 1.8; }
   GRADE.sat.value = s.sat; GRADE.contrast.value = s.contrast; GRADE.toe.value = s.toe; FLOW.rate.value = flowRateAt(s.sun.hour); // the stream runs fuller in the afternoon (snowmelt)
   { const asked = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('grade'); if (asked) { const [c, sat, toe] = asked.split(',').map(Number); if (c) GRADE.contrast.value = c; if (sat) GRADE.sat.value = sat; if (toe === toe && toe !== undefined) GRADE.toe.value = toe; } } // ?grade=contrast,saturation (look-dev experiment)

@@ -33,6 +33,7 @@ import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
 import { planWaterEdge, buildWildPlants, WILD_PLANTS_WANTED } from './wildPlants.js';
 import Airborne, { airborneWanted } from './Airborne.jsx';
+import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
 import { FOLIAGE_A2C, TAA } from './antialias.js';
@@ -417,6 +418,7 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
   const maxAnisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy());
   const result = useMemo(() => {
     gltf.scene.updateMatrixWorld(true); const group = new THREE.Group(); const owned = [];
+    const heads = new Map(); const headOf = (species, lod) => { const key = species + ':' + lod; if (!heads.has(key)) heads.set(key, flowerHeadInfo(gltf.scene, species, (o) => inheritedMetadata(o, 'species') === species && (inheritedMetadata(o, 'lod') ?? 0) === lod)); return heads.get(key); }; // for the flower clock, per level of detail (they sit apart in the file)
     gltf.scene.traverse((source) => {
       if (!source.isMesh) return;
       const species = inheritedMetadata(source, 'species'); if(!isMeadowFlowerEnabled(species))return;
@@ -430,12 +432,13 @@ function Flowers({ manifest, gltf, resources, baseline, flowerFilter, flowerStyl
         return (distance < 26 ? 0 : distance < 65 ? 1 : 2) === lod;
       });
       if (!records.length) return;
-      const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld);
+      const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld); if (!baseline && CLOSING_SPECIES.has(species)) tagFlowerHeads(geometry, headOf(species, lod)); // each head's centre, for closing at dusk
       const originals = Array.isArray(source.material) ? source.material : [source.material];
       const materials = originals.map((original) => {
         const material = original.clone(); material.transparent = false; material.alphaTest = .3; material.side = THREE.DoubleSide; if (FOLIAGE_A2C) material.alphaToCoverage = true; material.roughness = .8;
         if (!baseline) applyBlenderDisplay(material, resources);
         if (!baseline && flowerStyle !== 'previous') applyFlowerResponse(material);
+        if (!baseline) applyFlowerBehaviour(material, species, headOf(species, lod)); // close at dusk, lean to the sun (flowerBehaviour.js)
         if (!baseline && material.map) {
           const anisotropy = flowerFilter === 'previous' ? 1 : Math.min(FLOWER_ANISOTROPY, maxAnisotropy);
           if (material.map.anisotropy !== anisotropy) { material.map.anisotropy = anisotropy; material.map.needsUpdate = true; }
