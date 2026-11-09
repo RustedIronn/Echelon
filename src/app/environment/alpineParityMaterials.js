@@ -367,20 +367,30 @@ uniform vec2 viewportSize; uniform vec2 cameraRange; uniform vec3 extinction; un
 varying float vDepth; varying vec3 vWaterWorld; varying vec3 vWaterNormal; varying float vSurfaceZ; varying vec2 vFlow; uniform float uWaterTime; uniform float uFlowRate;
 // Flowing water: the ripple pattern is carried downstream at the local flow speed. Two copies, half a cycle apart, are cross-faded so the pattern
 // never stretches; a slow third layer drifts across the wind so even the level pool is never still.
-vec2 flowWave(vec2 p, vec2 scale, vec2 offset) {
-  float t = uWaterTime * 0.22; float a = fract(t), b = fract(t + 0.5); float wa = 1.0 - abs(2.0 * a - 1.0);
-  vec2 sa = texture2D(ripple, (p - vFlow * uFlowRate * a * 4.5) * scale + offset).xy, sb = texture2D(ripple, (p - vFlow * uFlowRate * b * 4.5) * scale + offset + 0.37).xy;
+// speedK: this layer's speed relative to the current (surface chop rides faster than the broad swell); cycle: its cross-fade period in seconds.
+// The cross-fade phase is offset from place to place, so the surface never pulses as one body.
+vec2 flowWave(vec2 p, vec2 scale, vec2 offset, float speedK, float cycle) {
+  float local = texture2D(ripple, p * 0.013 + offset * 3.1).z;
+  float t = uWaterTime / cycle + local * 2.0; float a = fract(t), b = fract(t + 0.5); float wa = 1.0 - abs(2.0 * a - 1.0);
+  vec2 v = vFlow * uFlowRate * speedK * cycle;
+  vec2 sa = texture2D(ripple, (p - v * a) * scale + offset).xy, sb = texture2D(ripple, (p - v * b) * scale + offset + 0.37).xy;
   return mix(sb, sa, wa) * 2.0 - 1.0;
+}
+// Patches of rougher water (riffles over stones, wind catching the surface) carried downstream with the current, between glassier runs.
+float roughPatches(vec2 p) {
+  float t = uWaterTime / 9.0; float a = fract(t), b = fract(t + 0.5); float wa = 1.0 - abs(2.0 * a - 1.0); vec2 v = vFlow * uFlowRate * 9.0;
+  float m = mix(texture2D(ripple, (p - v * b) * 0.045 + 0.71).x, texture2D(ripple, (p - v * a) * 0.045 + 0.23).x, wa);
+  return 0.5 + 1.0 * smoothstep(0.38, 0.72, m);
 }
 float viewDepth(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(bedDepth, uv).r, cameraRange.x, cameraRange.y); }
 vec2 skyUV(vec3 direction) { return vec2(atan(direction.z,direction.x)*RECIPROCAL_PI2+0.5,asin(clamp(direction.y,-1.0,1.0))*RECIPROCAL_PI+0.5); }
 void main() {
   vec3 V = normalize(cameraPosition-vWaterWorld); float distanceToCamera = length(cameraPosition-vWaterWorld);
   float distanceResponse = smoothstep(25.0, 130.0, distanceToCamera);
-  vec2 waveA = flowWave(vWaterWorld.xz, vec2(.58, .22), vec2(0.0));
-  vec2 waveB = flowWave(vWaterWorld.xz, vec2(1.7, .83), vec2(.31, .57));
+  vec2 waveA = flowWave(vWaterWorld.xz, vec2(.58, .22), vec2(0.0), 0.8, 5.0);
+  vec2 waveB = flowWave(vWaterWorld.xz, vec2(1.7, .83), vec2(.31, .57), 1.35, 2.6);
   vec2 drift = texture2D(ripple, vWaterWorld.xz * vec2(.31, .27) + vec2(uWaterTime * .011, -uWaterTime * .007)).xy * 2.0 - 1.0;
-  vec2 wave = waveA*.66 + waveB*.26 + drift*.08;
+  vec2 wave = (waveA*.6 + waveB*.32) * roughPatches(vWaterWorld.xz) + drift*.08;
   ${refine ? 'vec3 N = normalize(vWaterNormal + vec3(wave.x, 0.0, wave.y) * mix(.24, .13, distanceResponse) * uRippleK);' : 'vec3 N = normalize(vWaterNormal + vec3(wave.x, 0.0, wave.y) * mix(.24, .13, distanceResponse));'}
   float cosine = clamp(dot(N,V), .015, 1.0);
   float fresnel = .0204 + .9796*pow(1.0-cosine,5.0);

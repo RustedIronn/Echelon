@@ -38,6 +38,16 @@ export function computeWaterFlow(geometry, matrixWorld, { cell = 1 } = {}) {
     for (let j = h - 2; j > 0; j -= 1) for (let i = w - 2; i > 0; i -= 1) { const q = j * w + i; if (level[q] !== level[q]) continue; relax(q, q + 1, 1); relax(q, q + w, 1); relax(q, q + w + 1, 1.414); relax(q, q + w - 1, 1.414); }
   }
   const at = (arr, i, j, fallback) => { if (i < 0 || j < 0 || i >= w || j >= h) return fallback; const v2 = arr[j * w + i]; return v2 === v2 && v2 !== Infinity ? v2 : fallback; };
+  // distance from the bank (chamfer, inside the water) and the local half-width (largest such distance nearby): a real current is fastest in the middle
+  // of the channel and slows against the banks, so the water does not move as one body.
+  const bank = new Float32Array(w * h).fill(Infinity);
+  for (let q = 0; q < level.length; q += 1) if (level[q] !== level[q]) bank[q] = 0;
+  const relaxB = (q, r, c) => { if (bank[r] + c < bank[q]) bank[q] = bank[r] + c; };
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let j = 1; j < h - 1; j += 1) for (let i = 1; i < w - 1; i += 1) { const q = j * w + i; relaxB(q, q - 1, 1); relaxB(q, q - w, 1); relaxB(q, q - w - 1, 1.414); relaxB(q, q - w + 1, 1.414); }
+    for (let j = h - 2; j > 0; j -= 1) for (let i = w - 2; i > 0; i -= 1) { const q = j * w + i; relaxB(q, q + 1, 1); relaxB(q, q + w, 1); relaxB(q, q + w + 1, 1.414); relaxB(q, q + w - 1, 1.414); }
+  }
+  const vn = (x, z) => { const xi = Math.floor(x), zi = Math.floor(z), u = x - xi, v2 = z - zi; const hh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }; const su = u * u * (3 - 2 * u), sv = v2 * v2 * (3 - 2 * v2); return (hh(xi, zi) * (1 - su) + hh(xi + 1, zi) * su) * (1 - sv) + (hh(xi, zi + 1) * (1 - su) + hh(xi + 1, zi + 1) * su) * sv; };
   const flow = new Float32Array(n * 2);
   for (let k = 0; k < n; k += 1) {
     const i = Math.round((world[k * 3] - minX) / cell), j = Math.round((world[k * 3 + 2] - minZ) / cell); const c = at(along, i, j, NaN); if (c !== c) continue;
@@ -49,8 +59,14 @@ export function computeWaterFlow(geometry, matrixWorld, { cell = 1 } = {}) {
       if (l1 === l1 && l0 === l0 && m1 === m1 && m0 === m0) { ls += Math.hypot(l1 - l0, m1 - m0) / (2 * cell); ln += 1; }
     }
     const len = Math.hypot(gx, gz); if (len < 1e-6) continue; const slope = ln ? ls / ln : 0;
-    const speed = Math.min(1.6, 0.18 + 14 * slope); // m/s: a slow drift on the level pool, quicker where the stream falls
-    flow[k * 2] = FLOW_SIGN * gx / len * speed; flow[k * 2 + 1] = FLOW_SIGN * gz / len * speed;
+    let speed = Math.min(1.6, 0.18 + 14 * slope); // m/s: a slow drift on the level pool, quicker where the stream falls
+    // across the channel: fast thread in the middle, slack water at the banks
+    const fromBank = at(bank, i, j, 0); let half = fromBank; for (let dj = -6; dj <= 6; dj += 2) for (let di = -6; di <= 6; di += 2) half = Math.max(half, at(bank, i + di, j + dj, 0));
+    const t = Math.min(1, fromBank / Math.max(half, 0.5)); const profile = 0.22 + 1.05 * Math.pow(t * (2 - t), 0.8); speed *= profile;
+    // eddies: the direction wanders, more in the slack water by the banks (where real streams curl back on themselves)
+    const wx = world[k * 3], wz = world[k * 3 + 2]; const swirl = (vn(wx * 0.18, wz * 0.18) - 0.5) * 2 * (0.25 + 0.75 * (1 - t)) * 1.1;
+    let dx = gx / len, dz = gz / len; const cs = Math.cos(swirl), sn = Math.sin(swirl); [dx, dz] = [dx * cs - dz * sn, dx * sn + dz * cs];
+    flow[k * 2] = FLOW_SIGN * dx * speed; flow[k * 2 + 1] = FLOW_SIGN * dz * speed;
   }
   return flow;
 }
