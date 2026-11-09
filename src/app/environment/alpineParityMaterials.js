@@ -302,11 +302,11 @@ normal = normalize(mix(normal, vTreeNormal, ${style.sphericalBlend.toFixed(3)}))
       'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );',
       `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
        reflectedLight.directDiffuse += directLight.color * max(0.0, dot(-geometryNormal, directLight.direction)) * BRDF_Lambert(material.diffuseContribution) * ${style.translucency.toFixed(3)};
-       reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * 0.5; /* petals glow when backlit */`));
+       reflectedLight.directDiffuse += directLight.color * pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 4.0) * material.diffuseContribution * ${(style.backlight ?? 0.5).toFixed(3)}; /* petals glow when backlit */`));
     shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 reflectedLight.indirectDiffuse *= ${(1 + style.ambientWrap).toFixed(3)};`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : 'tree'}-foliage-v1`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : 'tree'}-foliage-v1${style === FOLIAGE_STYLE ? '' : `-${Object.values(style).join('_')}`}`; /* a non-default style is baked into the shader, so it belongs in the key */
   return material;
 }
 

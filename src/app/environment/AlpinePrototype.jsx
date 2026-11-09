@@ -32,6 +32,7 @@ import SmallLife, { lifeWanted } from './SmallLife.jsx';
 import { computeWaterFlow } from './waterFlow.js';
 import { findStoneWaterlines, placeRiffleStones, FOAM_WANTED } from './streamFoam.js';
 import Airborne, { airborneWanted } from './Airborne.jsx';
+import { planCopses, buildCopses, COPSES_WANTED } from './treeCopses.js';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
@@ -692,6 +693,19 @@ function LookDevBridge({ baseline, resources, manifest }) {
 }
 
 
+// Copses of the delivered spruce and the audition larch up the far stream and right of the hamlet (treeCopses.js; ?copses=on while under review).
+function Copses({ landscape, habitat, farMeta, farRaw, clearing, resources }) {
+  const larch = useLoader(GLTFLoader, `${ROOT}/larch.glb`);
+  const built = useMemo(() => {
+    let spruce = null; landscape.traverse((o) => { if (!spruce && o.userData.echelonRole === 'tree') spruce = o; });
+    const field = new HeightField(farMeta, new Float32Array(farRaw)); const bank = bankLowering.current;
+    const groundAt = (x, z) => { const y = field.at(x, z); return y + (bank ? bank.offsetAt(x, z, y) : 0); };
+    return buildCopses(planCopses({ habitat, groundAt, clearing }), { spruce, larch: larch.scene }, resources);
+  }, [landscape, habitat, farMeta, farRaw, clearing, resources, larch]);
+  useEffect(() => () => built.dispose(), [built]);
+  return <primitive object={built.group} />;
+}
+
 function attachSceneHabitat(group,field,clearing,roots) {
   const habitat=createMeadowHabitat({group,field,clearing,roots,bank:bankLowering.current});habitat.nearGround=terrainRaster(group); // the rendered ground near the camera, for the frame-edge planting
   group.traverse(o=>{if(!o.isMesh || inheritedMetadata(o,'echelonRole')!=='terrain')return;for(const material of Array.isArray(o.material)?o.material:[o.material])applyHabitatMaterial(material,habitat);});
@@ -749,6 +763,7 @@ function Scene({ vegetation, waterMode, look, surfaceDetail, refinement, corrido
     {!baseline && <Wind />}
     {!baseline && vegetation && lifeWanted() && <SmallLife ground={habitat?.nearGround} />}
     {!baseline && vegetation && airborneWanted() && <Airborne ground={habitat?.nearGround} />}
+    {!baseline && vegetation && habitat && COPSES_WANTED && <Suspense fallback={null}><Copses landscape={geometry.group} habitat={habitat} farMeta={farMeta} farRaw={farRaw} clearing={clearing} resources={resources} /></Suspense>}
     <LookDevBridge baseline={baseline} resources={resources} manifest={manifest} />
     <BankReflection geography={geometry} corridor={corridor} waterRefine={waterRefine} reflectionMode={reflectionMode} enabled={!baseline && refinement && waterMode === 'fresnel'} />
     <Measurements key={`${vegetation}-${waterMode}-${look}-${surfaceDetail}-${refinement}-${corridor}-${resolve}`} manifest={manifest} pipeline={pipeline} onReady={onReady} />
