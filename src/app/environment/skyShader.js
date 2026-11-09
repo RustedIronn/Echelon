@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { WIND } from './wind.js';
 
 // The generated sky as shader code and a single shared uniform set, used by the visible sky, the environment light and the water's sky reflection.
 // Clouds are a flat layer (no volumetrics): a domain-warped billowy layer with sun-side self shadowing, darker dense cores, brighter thin edges and a
 // silver lining toward the sun, plus a thin high cirrus layer.
 export const SKY_UNIFORM_GLSL = `
 uniform vec3 uSunDir; uniform vec3 uMoonDir; uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uBelt; uniform vec3 uSunC; uniform vec3 uCloudC;
-uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc;
+uniform float uBeltK; uniform float uGlowK; uniform float uCover; uniform float uCloudShift; uniform float uSkyTime; uniform float uStarK; uniform float uMoonVis; uniform float uMoonPhase; uniform float uSkyGain; uniform float uSunDisc;
 float hash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float vnoise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash21(i),hash21(i+vec2(1.0,0.0)),f.x),mix(hash21(i+vec2(0.0,1.0)),hash21(i+vec2(1.0,1.0)),f.x),f.y); }
 float fbm(vec2 p){ float a=0.5; float s=0.0; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=0.5; } return s; }
@@ -24,8 +25,8 @@ vec3 skyRadiance(vec3 d){
   col=mix(col,uBelt,clamp(belt,0.0,1.0)*0.9);
   float cm=0.0;
   if(y>0.0){
-    vec2 p=d.xz/(y+0.16)*1.1+vec2(uCloudShift,0.0);
-    vec2 w=vec2(fbm(p*0.8+3.1),fbm(p*0.8+7.7))-0.5;
+    vec2 p=d.xz/(y+0.16)*1.1+vec2(uCloudShift,0.0)+vec2(0.0035,0.0012)*uSkyTime; // clouds drift across the sky in real time
+    vec2 w=vec2(fbm(p*0.8+3.1+uSkyTime*0.0011),fbm(p*0.8+7.7-uSkyTime*0.0009))-0.5; /* and slowly change shape as they go */
     float detail=fbm(p*4.5+w*1.7); float n=fbm(p+w*0.9)*0.65+detail*0.35;
     float body=smoothstep(1.0-uCover-0.04,1.0-uCover+0.14,n); cm=body*smoothstep(0.012,0.17,y);
     vec2 sl=normalize(uSunDir.xz+vec2(1e-4)); float n2=fbm(p+sl*0.30+w*0.9)*0.65+detail*0.35;
@@ -35,7 +36,7 @@ vec3 skyRadiance(vec3 d){
     cc+=uSunC*pow(sd,5.0)*(1.0-thick)*0.45*uGlowK*up;
     cc+=uSunC*pow(sd,1.6)*(0.35+0.65*(1.0-thick))*0.2*uGlowK*up*(1.0-smoothstep(0.0,0.55,uSunDir.y));
     col=mix(col,cc,cm*0.94);
-    vec2 q=d.xz/(y+0.35)*vec2(0.6,2.4)+vec2(uCloudShift*0.4,0.0);
+    vec2 q=d.xz/(y+0.35)*vec2(0.6,2.4)+vec2(uCloudShift*0.4,0.0)+vec2(0.0014,0.0)*uSkyTime; // high cirrus drift slower
     float cirrus=smoothstep(0.55,0.85,fbm(q*2.6+w*0.6))*smoothstep(0.08,0.35,y)*0.38*(1.0-cm);
     col=mix(col,mix(uCloudC*1.05,uSunC,0.35*pow(sd,2.0)*(1.0-smoothstep(0.0,0.5,uSunDir.y))),cirrus);
   }
@@ -66,7 +67,7 @@ export const SKY_ACTIVE = { value: 0 };
 export const SKY_UNIFORMS = {
   uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uMoonDir: { value: new THREE.Vector3(0, -1, 0) }, uZen: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
   uBelt: { value: new THREE.Color() }, uSunC: { value: new THREE.Color() }, uCloudC: { value: new THREE.Color() }, uBeltK: { value: 0 }, uGlowK: { value: 0 }, uCover: { value: 0.4 },
-  uCloudShift: { value: 0 }, uStarK: { value: 0 }, uMoonVis: { value: 0 }, uMoonPhase: { value: 0 }, uSkyGain: { value: 1 }, uSunDisc: { value: 0 },
+  uCloudShift: { value: 0 }, uSkyTime: WIND.time, uStarK: { value: 0 }, uMoonVis: { value: 0 }, uMoonPhase: { value: 0 }, uSkyGain: { value: 1 }, uSunDisc: { value: 0 },
 };
 export const createSkyUniforms = () => SKY_UNIFORMS;
 export function writeSkyUniforms(u, s) {

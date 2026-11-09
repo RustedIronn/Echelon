@@ -19,7 +19,7 @@ void main(){
   vec3 Q = P + S * (${LAYER.toFixed(1)} / up);
   // The same kind of field as the sky's clouds (warped fbm, same cover and drift), laid out over the land at a cloud's real size (a few hundred metres),
   // so the valley gets several patches of shade. It does not trace each visible cloud exactly; nobody can check that from the ground.
-  vec2 p = Q.xz / 130.0 + vec2(uCloudShift * 0.35, 0.0);
+  vec2 p = Q.xz / 130.0 + vec2(uCloudShift * 0.35, 0.0) + vec2(0.019, 0.0065) * uSkyTime; // shadows sweep across the valley at a few metres a second
   vec2 w = vec2(fbm(p * 0.8 + 3.1), fbm(p * 0.8 + 7.7)) - 0.5;
   float detail = fbm(p * 4.5 + w * 1.7); float n = fbm(p + w * 0.9) * 0.65 + detail * 0.35;
   float cm = smoothstep(0.5, 0.64, n); // about a third of the land in shade at a time
@@ -53,7 +53,7 @@ export default function CloudShadows() {
     if (st.frames < 4 || st.frames % 90 === 0) { let patched = false; scene.traverse((o) => { if (!o.isMesh || o.userData.noCloudShadow) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m && applyCloudShadow(m)) patched = true; }); if (patched) invalidate(); }
     // strength: only while the generated sky is active and the sun is up; stronger in high, clear daylight, gone below the horizon
     const sunY = SKY_UNIFORMS.uSunDir.value.y; CLOUD_SHADOW.strength.value = DEBUG ? 10 : off || !SKY_ACTIVE.value ? 0 : 0.88 * THREE.MathUtils.smoothstep(sunY, 0.02, 0.25);
-    const key = `${SKY_UNIFORMS.uSunDir.value.toArray().map((v) => v.toFixed(3))}|${SKY_UNIFORMS.uCover.value.toFixed(3)}|${SKY_UNIFORMS.uCloudShift.value.toFixed(4)}`;
+    const key = `${SKY_UNIFORMS.uSunDir.value.toArray().map((v) => v.toFixed(3))}|${SKY_UNIFORMS.uCover.value.toFixed(3)}|${SKY_UNIFORMS.uCloudShift.value.toFixed(4)}|${Math.floor(SKY_UNIFORMS.uSkyTime.value * 4)}`; // 4 updates a second while the clouds drift (a texel is 1.6 m)
     if (key !== st.key && CLOUD_SHADOW.strength.value > 0) { st.key = key; const previous = gl.getRenderTarget(); gl.setRenderTarget(pass.target); gl.render(pass.passScene, pass.camera); gl.setRenderTarget(previous); invalidate(); }
   });
   return null;
