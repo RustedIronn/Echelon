@@ -79,7 +79,7 @@ function buildCards(sites, textures) {
   const group = new THREE.Group(); const S = 7, n = sites.length / S; const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
   textures.forEach((tex, v) => { const mine = []; for (let i = 0; i < n; i += 1) if (sites[i * S + 6] === v) mine.push(i); if (!mine.length) return; /* the flower mixes in drifts */
     const mesh = new THREE.InstancedMesh(geo, plantMaterial({ map: tex, glow: 1.8, sway: 0.03, up: 1.0, alphaTest: 0.45 }), mine.length);
-    mine.forEach((i, k) => { const [x, y, z, s, t, hf] = sites.slice(i * S, i * S + S); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.6 + 0.75 * hash(z * 1.3, x * 0.7)) * hf, s) /* heights vary, so the tops never make a line */); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.88 + 0.12 * t, 1.0 + 0.06 * t, 1.0 + 0.12 * t) /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
+    mine.forEach((i, k) => { const [x, y, z, s, t, hf] = sites.slice(i * S, i * S + S); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.6 + 0.75 * hash(z * 1.3, x * 0.7)) * hf, s) /* heights vary, so the tops never make a line */); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.74 + 0.1 * t, 1.0 + 0.06 * t, 0.96 + 0.1 * t) /* true summer green, not olive */ /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
     mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = 'meadow cards (baked scans)'; group.add(mesh); });
   return group;
 }
@@ -95,17 +95,17 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
   const flowerKinds0 = partsOf(fl.scene).map((k) => ({ ...k, parts: k.parts.filter((p) => !/LEAF/i.test(p.material?.name ?? '')).map((p) => ({ /* leaves stay hidden in the sward */ geometry: p.geometry, material: p.material, mat: plantMaterial({ map: p.material.map, color: p.material.color, glow: 0.6, sway: 0.05, up: 0.5 }) })) }));
   // two more species from the same scans, tinted: violet meadow cranesbill (from the pink) and blue cornflower (from the daisy)
   const tintKind = (k, col) => ({ ...k, parts: k.parts.map((p) => { const m2 = p.material.clone(); m2.color = new THREE.Color(col); return { geometry: p.geometry, material: m2, mat: plantMaterial({ map: m2.map, color: m2.color, glow: 0.6, sway: 0.05, up: 0.5 }) }; }) });
-  const flowerKinds = [...flowerKinds0, tintKind(flowerKinds0[0], '#8e86ff'), tintKind(flowerKinds0[2], '#a8baff')]; // 0 pink, 1 dandelion, 2 daisy, 3 clover, 4 cranesbill, 5 cornflower
+  const flowerKinds = [...flowerKinds0, tintKind(flowerKinds0[0], '#8e86ff'), tintKind(flowerKinds0[2], '#7d96ff')]; // 0 pink, 1 dandelion, 2 daisy, 3 clover, 4 cranesbill, 5 cornflower
   const vn = (x, z) => { const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; const sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz); const a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1); return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz; };
   // the near sward: packed clumps (not the tiny tufts), every 0.42 m, 0.35-0.9 m tall
   const swardOf = (fresh) => grassKinds.map((k, i) => [i, k]).filter(([, k]) => k.height > 0.12 && tris(k) < 1700 && k.fresh === fresh).map(([i]) => i); const swF = swardOf(true), swO = swardOf(false);
   const grass = [], flowers = [];
-  for (let r = from; r < to; ) { const step = 0.5; const da = (step / r) * (180 / Math.PI);
+  for (let r = from; r < to; ) { const step = 0.4; const da = (step / r) * (180 / Math.PI);
     for (let az = -40; az <= 40; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
       if (ground.skip(x, z) || (jr > 50 && hash(x * 2.9, z * 3.7) < (jr - 50) / 12)) continue; /* the clumps thin out into the cards beyond, no seam */ const y = ground.at(x, z), t = hash(x * 1.7, z * 2.3); const sward = hash(x * 5.3, z * 4.1) < 0.84 ? swF : swO; const kind = sward[Math.floor(hash(x, z) * sward.length) % sward.length]; const k = grassKinds[kind];
       const pd = ground.path ? ground.path(x, z) : 99, moist = ground.moist ? ground.moist(x, z) : 0.5; const trod = 1 - Math.min(1, Math.max(0, (pd - 0.8) / 3.2)); /* 1 on the path's margin, 0 a few metres off */
       const patch = (0.8 + 0.4 * hash(Math.floor(x / 7), Math.floor(z / 7))) * (1 - 0.45 * trod) * (0.9 + 0.25 * moist); /* taller in the damp hollows, shorter on the trodden margin */
-      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [1.06 + 0.14 * t, 1.14 + 0.1 * hash(x, 3), 1.38 + 0.16 * hash(z, 5)] }); /* matched to the cards' tone, seen from the same height */
+      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [0.8 + 0.1 * t, 1.1 + 0.09 * hash(x, 3), 0.86 + 0.1 * hash(z, 5)] }); /* measured against the cards beyond: one sward, no seam */ /* matched to the cards' tone, seen from the same height */
       // flowers as plant communities following the ground (a real alpine meadow, not a flower show): white daisies scattered everywhere,
       // thinly on the dry rises and thicker where it is richer; small irregular clusters where conditions suit - yellow buttercups and pink
       // bistort in the damp hollows, violet cranesbill and clover in the middle ground, blue harebells and daisies on the dry rises; few

@@ -100,7 +100,7 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; va
   { float gv = clamp(vlSurf.x * 1.3, 0.0, 1.0) * (1.0 - smoothstep(250.0, 900.0, d)); if (gv > 0.0) { vec3 gr = texture2D(tGravelB, p / 2.6).rgb; gr = mix(gr, vec3(dot(gr, vec3(0.333))), 0.45) * vec3(0.62, 0.64, 0.64); diffuseColor.rgb = mix(diffuseColor.rgb, gr, gv); } } /* grey wet stones, not sand */
   diffuseColor.rgb *= 1.0 - 0.35 * clamp(vlSurf.x * 1.4, 0.0, 1.0) * (1.0 - smoothstep(-0.3, 1.2, vlWorld.y - 0.2));
   // under the near blades the ground is the shaded base of the sward: deep green-brown, never the pale top colour
-  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.52, 0.34), open * (1.0 - smoothstep(48.0, 80.0, d)));
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.62, 0.8, 0.6), open * (1.0 - smoothstep(55.0, 70.0, d))); /* the sward's own mid-green under the near clumps, until the cards take over */
   // the distant slopes, per pixel: forest where the ground climbs, alpine pasture in the clearings and up the avalanche paths, the forest
   // thinning toward the treeline; canopy drawn as a fine grain of crowns, so far woods read as woods and no vertex grid shows
   float far = smoothstep(520.0, 900.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);

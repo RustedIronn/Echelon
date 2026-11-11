@@ -17,14 +17,14 @@ void main(){
   vec2 p = vW.xz + vec2(uTime * 6.0, uTime * 2.0);
   vec2 warp = vec2(fb(p / 5000.0), fb(p / 5000.0 + 9.2)) - 0.5;
   float base = fb(p / 3200.0 + warp * 1.6);
-  float dens = smoothstep(uCover, uCover + 0.22, base); dens *= 0.65 + 0.35 * fb(p / 700.0 + 3.0);
+  float dens = smoothstep(uCover, uCover + 0.12, base); /* defined clouds with clear sky between, not a veil */ dens *= 0.65 + 0.35 * fb(p / 700.0 + 3.0);
   vec3 v = normalize(vW - cameraPosition); float d = length(vW - cameraPosition);
   float fade = (1.0 - smoothstep(15000.0, 28500.0, d)) * smoothstep(0.0, 0.035, v.y);
   float mu = dot(normalize(vW - cameraPosition), normalize(uSunDir)); float a = clamp(dens * 1.25, 0.0, 1.0) * fade * (1.0 - 0.92 * smoothstep(0.975, 0.995, mu)); if (a < 0.003) discard; /* the sky round the sun kept clear, so its disc is seen */
   float sunUp = smoothstep(-0.08, 0.15, uSunDir.y);
   float thick = smoothstep(0.2, 1.0, dens);
   vec3 lit = mix(uSunCol, vec3(1.0), 0.8) * (1.0 - 0.12 * thick);                          // the thin edges: bright, a little warm (seen against the sun, never paper white)
-  lit = mix(lit, vec3(0.78, 0.81, 0.87), thick * 0.5); /* clean white cloud, soft blue-grey only in its thickest part */                                        // the thick middle: shaded blue-grey, the body of a backlit cloud
+  lit = mix(lit, vec3(0.8, 0.83, 0.88), thick * 0.45); /* clean white cloud, soft blue-grey only in its thickest part */                                        // the thick middle: shaded blue-grey, the body of a backlit cloud
   float fwd = pow(max(dot(v, normalize(uSunDir)), 0.0), 10.0); lit += uSunCol * fwd * (1.0 - thick) * 0.5; // the silver lining toward the sun
   vec3 col = mix(vec3(0.07, 0.08, 0.11), lit, sunUp); if (uNight > 0.5) col = vec3(0.08, 0.1, 0.15);
   col = mix(col, uHaze, smoothstep(0.25, 0.0, v.y) * 0.55);                                  // the far cloud fades into the horizon haze
