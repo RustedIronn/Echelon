@@ -169,7 +169,7 @@ function zoneColour(x, h, z, slope) {
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if ((slope > 0.22 && h > 48) || (slope > 0.1 && h > 160 && fbm(x / 420 + 9, z / 420, 2) > 0.38)) { /* the foothills wooded too, with clearings */ /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.05 && h > 220; if (avalanche) return ZONE.pasture.clone().lerp(ZONE.forest, 0.25); /* narrow avalanche lanes, high up, grassed and dark */ SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 8.5) { const bar = smooth(0.42, 0.58, fbm(x / 26 + 3, z / 26, 2)); const gv = (1 - smooth(4.5, 8, d)) * (0.25 + 0.75 * bar); SURF[0] = gv; return ZONE.shore.clone().lerp(ZONE.gravel, gv); } // stony bars in places; elsewhere the turf comes down to the water
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 8.5) { const bar = smooth(0.42, 0.58, fbm(x / 26 + 3, z / 26, 2)); const bar2 = smooth(0.5, 0.66, fbm(x / 26 + 3, z / 26, 2)); const gv = (1 - smooth(4.5, 8, d)) * bar2 * 0.8; SURF[0] = gv; const cutBank = (1 - smooth(5.2, 7.2, d)) * (1 - bar2); /* where there is no bar, a dark undercut bank of wet earth */ return ZONE.shore.clone().lerp(ZONE.gravel, gv).lerp(C('#2a2a1c'), 0.7 * cutBank); } // stony bars in places; elsewhere the turf comes down to the water
   { const lk = lakeL(x, z); if (lk < 1.5) { SURF[0] = 0.75 * (1 - smooth(1.24, 1.36, lk)) * (0.5 + 0.5 * fbm(x / 14, z / 14, 2)); /* stony patches in the mud at the waterline */ } if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.75 * (1 - smooth(1.24, 1.44, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
@@ -255,7 +255,8 @@ function buildWater() {
       sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); float lim = 0.78 + 0.2 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7)); diffuseColor.a = 1.0 - smoothstep(lim - 0.16, lim, edge); /* the water thins out over the stones at its edge: a soft, wandering margin */ float depth = 1.0 - smoothstep(0.3, 0.85, edge);
   float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0))); float sp = 1.0 + 1.6 * depth + 1.2 * rapid;
-  vec2 q = vec2(fl.x * 5.0, fl.y * 0.45 - uTime * sp); float rip = (vlNoise(q) - 0.5) * 0.6 + (vlNoise(q * 2.7 + 4.0) - 0.5) * 0.4; /* ripples carried downstream */
+  float fine = 1.0 / (1.0 + 6.0 * length(fwidth(vec2(fl.x * 5.0, fl.y * 0.45)))); /* detail finer than a pixel only glitters: let it melt into a calm sheen with distance */
+  vec2 q = vec2(fl.x * 5.0, fl.y * 0.45 - uTime * sp); float rip = ((vlNoise(q) - 0.5) * 0.6 + (vlNoise(q * 2.7 + 4.0) - 0.5) * 0.4 * fine) * (0.35 + 0.65 * fine); /* ripples carried downstream */
   vec3 V = normalize(cameraPosition - vlWorld); float fres = pow(1.0 - clamp(V.y + rip * 0.2, 0.0, 1.0), 4.0);
   vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb; vec3 body = mix(bedC * vec3(0.55, 0.7, 0.68), vec3(0.07, 0.19, 0.21), depth); /* stones through the shallows, deep green-blue pools */
   float pool = smoothstep(0.35, 0.65, vlFbm(vec2(fl.y * 0.03 + 9.0, fl.x * 0.7))) * (1.0 - rapid); /* slack water mirrors the dark far bank, running water the sky */
@@ -263,9 +264,9 @@ function buildWater() {
   vec3 water = mix(body, mirror, clamp(0.2 + 0.8 * fres, 0.0, 1.0) * (0.45 + 0.55 * depth));
   water *= 1.0 - 0.5 * smoothstep(0.55, 0.85, edge); /* the shade under the banks */
   float streak = vlNoise(vec2(fl.x * 9.0, fl.y * 0.35 - uTime * sp)) * vlNoise(vec2(fl.x * 23.0 + 3.0, fl.y * 0.9 - uTime * sp * 1.3));
-  float foam = smoothstep(0.4 - 0.2 * rapid, 0.62, streak) * rapid * (0.4 + 0.6 * depth);
+  float foam = mix(0.3 * rapid, smoothstep(0.4 - 0.2 * rapid, 0.62, streak), fine) * rapid * (0.4 + 0.6 * depth); /* far off, the rapids are a soft pale reach, not speckle */
   diffuseColor.rgb = mix(water, vec3(0.88, 0.91, 0.9), foam * 0.75);
-  float glint = step(0.97, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(-V, normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
+  float glint = fine * fine * step(0.97, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(-V, normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
   diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
@@ -416,7 +417,7 @@ export async function startBlockout(canvas, overlay) {
       const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot);
       reeds = []; for (let i = 0; i < 900; i += 1) { const a = (i / 900) * 6.283 + hash(i, 91) * 0.01; const k = 1.06 + 0.12 * hash(i, 92) + 0.05 * Math.sin(a * 7.0); if (hash(Math.floor(a * 9), 93) < 0.55 || hash(i, 94) < 0.35) continue; /* stands, not a wall */
         const uu = Math.cos(a) * LAKE.rx * k, vv = Math.sin(a) * LAKE.rz * k; const x = LAKE.x + uu * c + vv * sn, z = LAKE.z - uu * sn + vv * c; if (Math.hypot(x, z) > 330) continue;
-        if (z < LAKE.z - 30) continue; /* only the near and side shores: on the far shore a reed line reads as a row of dashes */ reeds.push({ x, y: Math.max(heightAt(x, z), 0.05), z }); }
+        if (z < LAKE.z - 30) continue; /* only the near and side shores: on the far shore a reed line reads as a row of dashes */ { const ll = lakeL(x, z); if (ll < 1.27 || ll > 1.42 || riverDistance(x, z)[0] < 22 || hash(i, 97) < 0.5) continue; } /* on the real shore only, clear of the stream's mouth */ reeds.push({ x, y: Math.max(heightAt(x, z), 0.05), z }); }
       if (blades.length) scene.add(buildBlades(blades)); /* procedural blades only with ?blades=1 */
       /* the scanned meadow below */
     }
