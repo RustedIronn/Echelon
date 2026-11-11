@@ -8,7 +8,7 @@ import * as THREE from 'three';
 // The old scene's mountainDetail.js had the same ideas tuned to 90 m mountains; these are tuned to kilometres.
 export const LOOK = {
   uSunDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() }, uSunCol: { value: new THREE.Color(1, 0.95, 0.85) },
-  uHaze: { value: new THREE.Color(0.75, 0.8, 0.86) }, uDensity: { value: 1 / 16000 }, uScaleHeight: { value: 1300 }, uGlow: { value: 1.2 },
+  uHaze: { value: new THREE.Color(0.75, 0.8, 0.86) }, uDensity: { value: 1 / 16000 }, uScaleHeight: { value: 2300 } /* the haze reaches up the mountains: the far range goes blue */, uGlow: { value: 1.2 },
   uSnowline: { value: 1500 }, uTreeline: { value: 640 }, uRockOn: { value: 1 }, uCover: { value: 0.5 }, uCloudOn: { value: 0 }, uTime: { value: 0 },
 };
 const NOISE = `

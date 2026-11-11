@@ -14,7 +14,7 @@ let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
 // the land is exposed for its shadowed faces (the camera looks into the light); the sky keeps its own brightness
-const LAND_EXPOSURE = 1.75;
+const LAND_EXPOSURE = 1.4; // the sky and haze are not blown out (reference 28: a grey-blue sky, not white)
 const lookMat = (m, o) => (LOOK_ON ? applyValleyLook(m, o) : m);
 
 // The valley block-out (docs/WORLD-SPEC.md, build step 1): grey-box land at true scale, colour masses for the zones, water shapes, hamlet
@@ -126,7 +126,7 @@ const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
 const ZONE = { meadow: C('#646c3d'), hay: C('#6f6f41'), pasture: C('#56673a'), shore: C('#525e38'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#646c3d'), track: C('#9a8e6c'), wet: C('#4c5f35'), dry: C('#76744a'), mown: C('#7e7c4c') };
-const LAND_LIGHT = 1.3;
+const LAND_LIGHT = 1.65; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
 function zoneColour(x, h, z, slope) {
@@ -269,7 +269,7 @@ const dirOf = (az, el) => new THREE.Vector3(Math.sin(az * DEG) * Math.cos(el * D
 const MOODS = {
   dawn: [0.035, 6, 2.6, 0.42, '#ffb27a', 1.4, '#9fb4d6', '#5a4a3c', '#d9b9a3', 1.05e-4],
   morning: [0.22, 4, 1.4, 0.36, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
-  noon: [0.5, 3, 1.0, 0.32, '#fff6ea', 3.0, '#c6d6ef', '#626048', '#c4d0dc', 0.85e-4],
+  noon: [0.5, 2.4, 1.7, 0.32, '#fff0da', 3.3, '#b9d0f2', '#6b6540', '#b0c2da', 0.85e-4], // a clear blue sky, warm sun
   evening: [0.82, 4, 1.6, 0.38, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
   dusk: [0.968, 7, 2.8, 0.45, '#ff9a5a', 1.2, '#93a3c8', '#4b3d33', '#d8a98f', 1.1e-4],
   night: [null, 0, 0, 0.9, '#a9bde6', 0.75, '#2a3858', '#11161e', '#1b2433', 0.9e-4], // moonlight strong enough to read the valley by
@@ -312,14 +312,14 @@ export async function startBlockout(canvas, overlay) {
     const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 430 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
     if (Q.get('scanned') !== '0') { try { meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
-  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
+  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0032; /* less milky glare round the sun */ u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };
   const light = new THREE.DirectionalLight(mood[4], mood[5] * (night ? 1 : LAND_LIGHT)); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.55 : LOOK_ON ? 1.7 * LAND_LIGHT : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
-  const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#d9dcb4' : mood[6], night ? 0.08 : LOOK_ON ? 1.15 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
+  const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#e6dfb8' : mood[6], night ? 0.08 : LOOK_ON ? 1.5 * LAND_LIGHT / 1.3 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
   if (LOOK_ON && Q.get('clouds') !== '0') { const cover = Number(Q.get('cover') ?? (night ? 0.58 : 0.5)); scene.add(buildClouds({ coverage: cover, night })); LOOK.uCover.value = cover; LOOK.uCloudOn.value = 1; } // ?clouds=0 for a clear sky, ?cover=0.3..0.7
-  if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 30000, glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
+  if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 12500, /* the far range goes blue with distance, as in the references */ glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
     scene.background = new THREE.Color('#0b1220'); sky.visible = false;
@@ -342,7 +342,7 @@ export async function startBlockout(canvas, overlay) {
   }
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
-  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.08) saturate(1.1)' : 'contrast(1.06) saturate(1.05)'; document.body.classList.add('graded'); }
+  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.1) saturate(1.14)' : 'contrast(1.12) saturate(1.16) brightness(1.03)'; document.body.classList.add('graded'); }
   // motion: birds over the meadows, smoke from the chimneys (more in the cold and the evening), one clock for everything that moves
   scene.updateMatrixWorld(true); const chimneys = []; scene.traverse((o) => { if (o.name === 'chimney') chimneys.push(o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0))); });
   const warmHour = ['dawn', 'dusk', 'evening', 'night'].includes(Q.get('tod')); const smoke = LOOK_ON && Q.get('smoke') !== '0' ? buildSmoke(chimneys.filter((_, i) => season === 'winter' || warmHour || i % 3 === 0), { strength: night ? 0.35 : 1 }) : null; if (smoke) scene.add(smoke.group);
