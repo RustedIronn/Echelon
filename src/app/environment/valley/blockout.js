@@ -45,6 +45,25 @@ function riverDistance(x, z) { let best = Infinity, along = 0; for (let i = 0; i
 // The land: the valley floor (lake level, rising gently to the south), the camera's knoll, the upper hamlet's terrace, the valley sides,
 // the foothills and the range, combined with a smooth maximum; the river and the lake are cut in.
 const smax = (a, b, k) => (b <= a ? a : a + (b - a) * smooth(0, k, b - a)); // a soft maximum that never lifts the ground where the shapes are level
+
+// The real massif (docs/WORLD-SPEC.md section 4): Copernicus GLO-30 elevation of the Dom/Mischabel group (Valais), placed so that seen from
+// our camera it stands exactly where the designed main peak stands, at its true distance of 12 km (from there it rises 13.9 degrees, the
+// designed height, at 1:1 scale). World azimuth a maps to the compass bearing 180 + a - 12.4 from a viewpoint 12 km north of the summit;
+// the lake is at 1,500 m. Terrain more than about 8 km from the summit is masked off so the real Saas and Matter ridges do not block it.
+// ?dem=0 shows the procedural range instead.
+export const MASSIF = { az: 12.4, distance: 12000, lakeAltitude: 1500 };
+let DEM = null;
+export async function loadDem(url = '/design-reference/world-redesign/dem/dom') {
+  if (Q.get('dem') === '0') return null;
+  try { const [meta, buf] = await Promise.all([fetch(url + '.json').then((r) => r.json()), fetch(url + '.f32').then((r) => r.arrayBuffer())]);
+    const mLat = 111320, mLon = 111320 * Math.cos(meta.summit[0] * DEG); DEM = { meta, data: new Float32Array(buf), mLat, mLon, vLat: meta.summit[0] + MASSIF.distance / mLat, vLon: meta.summit[1], summit: toXZ(MASSIF.az, MASSIF.distance) }; return DEM; } catch { return null; }
+}
+function demHeight(x, z) {
+  if (!DEM) return NaN; const r = Math.hypot(x, z), b = (180 + Math.atan2(x, -z) / DEG - MASSIF.az) * DEG; const lat = DEM.vLat + (r * Math.cos(b)) / DEM.mLat, lon = DEM.vLon + (r * Math.sin(b)) / DEM.mLon;
+  const m = DEM.meta, fx = (lon - m.west) / m.dLon, fy = (m.north - lat) / m.dLat, ix = Math.floor(fx), iy = Math.floor(fy); if (ix < 0 || iy < 0 || ix >= m.width - 1 || iy >= m.height - 1) return NaN;
+  const tx = fx - ix, ty = fy - iy, i = iy * m.width + ix, d = DEM.data; return (d[i] * (1 - tx) + d[i + 1] * tx) * (1 - ty) + (d[i + m.width] * (1 - tx) + d[i + m.width + 1] * tx) * ty - MASSIF.lakeAltitude;
+}
+const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 export function heightAt(x, z, cheap = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5); // the floor
@@ -54,7 +73,8 @@ export function heightAt(x, z, cheap = false) {
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
   const m = profile(RANGE, az); const mh = Math.tan(m[1] * DEG) * m[2] + FRAME.eye; const crest = smooth(m[2] - 5200, m[2], r) * (1 - smooth(m[2], m[2] + 3500, r));
-  h = smax(h, mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)), 120);
+  let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh, wd); }
+  h = smax(h, mountain, 120);
   if (!cheap) { const [d] = riverDistance(x, z); h -= 2.2 * (1 - smooth(5, 16, d)); }
   const l = inLake(x, z); if (l < 1.6) h = lerp(-2.5, h, smooth(0.8, 1.6, l));
   return h;
@@ -77,8 +97,8 @@ function zoneColour(x, h, z, slope) {
 
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 401, R = 300, r0 = 12, r1 = 16000; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
-  for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z); const e = Math.max(2, r * 0.004);
+  const A = 401, R = 320, r0 = 12, r1 = 16000; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
+  for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 6000 && demWeight(x, z) > 0.02 ? 80 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
     const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
@@ -135,11 +155,12 @@ const MOODS = {
   night: [null, 0, 0, 0.9, '#9fb4e0', 0.35, '#1d2740', '#0e1218', '#1b2433', 0.9e-4],
 };
 
-export function startBlockout(canvas, overlay) {
+export async function startBlockout(canvas, overlay) {
+  await loadDem();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(FRAME.vfov, 1, 0.5, 30000); camera.position.set(0, FRAME.eye, 0); camera.rotation.set(FRAME.pitch * DEG, 0, 0, 'YXZ');
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
-  const t0 = performance.now(); scene.add(buildTerrain()); scene.add(buildWater()); scene.add(buildSettlements()); const buildMs = Math.round(performance.now() - t0);
+  const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements()); const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3];
   const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : 1.3); scene.add(light, hemi);
@@ -167,4 +188,16 @@ export function sunDisc(scene, dir, colour) {
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), color: colour, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
   glow.scale.setScalar(2600); glow.position.copy(dir).multiplyScalar(20000); scene.add(glow);
   const disc = new THREE.Mesh(new THREE.CircleGeometry(105, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(colour).multiplyScalar(6), fog: false })); disc.position.copy(dir).multiplyScalar(20000); disc.lookAt(0, 0, 0); scene.add(disc);
+}
+
+// The massif at the elevation data's own 60 m spacing (every second sample), so ridges, couloirs and glacier basins keep their shape.
+function buildMassif() {
+  const m = DEM.meta, step = 2, W = Math.floor(m.width / step), H = Math.floor(m.height / step); const pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), ok = new Uint8Array(W * H);
+  for (let j = 0; j < H; j += 1) for (let i = 0; i < W; i += 1) { const lat = m.north - j * step * m.dLat, lon = m.west + i * step * m.dLon; const dN = (lat - DEM.vLat) * DEM.mLat, dE = (lon - DEM.vLon) * DEM.mLon;
+    const r = Math.hypot(dN, dE), a = Math.atan2(dE, dN) / DEG - 180 + MASSIF.az; const [x, z] = toXZ(a, r); const k = j * W + i; if (r < 5500 || Math.abs(a) > 62) continue;
+    const h = heightAt(x, z, true); const e = 60; const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e);
+    pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; const c = zoneColour(x, h, z, slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; ok[k] = 1; }
+  const idx = []; for (let j = 0; j < H - 1; j += 1) for (let i = 0; i < W - 1; i += 1) { const a = j * W + i, b = a + 1, c = a + W, d = c + 1; if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
 }

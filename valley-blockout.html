@@ -37,7 +37,7 @@
   <script type="module">
     import { startBlockout } from './src/app/environment/valley/blockout.js';
     const labels = document.getElementById('labels'), overlay = document.getElementById('overlay');
-    startBlockout(document.getElementById('world'), overlay);
+    await startBlockout(document.getElementById("world"), overlay);
     const sync = () => { labels.style.display = overlay.style.display; }; sync(); window.addEventListener('keydown', () => setTimeout(sync));
   </script>
 </body>
