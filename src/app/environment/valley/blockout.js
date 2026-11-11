@@ -96,7 +96,7 @@ export function heightAt(x, z, cheap = false) {
   let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * reshapeAt(az), wd); }
   h = smax(h, mountain, 120);
   if (!cheap) { const [d] = riverDistance(x, z); h -= 2.2 * (1 - smooth(5, 16, d)); }
-  const l = inLake(x, z); if (l < 1.9) h = lerp(-2.5, Math.max(h, 0.4), smooth(1.28, 1.9, l)); /* the bed stays under the water to the very edge of the lake, then a low shore */
+  const l = inLake(x, z); if (l < 1.26) h = Math.min(lerp(-2.5, -0.3, smooth(0.9, 1.26, l)), h); else if (l < 1.9) h = lerp(0.05, Math.max(h, 0.25), smooth(1.26, 1.5, l)); /* under the water inside its outline, a low bank rising just outside */ /* the bed stays under the water to the very edge of the lake, then a low shore */
   return h;
 }
 
@@ -113,7 +113,7 @@ function zoneColour(x, h, z, slope) {
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 22) { SURF[0] = 1 - smooth(8, 22, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(8, 22, d)); }
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 13) { SURF[0] = 1 - smooth(5, 13, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(5, 13, d)); }
   if (inLake(x, z) < 1.5) return ZONE.shore;
   if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) { SURF[1] = 1; return ZONE.track; }
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
@@ -258,7 +258,15 @@ export async function startBlockout(canvas, overlay) {
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
   if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
-    if (Q.get('blades') !== '0') scene.add(buildBlades(planBlades({ at: (x, z) => heightAt(x, z), skip, zone }))); /* real blades near, cards beyond */
+    if (Q.get('blades') !== '0') {
+      const blades = planBlades({ at: (x, z) => heightAt(x, z), skip, zone });
+      // reeds and sedge round the lake: tall, slender clumps in a ragged band at the water's edge, thicker in the bays
+      const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot);
+      for (let i = 0; i < 900; i += 1) { const a = (i / 900) * 6.283 + hash(i, 91) * 0.01; const k = 1.08 + 0.16 * hash(i, 92) + 0.06 * Math.sin(a * 7.0); if (hash(i, 93) < 0.25 + 0.3 * Math.sin(a * 3.0 + 1.0)) continue;
+        const uu = Math.cos(a) * LAKE.rx * k, vv = Math.sin(a) * LAKE.rz * k; const x = LAKE.x + uu * c + vv * sn, z = LAKE.z - uu * sn + vv * c; if (Math.hypot(x, z) > 330) continue;
+        blades.push(x, Math.max(heightAt(x, z), 0.05), z, 1.9 + 0.9 * hash(i, 94), hash(i, 95), -1); }
+      scene.add(buildBlades(blades)); /* real blades near, cards beyond */
+    }
     scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
