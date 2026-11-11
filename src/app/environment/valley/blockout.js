@@ -179,15 +179,28 @@ function house(w, d, wall, roof, eave, ridge, colour = '#cfc6b6') {
   const shape = new THREE.Shape([new THREE.Vector2(-w / 2 - 0.6, 0), new THREE.Vector2(w / 2 + 0.6, 0), new THREE.Vector2(0, ridge - eave)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: d + 1.2, bevelEnabled: false }); rg.translate(0, eave, -(d + 1.2) / 2);
   g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof })))); return g;
 }
+// An Alpine house (docs/WORLD-SPEC.md section 6): a whitewashed or stone ground floor, a dark larch-timber upper floor with a balcony along
+// the sunny front, a shallow roof of stone slabs or shingles with deep eaves, small windows with shutters, a chimney. w along the ridge.
+function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5a55', low = 3.0, high = 3.2, pitch = 0.42, seed = 0 } = {}) {
+  const g = new THREE.Group(); const box = (sx, sy, sz, col, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), lookMat(new THREE.MeshLambertMaterial({ color: col }))); m.position.set(x, y, z); g.add(m); return m; };
+  box(w, low, d, stone, 0, low / 2, 0); box(w * 0.995, high, d * 0.995, timber, 0, low + high / 2, 0);
+  const eave = low + high, rise = (d / 2 + 1.4) * pitch; const shape = new THREE.Shape([new THREE.Vector2(-d / 2 - 1.4, 0), new THREE.Vector2(d / 2 + 1.4, 0), new THREE.Vector2(0, rise)]);
+  const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }))));
+  box(w * 0.55, 0.1, 1.3, '#4a3221', 0, low + 0.3, d / 2 + 0.65); box(w * 0.55, 1.0, 0.08, '#4a3221', 0, low + 0.85, d / 2 + 1.28); // the balcony
+  const win = '#1d1916', shut = seed % 2 ? '#3d5a3a' : '#6a4a2c'; const n = Math.max(2, Math.floor(w / 3.2));
+  for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
+  box(0.8, 1.8, 0.8, '#8a8378', w * 0.25, eave + rise * 0.6, -d * 0.15); // chimney
+  return g;
+}
 function buildSettlements() {
   const group = new THREE.Group(); const place = (o, x, z, yaw = 0) => { o.position.set(x, heightAt(x, z, true) - 0.3, z); o.rotation.y = yaw; group.add(o); };
   // lower group: mill on the water, farmhouse, barn
-  place(house(9, 7, 0, '#5a4b3f', 4.5, 8, '#b7aa94'), LOWER.x - 10, LOWER.z + 12, 0.4); place(house(12, 9, 0, '#4f4136', 5, 9.5, '#cfc3ad'), LOWER.x + 14, LOWER.z - 4, -0.2); place(house(16, 11, 0, '#4a3b2f', 5.5, 10.5, '#8a6a4c'), LOWER.x + 34, LOWER.z - 22, 0.1);
+  place(alpineHouse(9, 7, { stone: '#bdb5a6', timber: '#4f3624', roof: '#4d4740', seed: 1 }), LOWER.x - 10, LOWER.z + 12, 0.4); /* the mill */ place(alpineHouse(12, 10, { seed: 2 }), LOWER.x - 28, LOWER.z + 4, -0.2); /* the farmhouse, left of the chapel line */ place(alpineHouse(17, 12, { stone: '#a9a196', timber: '#5a3c27', roof: '#55504a', low: 3.4, high: 4.2, seed: 3 }), LOWER.x - 44, LOWER.z - 18, 0.1); /* the barn and hay loft */
   // upper group: chapel with its tower, houses, the inn
-  const chapel = house(8, 15, 0, '#5a5550', 7, 12, '#f1eee6'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), lookMat(new THREE.MeshLambertMaterial({ color: '#f1eee6' }))); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
-  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), lookMat(new THREE.MeshLambertMaterial({ color: '#4c4a48' }))); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 30, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
-  [[-38, -2], [-20, -30], [30, -6], [44, -28], [8, -44], [-46, -32]].forEach(([dx, dz], i) => place(house(10 + (i % 3) * 2, 8 + (i % 2) * 2, 0, '#4f4640', 5 + (i % 2), 9.5 + (i % 2), i % 2 ? '#c9bea9' : '#a58566'), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
-  HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#3e3329', 2.6, 4.6, '#6e5640'), x, z, i * 1.1));
+  const chapel = house(8, 15, 0, '#4d4945', 7, 11, '#eeebe3'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), lookMat(new THREE.MeshLambertMaterial({ color: '#f1eee6' }))); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), lookMat(new THREE.MeshLambertMaterial({ color: '#4c4a48' }))); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 10, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
+  [[-44, -22], [-26, -50], [36, -24], [54, -46], [12, -62], [-58, -46]].forEach(([dx, dz], i) => place(alpineHouse(10 + (i % 3) * 2, 8 + (i % 2) * 2, { stone: i % 3 === 1 ? '#c8bfae' : '#ddd6c7', timber: i % 2 ? '#4e3524' : '#6a4a30', roof: i % 2 ? '#56524c' : '#4b4038', low: 3 + (i % 2) * 0.4, seed: i }), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
+  HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#4a3f36', 2.6, 4.2, '#5a4130'), x, z, i * 1.1)); /* hay huts: weathered larch, silver-brown */
   // the hero tree: a dark mass on a trunk
   const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), lookMat(new THREE.MeshLambertMaterial({ color: '#4a3c2e' }))); trunk.position.y = 4; tree.add(trunk);
   const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); tree.name = 'hero placeholder'; place(tree, HERO_TREE[0], HERO_TREE[1]);
