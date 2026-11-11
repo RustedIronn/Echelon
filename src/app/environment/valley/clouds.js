@@ -7,7 +7,7 @@ import { LOOK } from './look.js';
 export function buildClouds({ coverage = 0.5, night = false } = {}) {
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
-    uniforms: { uSunDir: LOOK.uSunDir, uSunCol: LOOK.uSunCol, uHaze: LOOK.uHaze, uCover: { value: coverage }, uNight: { value: night ? 1 : 0 }, uTime: { value: 0 } },
+    uniforms: { uSunDir: LOOK.uSunDir, uSunCol: LOOK.uSunCol, uHaze: LOOK.uHaze, uCover: { value: coverage }, uNight: { value: night ? 1 : 0 }, uTime: LOOK.uTime },
     vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: `uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uHaze; uniform float uCover; uniform float uNight; uniform float uTime; varying vec3 vW;
 float h1(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }

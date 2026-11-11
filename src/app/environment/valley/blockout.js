@@ -5,6 +5,7 @@ import { applyValleyLook, setLook, LOOK } from './look.js';
 import { buildForest } from './trees.js';
 import { planGrass, buildGrass, planBlades, buildBlades, WIND } from './grass.js';
 import { buildClouds } from './clouds.js';
+import { buildBirds, buildSmoke } from './motion.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -138,17 +139,17 @@ function buildTerrain() {
 // The still lake: a true mirror where the air is calm, broken where a breath of wind crosses it (cat's-paws), and darker teal water seen
 // when looking down near the shore, more mirror toward the far side (Fresnel).
 const LAKE_SHADER = {
-  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null } },
+  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 } },
   vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vWorld;
 #include <common>
 void main() { vUv = textureMatrix * vec4(position, 1.0); vWorld = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; varying vec4 vUv; varying vec3 vWorld;
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uTime; varying vec4 vUv; varying vec3 vWorld;
 float lh(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float ln(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(lh(i),lh(i+vec2(1,0)),f.x),mix(lh(i+vec2(0,1)),lh(i+vec2(1,1)),f.x),f.y); }
 float lf(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*ln(p); p=p*2.1+3.7; a*=0.5; } return s; }
 void main() {
   vec2 p = vWorld.xz; float paws = smoothstep(0.5, 0.72, lf(p * 0.025)); // where a breath of wind is crossing
-  vec2 ripple = vec2(lf(p * vec2(0.9, 2.6)), lf(p * vec2(0.9, 2.6) + 7.3)) - 0.5;
+  vec2 rp = p * vec2(0.9, 2.6) + vec2(uTime * 0.35, uTime * 0.12); vec2 ripple = vec2(lf(rp), lf(rp + 7.3)) - 0.5; /* the ripples move */
   vec4 uv = vUv; uv.xy += ripple * (0.004 + 0.03 * paws) * uv.w;
   vec3 refl = texture2DProj(tDiffuse, uv).rgb;
   vec3 v = normalize(cameraPosition - vWorld); float f = 0.02 + 0.98 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
@@ -161,7 +162,7 @@ void main() {
 function buildWater() {
   const group = new THREE.Group();
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
-  const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
+  const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.name = 'lake'; lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
   const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
     const y = inLake(p.x, p.y) < 1.15 ? -0.4 : heightAt(p.x, p.y, true) - 0.9; /* where it enters the lake the river sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
@@ -204,7 +205,7 @@ function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5
   box(w * 0.55, 0.1, 1.3, '#4a3221', 0, low + 0.3, d / 2 + 0.65); box(w * 0.55, 1.0, 0.08, '#4a3221', 0, low + 0.85, d / 2 + 1.28); // the balcony
   const win = '#1d1916', shut = seed % 2 ? '#3d5a3a' : '#6a4a2c'; const n = Math.max(2, Math.floor(w / 3.2));
   for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { const pane = box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); if (LAMPS && hash(seed * 7.3 + k, y) > 0.38) { pane.material.emissive.set("#ffae55"); pane.material.emissiveIntensity = LAMPS === "night" ? 2.6 : 1.4; } /* lamplight: most windows lit when it gets dark, not all */ box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
-  box(0.8, 1.8, 0.8, '#8a8378', w * 0.25, eave + rise * 0.6, -d * 0.15); // chimney
+  box(0.8, 1.8, 0.8, '#8a8378', w * 0.25, eave + rise * 0.6, -d * 0.15).name = 'chimney';
   return g;
 }
 function buildSettlements() {
@@ -299,7 +300,12 @@ export async function startBlockout(canvas, overlay) {
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
   if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.08) saturate(1.1)' : 'contrast(1.06) saturate(1.05)'; document.body.classList.add('graded'); }
-  let frames = 0; renderer.setAnimationLoop(() => { WIND.uTime.value = performance.now() / 1000; renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
+  // motion: birds over the meadows, smoke from the chimneys (more in the cold and the evening), one clock for everything that moves
+  scene.updateMatrixWorld(true); const chimneys = []; scene.traverse((o) => { if (o.name === 'chimney') chimneys.push(o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0))); });
+  const warmHour = ['dawn', 'dusk', 'evening', 'night'].includes(Q.get('tod')); const smoke = LOOK_ON && Q.get('smoke') !== '0' ? buildSmoke(chimneys.filter((_, i) => season === 'winter' || warmHour || i % 3 === 0), { strength: night ? 0.35 : 1 }) : null; if (smoke) scene.add(smoke.group);
+  const birds = LOOK_ON && !night && Q.get('birds') !== '0' ? buildBirds() : null; if (birds) scene.add(birds.mesh);
+  const lakeMesh = scene.getObjectByName('lake');
+  let frames = 0; renderer.setAnimationLoop(() => { const tNow = performance.now() / 1000 + Number(Q.get('t') ?? 0); WIND.uTime.value = tNow; if (lakeMesh?.material.uniforms?.uTime) lakeMesh.material.uniforms.uTime.value = tNow; birds?.update(tNow); smoke?.update(tNow); renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
   window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
 }

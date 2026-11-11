@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { applyValleyLook } from './look.js';
+import { applyValleyLook, LOOK } from './look.js';
 
 // The near meadow's grass, from the frame's bottom edge (about 38 m out) to about 230 m: crossed cards of painted grass, each a clump of
 // blades of several kinds and heights with seed heads and the odd flower, standing in the sward. Cards grow with distance so coverage stays
@@ -51,7 +51,7 @@ export function buildGrass(sites) {
 // Real grass close to the camera (from the frame's edge to about 60 m), where painted cards would show as flat: clumps of curved, tapering
 // blades of several heights and greens, darker at the base and lighter at the tip, with the odd flowering stem. The flowers follow the
 // ground: buttercups where it is damp, ox-eye daisies and harebells on the dry knoll, a hay-meadow mix elsewhere. The blades sway in the wind.
-export const WIND = { uTime: { value: 0 } };
+export const WIND = { uTime: LOOK.uTime }; // one clock for grass, trees, clouds, cloud shadows and water
 function clumpGeometry(seed, flowerKind) {
   const rnd = (() => { let s = seed * 9301 + 49297; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
   const P = [], C = [], N = [], I = []; const greens = [[0.25, 0.38, 0.11], [0.31, 0.43, 0.14], [0.36, 0.45, 0.17], [0.42, 0.47, 0.2], [0.28, 0.35, 0.12]];

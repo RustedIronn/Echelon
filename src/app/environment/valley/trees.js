@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { applyValleyLook } from './look.js';
+import { applyValleyLook, LOOK } from './look.js';
 
 // The valley's forests from the real spruce and larch (Georgeous, CC BY 4.0; design-reference/world-redesign/models/ATTRIBUTION.md).
 // Tens of thousands of trees cannot each draw 10-12 thousand triangles, so every model is baked once into an impostor: its colour and its
@@ -51,7 +51,9 @@ function impostorMaterial(baked) {
     const face = 'vec3 vlBase = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz; vec2 vlToCam = normalize(cameraPosition.xz - vlBase.xz + vec2(1e-4)); float vlFlip = sign(instanceMatrix[0][0]);';
     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
 { ${face} objectNormal = vec3(vlToCam.x * vlFlip, 0.0, vlToCam.y); }`).replace('#include <begin_vertex>', `#include <begin_vertex>
-{ ${face} vec3 right = vec3(vlToCam.y, 0.0, -vlToCam.x); transformed = vec3(right.x * position.x, position.y, right.z * position.x * vlFlip); }`);
+{ ${face} vec3 right = vec3(vlToCam.y, 0.0, -vlToCam.x); transformed = vec3(right.x * position.x, position.y, right.z * position.x * vlFlip);
+  float swayT = sin(uTime * 0.9 + vlBase.x * 0.07 + vlBase.z * 0.05) * 0.6 + sin(uTime * 1.7 + vlBase.z * 0.11) * 0.25; transformed += right * swayT * 0.012 * position.y * position.y; /* crowns sway, trunks stay */ }`);
+    shader.uniforms.uTime = LOOK.uTime; shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader;
     look(shader, renderer);
   };
   m.customProgramCacheKey = () => 'valley-impostor';

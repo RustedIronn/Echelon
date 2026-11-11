@@ -9,16 +9,16 @@ import * as THREE from 'three';
 export const LOOK = {
   uSunDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() }, uSunCol: { value: new THREE.Color(1, 0.95, 0.85) },
   uHaze: { value: new THREE.Color(0.75, 0.8, 0.86) }, uDensity: { value: 1 / 16000 }, uScaleHeight: { value: 1300 }, uGlow: { value: 1.2 },
-  uSnowline: { value: 1500 }, uTreeline: { value: 640 }, uRockOn: { value: 1 }, uCover: { value: 0.5 }, uCloudOn: { value: 0 },
+  uSnowline: { value: 1500 }, uTreeline: { value: 640 }, uRockOn: { value: 1 }, uCover: { value: 0.5 }, uCloudOn: { value: 0 }, uTime: { value: 0 },
 };
 const NOISE = `
 float vlHash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float vlNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(vlHash(i),vlHash(i+vec2(1,0)),f.x),mix(vlHash(i+vec2(0,1)),vlHash(i+vec2(1,1)),f.x),f.y); }
 float vlFbm(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vlNoise(p); p=p*2.03+17.1; a*=0.5; } return s; }
 float vlFb(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<6;i++){ s+=a*vlNoise(p); p=p*2.02+vec2(5.1,1.7); a*=0.5; } return s; } // the cloud layer's own noise
-uniform float uCover; uniform float uCloudOn;
+uniform float uCover; uniform float uCloudOn; uniform float uTime;
 float vlCloudShade(vec3 w) { if (uCloudOn < 0.5) return 1.0; vec3 L = normalize(uSunDir); if (L.y < 0.03) return 1.0;
-  vec2 p = w.xz + L.xz * (2800.0 - w.y) / L.y; vec2 warp = vec2(vlFb(p / 5000.0), vlFb(p / 5000.0 + 9.2)) - 0.5;
+  vec2 p = w.xz + L.xz * (2800.0 - w.y) / L.y + vec2(uTime * 6.0, uTime * 2.0); /* the shadows drift with the clouds */ vec2 warp = vec2(vlFb(p / 5000.0), vlFb(p / 5000.0 + 9.2)) - 0.5;
   float dens = smoothstep(uCover, uCover + 0.22, vlFb(p / 3200.0 + warp * 1.6)) * (0.65 + 0.35 * vlFb(p / 700.0 + 3.0));
   return 1.0 - 0.72 * clamp(dens * 1.25, 0.0, 1.0); }`;
 
@@ -77,7 +77,7 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
   // and up the near valley walls alike, so nothing reads as a smooth lawn
   { float grassy = (1.0 - clamp(vlSurf.x + vlSurf.y + vlSurf.z, 0.0, 1.0)) * (1.0 - smoothstep(uTreeline - 120.0, uTreeline, vlWorld.y)) * (1.0 - smoothstep(900.0, 1600.0, d)) * (uSnowline < 0.0 ? 0.25 : 1.0);
     float grain = 0.8 + 0.4 * vlFbm(p / 6.0) * (0.7 + 0.6 * vlNoise(p / 40.0)); float bush = step(0.9, vlNoise(p / 3.2)) * step(0.55, vlNoise(p / 60.0)) * smoothstep(120.0, 220.0, d);
-    vec3 g2 = diffuseColor.rgb * grain; g2 = mix(g2, vec3(0.09, 0.14, 0.06), bush * 0.8);
+    vec3 g2 = diffuseColor.rgb * grain; g2 = mix(g2, g2 * 0.72, bush * 0.6); /* a bush is a darker tuft of the same sward, not a black stain */
     float slopeN = 1.0 - normalize(vlNormal).y; g2 = mix(g2, g2 * vec3(0.78, 0.82, 0.7), smoothstep(0.15, 0.4, slopeN) * smoothstep(0.55, 0.7, vlFbm(p / 25.0 + 4.0))); /* rougher, darker turf on the steeper banks */
     diffuseColor.rgb = mix(diffuseColor.rgb, g2, grassy); }
   // wet ground: darker, glossier soil and gravel at the water's edge (the gravel weight marks the river banks)
