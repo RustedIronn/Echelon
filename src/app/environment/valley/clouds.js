@@ -26,7 +26,7 @@ void main(){
   vec3 lit = mix(uSunCol, vec3(1.0), 0.8) * (1.0 - 0.12 * thick);                          // the thin edges: bright, a little warm (seen against the sun, never paper white)
   lit = mix(lit, vec3(0.8, 0.83, 0.88), thick * 0.45); /* clean white cloud, soft blue-grey only in its thickest part */                                        // the thick middle: shaded blue-grey, the body of a backlit cloud
   float fwd = pow(max(dot(v, normalize(uSunDir)), 0.0), 10.0); lit += uSunCol * fwd * (1.0 - thick) * 0.5; // the silver lining toward the sun
-  vec3 col = mix(vec3(0.07, 0.08, 0.11), lit, sunUp); if (uNight > 0.5) col = vec3(0.08, 0.1, 0.15);
+  vec3 col = mix(vec3(0.07, 0.08, 0.11), lit, sunUp); if (uNight > 0.5) col = vec3(0.022, 0.028, 0.045);
   col = mix(col, uHaze, smoothstep(0.25, 0.0, v.y) * 0.55);                                  // the far cloud fades into the horizon haze
   gl_FragColor = vec4(col, a);
 }`,
