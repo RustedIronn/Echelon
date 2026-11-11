@@ -164,7 +164,7 @@ function buildWater() {
   const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
   const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
-    const y = heightAt(p.x, p.y, true) - 0.9 + 0.0; P.push(p.x - (tz / l) * w, Math.max(0.05, y), p.y + (tx / l) * w, p.x + (tz / l) * w, Math.max(0.05, y), p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+    const y = inLake(p.x, p.y) < 1.15 ? -0.4 : heightAt(p.x, p.y, true) - 0.9; /* where it enters the lake the river sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
   const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x4f9c9c, roughness: 0.8, metalness: 0.0, side: THREE.DoubleSide }));
   if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
@@ -172,6 +172,18 @@ function buildWater() {
 { vec2 p = vlWorld.xz; float riffle = smoothstep(0.58, 0.78, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))); float silt = vlFbm(p * 0.04);
   diffuseColor.rgb = mix(diffuseColor.rgb * (0.85 + 0.3 * silt), vec3(0.8, 0.9, 0.9), riffle * 0.45); }`); }; riverMat.customProgramCacheKey = () => 'valley-river'; }
   group.add(new THREE.Mesh(rg, riverMat));
+  // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
+  // rounded, half buried, pale where dry and darker at the waterline
+  if (LOOK_ON && Q.get('stones') !== '0') {
+    const geo = new THREE.IcosahedronGeometry(1, 1); const pos = geo.attributes.position; for (let i = 0; i < pos.count; i += 1) { const k = 0.82 + 0.3 * hash(i * 1.7, 3.1); pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * 0.62, pos.getZ(i) * k); } geo.computeVertexNormals();
+    const sites = []; for (let i = 0; i < riverPts.length - 1; i += 1) { const p = riverPts[i], q = riverPts[i + 1]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
+      for (let k = 0; k < 5; k += 1) { const side = hash(i, k) < 0.5 ? -1 : 1; const off = side * (w * (0.75 + 0.9 * hash(k, i)) + 2.2 * hash(i + k, 9)); const x = p.x + (-tz / l) * off, z = p.y + (tx / l) * off; if (Math.hypot(x, z) > 1400) continue;
+        sites.push([x, z, 0.25 + 1.1 * hash(i * 3 + k, 5) ** 2.2]); } }
+    for (let i = 0; i < 90; i += 1) { const a = hash(i, 41) * 6.283; const c = Math.cos(LAKE.rot), s = Math.sin(LAKE.rot); const u = Math.cos(a) * LAKE.rx * (1.08 + 0.12 * hash(i, 42)), v = Math.sin(a) * LAKE.rz * (1.08 + 0.12 * hash(i, 43)); sites.push([LAKE.x + u * c + v * s, LAKE.z - u * s + v * c, 0.2 + 0.7 * hash(i, 44) ** 2]); }
+    const mesh = new THREE.InstancedMesh(geo, lookMat(new THREE.MeshLambertMaterial({ color: '#c9c5bb' })), sites.length); const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), e = new THREE.Euler(), col = new THREE.Color();
+    sites.forEach(([x, z, r], i) => { e.set(hash(i, 1) * 0.6, hash(i, 2) * 6.28, hash(i, 3) * 0.6); qq.setFromEuler(e); m.compose(new THREE.Vector3(x, Math.max(heightAt(x, z, true), 0) - r * 0.25, z), qq, new THREE.Vector3(r * (0.8 + 0.5 * hash(i, 4)), r, r * (0.8 + 0.5 * hash(i, 5)))); mesh.setMatrixAt(i, m); mesh.setColorAt(i, col.setScalar(0.72 + 0.4 * hash(i, 6))); });
+    mesh.instanceMatrix.needsUpdate = true; mesh.name = 'river stones'; group.add(mesh);
+  }
   return group;
 }
 

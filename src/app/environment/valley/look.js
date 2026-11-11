@@ -64,6 +64,8 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
     vec3 tone = id < 0.33 ? mown : id < 0.66 ? f : lush; tone *= 0.94 + 0.12 * vlFbm(p / 18.0); /* the sward is never even */
     float seam = 1.0 - smoothstep(0.012, 0.05, d2 - d1);
     diffuseColor.rgb = mix(f, tone * (1.0 - 0.12 * seam), open); }
+  // wet ground: darker, glossier soil and gravel at the water's edge (the gravel weight marks the river banks)
+  diffuseColor.rgb *= 1.0 - 0.35 * clamp(vlSurf.x * 1.4, 0.0, 1.0) * (1.0 - smoothstep(-0.3, 1.2, vlWorld.y - 0.2));
   // under the near blades the ground is the shaded base of the sward: deep green-brown, never the pale top colour
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.52, 0.34), open * (1.0 - smoothstep(48.0, 80.0, d)));
   // the distant slopes, per pixel: forest where the ground climbs, alpine pasture in the clearings and up the avalanche paths, the forest
