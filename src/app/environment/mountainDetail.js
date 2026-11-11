@@ -18,8 +18,8 @@ export function applyMountainDetail(material) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir;
-    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
+    shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir; shader.uniforms.uMdForest = { value: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forest') === '0' ? 0 : 1 };
+    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; uniform float uMdForest; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 wp = cameraPosition + transpose(mat3(viewMatrix)) * (-vViewPosition); vec3 wn = normalize(transpose(mat3(viewMatrix)) * normalize(vNormal));
   float slope = 1.0 - clamp(wn.y, 0.0, 1.0); mdDist = length(wp.xz - cameraPosition.xz); float h = wp.y; mdLift = smoothstep(14.0, 40.0, h);
@@ -43,15 +43,23 @@ export function applyMountainDetail(material) {
   float scree = smoothstep(0.62, 0.8, mdFbm2(vec2((wp.x - wp.z) * 0.05, h * 0.06))) * smoothstep(30.0, 50.0, h);
   vec3 grass = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.333))), 0.22) * (0.86 + 0.24 * mdFbm2(wp.xz * 0.02 + 2.0));
   diffuseColor.rgb = mix(diffuseColor.rgb, grass, foot);
-  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.97, 0.9) * dot(base, vec3(0.333)) * (0.85 + 0.35 * mdNoise2(wp.xz * 0.3)), foot * clamp(outcrop + scree, 0.0, 0.85)); } /* grey stone at the grass's own brightness */`);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.97, 0.9) * dot(base, vec3(0.333)) * (0.85 + 0.35 * mdNoise2(wp.xz * 0.3)), foot * clamp(outcrop + scree, 0.0, 0.85)); /* grey stone at the grass's own brightness */
+  // scale: a belt of conifer forest on the lower flanks, drawn very fine, with a ragged treeline and clearings; trees this small say the
+  // slope above them is a thousand metres high (?forest=0 removes it)
+  float treeLine = 70.0 + 18.0 * mdFbm2(wp.xz * 0.012 + 3.0) + 6.0 * (mdNoise2(wp.xz * 0.11) - 0.5);
+  float forest = smoothstep(16.0, 24.0, h) * (1.0 - smoothstep(treeLine - 5.0, treeLine, h)) * smoothstep(380.0, 520.0, mdDist) * (1.0 - smoothstep(0.86, 0.97, slope)) * (1.0 - snow);
+  forest *= smoothstep(0.3, 0.42, mdFbm2(wp.xz * 0.02 + 9.0)) * (1.0 - 0.9 * smoothstep(0.84, 0.92, abs(sin(wp.x * 0.045 + mdFbm2(wp.xz * 0.01) * 6.0)))); /* clearings, avalanche lanes */
+  forest = max(forest, step(0.8, mdNoise2(wp.xz * 0.5)) * smoothstep(treeLine + 9.0, treeLine - 3.0, h) * smoothstep(18.0, 26.0, h) * smoothstep(380.0, 520.0, mdDist) * 0.8 * (1.0 - snow)); /* stragglers up to the treeline */
+  float crowns = mdNoise2(wp.xz * 0.9) * 0.6 + mdNoise2(wp.xz * 0.33) * 0.4;
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.035, 0.065, 0.035), vec3(0.085, 0.13, 0.06), crowns), forest * uMdForest); }`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 // faces turned from the sun get less sky fill, so the forms separate; sunlit faces a touch more direct light
 reflectedLight.indirectDiffuse *= mix(1.0, 0.6, mdLift); reflectedLight.directDiffuse *= mix(1.0, 1.14, mdLift);`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', `// aerial perspective: distant rock takes on the horizon colour, more at the foot than at the summits
-{ float air = smoothstep(280.0, 1000.0, mdDist) * mix(0.32, 0.14, mdLift);
-  if (uMdSky > 0.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, uMdHor * uMdGain * 0.95, air); } // only with the generated sky (it supplies the horizon colour)
+{ float air = smoothstep(280.0, 1000.0, mdDist) * mix(0.46, 0.3, mdLift); /* more air between us and the range: it stands further off */
+  if (uMdSky > 0.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, uMdHor * uMdGain * vec3(0.88, 0.95, 1.06), air); } // only with the generated sky (it supplies the horizon colour)
 #include <fog_fragment>`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-1`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-3`;
   material.needsUpdate = true; return material;
 }
