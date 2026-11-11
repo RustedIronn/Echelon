@@ -39,6 +39,14 @@ export const LOWER = { x: 60, z: -345 }; // the mill stands on the river bank //
 export const UPPER = { ...(() => { const [x, z] = toXZ(13.2, 430); return { x, z }; })(), y: 22 }; // the old heart on its terrace, near enough to read as a home
 export const HUTS = [[-150, -430], [-260, -760], [255, -560], [372, -410]];
 export const HERO_TREE = [-118, -360];
+// the track: from the mill up the slope to the chapel, worn into the turf
+export const TRACK = new THREE.SplineCurve([[LOWER.x + 6, LOWER.z - 8], [LOWER.x + 40, LOWER.z - 30], [LOWER.x + 52, LOWER.z - 60], [UPPER.x - 30, UPPER.z + 90], [UPPER.x - 8, UPPER.z + 40]].map(([x, z]) => new THREE.Vector2(x, z))).getSpacedPoints(120);
+function polyDistance(pts, x, z) { let best = Infinity; for (let i = 0; i < pts.length - 1; i += 1) { const a = pts[i], b = pts[i + 1]; const abx = b.x - a.x, abz = b.y - a.y; const t = clamp(((x - a.x) * abx + (z - a.y) * abz) / (abx * abx + abz * abz), 0, 1); best = Math.min(best, Math.hypot(x - a.x - abx * t, z - a.y - abz * t)); } return best; }
+// fields: a mosaic of irregular plots (jittered cells about 110 m across), each mown or grazed on its own rhythm, so the floor reads as land
+// that people use rather than one carpet; the seams between plots are slightly darker, the line a fence or a ditch would leave
+function fieldAt(x, z) { const s = 110, cx = Math.floor(x / s), cz = Math.floor(z / s); let d1 = Infinity, d2 = Infinity, id = 0;
+  for (let j = -1; j <= 1; j += 1) for (let i = -1; i <= 1; i += 1) { const gx = cx + i, gz = cz + j; const px = (gx + 0.15 + 0.7 * hash(gx, gz)) * s, pz = (gz + 0.15 + 0.7 * hash(gz + 17, gx)) * s; const d = Math.hypot(x - px, z - pz); if (d < d1) { d2 = d1; d1 = d; id = hash(gx * 3.1, gz * 7.7); } else if (d < d2) d2 = d; }
+  return { id, seam: 1 - smooth(1.5, 6, d2 - d1) }; }
 const inLake = (x, z) => { const c = Math.cos(LAKE.rot), s = Math.sin(LAKE.rot), dx = x - LAKE.x, dz = z - LAKE.z; const u = (dx * c - dz * s) / LAKE.rx, v = (dx * s + dz * c) / LAKE.rz; return u * u + v * v; };
 function riverDistance(x, z) { let best = Infinity, along = 0; for (let i = 0; i < riverPts.length - 1; i += 1) { const a = riverPts[i], b = riverPts[i + 1]; const abx = b.x - a.x, abz = b.y - a.y; const t = clamp(((x - a.x) * abx + (z - a.y) * abz) / (abx * abx + abz * abz), 0, 1); const d = Math.hypot(x - a.x - abx * t, z - a.y - abz * t); if (d < best) { best = d; along = (i + t) / (riverPts.length - 1); } } return [best, along]; }
 
@@ -83,28 +91,34 @@ export function heightAt(x, z, cheap = false) {
 }
 
 const C = (hex) => new THREE.Color(hex);
-const ZONE = { meadow: C('#93a85a'), hay: C('#a8b462'), pasture: C('#6f9447'), shore: C('#6b7d4a'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#8fa456') };
+const ZONE = { meadow: C('#93a85a'), hay: C('#a8b462'), pasture: C('#6f9447'), shore: C('#6b7d4a'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#8fa456'), track: C('#9a8e6c'), wet: C('#5d7a43'), dry: C('#a3a66a'), mown: C('#b4b878') };
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 function zoneColour(x, h, z, slope) {
   const r = Math.hypot(x, z); const n = fbm(x / 90, z / 90, 3);
   if (h > SNOWLINE + 260 * (n - 0.5) && slope < 1.25) return ZONE.snow;
   if (slope > 1.0 || h > 1100) return h > 1100 && slope < 0.7 ? ZONE.scree : ZONE.rock;
   if (h > 640 + 160 * (n - 0.5)) return ZONE.scree.clone().lerp(ZONE.larch, 0.35); // above the treeline
-  if (slope > 0.22 && h > 18) { const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
+  if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) return n > 0.6 ? ZONE.larch : ZONE.forest; // the wood behind the chapel terrace: a dark ground for the white tower
+  if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 22) return ZONE.gravel.clone().lerp(ZONE.shore, smooth(8, 22, d));
   if (inLake(x, z) < 1.5) return ZONE.shore;
+  if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) return ZONE.track;
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
-  return x > 40 ? ZONE.pasture.clone().lerp(ZONE.meadow, n) : ZONE.hay.clone().lerp(ZONE.meadow, n);
+  if (d < 70 || inLake(x, z) < 2.4) return ZONE.wet.clone().lerp(ZONE.meadow, 0.35 * n); // wet ground along the water: rushes, marsh marigold
+  if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
+  const f = fieldAt(x, z); const base = x > 40 ? ZONE.pasture : ZONE.hay; const tone = f.id < 0.33 ? ZONE.mown : f.id < 0.66 ? base : ZONE.meadow;
+  return base.clone().lerp(tone, 0.75).lerp(ZONE.meadow, 0.25 * n).multiplyScalar(1 - 0.12 * f.seam);
 }
 
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 401, R = 320, r0 = 12, r1 = 16000; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
+  const A = 401, R = 320, r0 = 12, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.001 ? 320 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
-    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; } }
+    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b;
+    if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); mesh.name = 'blockout terrain'; return mesh;
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
 }
 
 function buildWater() {
@@ -217,4 +231,14 @@ export function fitSkyline(passes = 2) {
     for (let i = 0; i < n; i += 1) { let a = 0, s = 0; for (let j = -20; j <= 20; j += 1) { const q = i + j; if (q < 0 || q >= n) continue; const g = Math.exp(-(j * j) / 128); a += k[q] * g; s += g; } RESHAPE[i] = a / s; }
   }
   window.__blockoutReshape = Array.from(RESHAPE.filter((_, i) => i % 8 === 0), (v) => +v.toFixed(2));
+}
+
+// Block-out trees at their true size: spruce and larch as simple cones, 16-30 m tall, so the slopes and the wood behind the chapel read at the
+// right scale. The final forest replaces these with real trees near and impostors far.
+function buildTrees(list) {
+  const n = list.length / 4; const geo = new THREE.ConeGeometry(1, 1, 7); geo.translate(0, 0.5, 0);
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial(), n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+  for (let i = 0; i < n; i += 1) { const x = list[i * 4], z = list[i * 4 + 1], larch = list[i * 4 + 2], v = list[i * 4 + 3]; const h = 16 + 14 * v; const y = heightAt(x, z, true) - 0.5;
+    m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(h * (larch ? 0.26 : 0.21), h, h * (larch ? 0.26 : 0.21))); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(larch ? '#56703a' : '#26391f').multiplyScalar(0.85 + 0.3 * v)); }
+  mesh.instanceMatrix.needsUpdate = true; mesh.name = `block-out trees (${n})`; mesh.frustumCulled = false; return mesh;
 }
