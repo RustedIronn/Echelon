@@ -35,8 +35,8 @@ function profile(table, az) { if (az <= table[0][0]) return table[0]; for (let i
 export const LAKE = { x: -52, z: -150, rx: 62, rz: 98, rot: -0.18 };
 export const RIVER = [[760, -1300], [470, -760], [300, -470], [190, -300], [95, -285], [52, -330], [12, -262], [38, -196], [8, -150], [-14, -118]].map(([x, z]) => new THREE.Vector2(x, z));
 const riverCurve = new THREE.SplineCurve(RIVER); const riverPts = riverCurve.getSpacedPoints(400);
-export const LOWER = { x: 34, z: -345 }; // the working group: mill on the river, farm, barn
-export const UPPER = { ...(() => { const [x, z] = toXZ(13.2, 720); return { x, z }; })(), y: 46 }; // the old heart on its terrace
+export const LOWER = { x: 60, z: -345 }; // the mill stands on the river bank // the working group: mill on the river, farm, barn
+export const UPPER = { ...(() => { const [x, z] = toXZ(13.2, 430); return { x, z }; })(), y: 22 }; // the old heart on its terrace, near enough to read as a home
 export const HUTS = [[-150, -430], [-260, -760], [255, -560], [372, -410]];
 export const HERO_TREE = [-118, -360];
 const inLake = (x, z) => { const c = Math.cos(LAKE.rot), s = Math.sin(LAKE.rot), dx = x - LAKE.x, dz = z - LAKE.z; const u = (dx * c - dz * s) / LAKE.rx, v = (dx * s + dz * c) / LAKE.rz; return u * u + v * v; };
@@ -49,7 +49,7 @@ export function heightAt(x, z, cheap = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5); // the floor
   h = smax(h, 8 - (r / 34) ** 2 * 8, 3); // the knoll under the camera
-  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(130, 260, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5), 12); } // the terrace
+  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5), 12); } // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
@@ -71,7 +71,7 @@ function zoneColour(x, h, z, slope) {
   if (slope > 0.22 && h > 18) { const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 22) return ZONE.gravel.clone().lerp(ZONE.shore, smooth(8, 22, d));
   if (inLake(x, z) < 1.5) return ZONE.shore;
-  if (Math.hypot(x - UPPER.x, z - UPPER.z) < 200) return ZONE.terrace;
+  if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   return x > 40 ? ZONE.pasture.clone().lerp(ZONE.meadow, n) : ZONE.hay.clone().lerp(ZONE.meadow, n);
 }
 
@@ -90,10 +90,10 @@ function buildWater() {
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
   const lake = new Reflector(lakeGeo, { textureWidth: 1024, textureHeight: 512, color: 0x8a9aa4 }); lake.position.set(LAKE.x, 0, LAKE.z); lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
-  const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(5, 9, i / riverPts.length);
+  const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
     const y = heightAt(p.x, p.y, true) - 0.9 + 0.0; P.push(p.x - (tz / l) * w, Math.max(0.05, y), p.y + (tx / l) * w, p.x + (tz / l) * w, Math.max(0.05, y), p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
-  group.add(new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ color: 0x8fcfca, roughness: 0.55, metalness: 0.0, side: THREE.DoubleSide })));
+  group.add(new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ color: 0x6fa9a6, roughness: 0.85, metalness: 0.0, side: THREE.DoubleSide })));
   return group;
 }
 
@@ -141,7 +141,9 @@ export function startBlockout(canvas, overlay) {
   const t0 = performance.now(); scene.add(buildTerrain()); scene.add(buildWater()); scene.add(buildSettlements()); const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3];
-  const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : 1.1); scene.add(light, hemi);
+  const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : 1.3); scene.add(light, hemi);
+  // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
+  const bounce = new THREE.DirectionalLight(mood[6], night ? 0.08 : 0.85); bounce.position.set(0, 400, 1000); scene.add(bounce);
   scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
@@ -149,10 +151,19 @@ export function startBlockout(canvas, overlay) {
     moon = new THREE.Mesh(new THREE.CircleGeometry(95, 48), new THREE.MeshBasicMaterial({ color: '#f3efe2', fog: false })); moon.position.copy(d).multiplyScalar(20000); moon.lookAt(0, 0, 0); scene.add(moon);
     const s = []; for (let i = 0; i < 2500; i += 1) { const az = (hash(i, 1) - 0.5) * 160, el = 2 + hash(i, 2) ** 0.7 * 60; s.push(...dirOf(az, el).multiplyScalar(25000).toArray()); }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(s, 3)); scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: '#dfe6ff', size: 1.4, sizeAttenuation: false, fog: false })));
-  } else { light.position.copy(dirOf(sunPose.az, Math.max(sunPose.el, 1.5))).multiplyScalar(1000); }
+  } else { light.position.copy(dirOf(sunPose.az, Math.max(sunPose.el, 1.5))).multiplyScalar(1000); sunDisc(scene, dirOf(sunPose.az, sunPose.el), mood[4]); }
   const resize = () => { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   window.addEventListener('resize', resize); resize();
   let frames = 0; renderer.setAnimationLoop(() => { renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
   window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
+}
+
+// The sun as a disc with a soft glow (Sky.js alone loses the disc in the haze): additive, depth-tested so ridges cut it.
+export function sunDisc(scene, dir, colour) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.08, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.25, 'rgba(255,255,255,0.25)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), color: colour, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
+  glow.scale.setScalar(2600); glow.position.copy(dir).multiplyScalar(20000); scene.add(glow);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(105, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(colour).multiplyScalar(6), fog: false })); disc.position.copy(dir).multiplyScalar(20000); disc.lookAt(0, 0, 0); scene.add(disc);
 }
