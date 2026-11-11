@@ -9,6 +9,7 @@ import { buildBirds, buildSmoke } from './motion.js';
 import { buildMeadow } from './meadow.js';
 import { alpineHouse, chapel } from './buildings.js';
 import { buildPath, footbridge } from './paths.js';
+import { buildRocks } from './rocks.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -189,7 +190,7 @@ function buildWater() {
   const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
     const y = inLake(p.x, p.y) < 1.15 ? -0.4 : heightAt(p.x, p.y, true) - 0.9; /* where it enters the lake the river sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
-  const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x4f9c9c, roughness: 0.8, metalness: 0.0, side: THREE.DoubleSide }));
+  const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x3f8486, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide }) /* matte milky glacial water; the lake carries the reflections */);
   if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
     sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec2 p = vlWorld.xz; float riffle = smoothstep(0.58, 0.78, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))); float silt = vlFbm(p * 0.04);
@@ -197,7 +198,7 @@ function buildWater() {
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
   // rounded, half buried, pale where dry and darker at the waterline
-  if (LOOK_ON && Q.get('stones') !== '0') {
+  if (LOOK_ON && Q.get('stones') === 'ico') { /* the block-out stones; the scanned rocks (rocks.js) replace them */
     const geo = new THREE.IcosahedronGeometry(1, 1); const pos = geo.attributes.position; for (let i = 0; i < pos.count; i += 1) { const k = 0.82 + 0.3 * hash(i * 1.7, 3.1); pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * 0.62, pos.getZ(i) * k); } geo.computeVertexNormals();
     const sites = []; for (let i = 0; i < riverPts.length - 1; i += 1) { const p = riverPts[i], q = riverPts[i + 1]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
       for (let k = 0; k < 5; k += 1) { const side = hash(i, k) < 0.5 ? -1 : 1; const off = side * (w * (0.75 + 0.9 * hash(k, i)) + 2.2 * hash(i + k, 9)); const x = p.x + (-tz / l) * off, z = p.y + (tx / l) * off; if (Math.hypot(x, z) > 1400) continue;
@@ -208,6 +209,30 @@ function buildWater() {
     mesh.instanceMatrix.needsUpdate = true; mesh.name = 'river stones'; group.add(mesh);
   }
   return group;
+}
+
+// Where the rocks lie (rocks.js): where water and ice would have left them, not in a line. On the outside of each river bend the bank is
+// cut and its boulders stand exposed; on the inside a bar of cobbles; one boulder stands in the lake's shallows and groups of stones mark
+// the shore; erratics lie out in the meadow, one beside the footpath, and a mossy group sits in the foreground, half in the grass.
+let ROCKS = [];
+function rockSites() {
+  const out = []; const add = (x, z, size, set = 'moss', sink = 0.3, y = null) => { if (Math.hypot(x, z) > 1500) return; out.push({ x, y: y ?? Math.max(heightAt(x, z), -0.4), z, size, set, sink }); };
+  const step = 7; for (let i = step; i < riverPts.length - step; i += step) { const o = riverPts[i - step], p = riverPts[i], q = riverPts[i + step]; if (Math.hypot(p.x, p.y) > 1500) continue;
+    const ax = p.x - o.x, az = p.y - o.y, bx = q.x - p.x, bz = q.y - p.y; const la = Math.hypot(ax, az) || 1, lb = Math.hypot(bx, bz) || 1; const turn = (ax * bz - az * bx) / (la * lb);
+    const tx = (ax / la + bx / lb) / 2, tz = (az / la + bz / lb) / 2, tl = Math.hypot(tx, tz) || 1; const nx = -tz / tl, nz = tx / tl; const w = lerp(3.2, 5.5, i / riverPts.length); const out_ = turn > 0 ? -1 : 1;
+    if (Math.abs(turn) > 0.12) { const n = 3 + Math.floor(hash(i, 1) * 3); for (let k = 0; k < n; k += 1) { const off = out_ * (w + 0.8 + 2.4 * hash(i, k + 2)), along = (hash(k, i) - 0.5) * 8; add(p.x + nx * off + tx / tl * along, p.y + nz * off + tz / tl * along, 1.2 + 1.6 * hash(i + k, 5) ** 1.5, 'moss', 0.3); } // the cut bank
+      for (let k = 0; k < 7; k += 1) { const off = -out_ * (w * 0.5 + 3.5 * hash(i, k + 20)), along = (hash(k + 20, i) - 0.5) * 12; add(p.x + nx * off + tx / tl * along, p.y + nz * off + tz / tl * along, 0.45 + 0.5 * hash(i, k + 30), 'moss', 0.4); } } // the bar
+    else if (hash(i, 9) < 0.25) add(p.x + nx * (w + 0.5) * (hash(i, 10) < 0.5 ? -1 : 1), p.y + nz * (w + 0.5), 0.6 + 0.6 * hash(i, 11), 'moss', 0.35); } // the odd stone on a straight reach
+  // the lake: one boulder in the shallows on the near side, groups of stones on the shore
+  const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot); const onLake = (a, k) => { const u = Math.cos(a) * LAKE.rx * k, v = Math.sin(a) * LAKE.rz * k; return [LAKE.x + u * c + v * sn, LAKE.z - u * sn + v * c]; };
+  let best = null; for (let a = 0; a < 6.283; a += 0.05) { const [x, z] = onLake(a, 0.9); if (z < -70 && x > -45 && (!best || Math.hypot(x, z) < Math.hypot(best[0], best[1]))) best = [x, z]; }
+  if (best) { add(best[0], best[1], 3.4, 'boulder', 0.42, 0); add(best[0] + 3.2, best[1] - 1.5, 1.2, 'moss', 0.5, 0); }
+  for (const a of [2.2, 3.4, 4.6]) for (let k = 0; k < 4; k += 1) { const [x, z] = onLake(a + (hash(a, k) - 0.5) * 0.12, 1.03 + 0.06 * hash(k, a)); add(x, z, 0.6 + 1.0 * hash(a * 3, k), 'moss', 0.35, Math.max(heightAt(x, z), 0)); }
+  // erratics in the meadow; one beside the footpath; the foreground group
+  add(85, -150, 3.6, 'boulder', 0.28); add(-140, -320, 4.2, 'boulder', 0.28); add(165, -255, 3.0, 'moss', 0.28); add(-95, -40, 2.4, 'moss', 0.3);
+  { const p = FOOTPATH[46], q = FOOTPATH[47]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; add(p.x - tz / l * 3.0, p.y + tx / l * 3.0, 2.6, 'moss', 0.28); add(p.x - tz / l * 5.0, p.y + tx / l * 5.0 - 1.6, 1.0, 'moss', 0.4); }
+  add(27, -47, 2.8, 'moss', 0.28); add(30.4, -44.8, 1.3, 'moss', 0.35); add(24.2, -50.5, 0.9, 'moss', 0.4);
+  return out;
 }
 
 // The hamlet (buildings.js): every building faces the camera, its front with the balcony and windows toward the viewer and turned a little
@@ -256,6 +281,7 @@ export async function startBlockout(canvas, overlay) {
   const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(FRAME.vfov, 1, 0.5, 30000); camera.position.set(0, FRAME.eye, 0); camera.rotation.set(FRAME.pitch * DEG, 0, 0, 'YXZ');
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
+  if (LOOK_ON && Q.get('stones') !== '0') { try { ROCKS = rockSites(); scene.add(await buildRocks(ROCKS)); } catch (e) { console.warn('rocks', e); } } // the scanned rocks
   // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
   { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }));
     let a = null, b = null; for (let i = 1; i < FOOTPATH.length && !b; i += 1) { const w = wet(FOOTPATH[i].x, FOOTPATH[i].y); if (w && !a) a = FOOTPATH[i - 1]; if (!w && a) b = FOOTPATH[i]; }
@@ -271,7 +297,7 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], (16 + 14 * v) * (1 + 0.25 * smooth(2600, 7000, Math.hypot(x, z))), v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
+  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
     if (Q.get('blades') !== '0') {
       const blades = Q.get('blades') === '1' ? planBlades({ at: (x, z) => heightAt(x, z), skip, zone }) : []; /* the scanned meadow covers the near ground now */
