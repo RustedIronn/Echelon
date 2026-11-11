@@ -93,9 +93,9 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
   const grassKinds = [...partsOf(g1.scene).map((k) => ({ ...k, a: a1, d: d1, fresh: true })), ...partsOf(g2.scene).map((k) => ({ ...k, a: a2, d: d2, fresh: false }))] /* 01 is the lush, dark-green scan; 02 pale and part dry */.map((k) => ({ ...k, parts: k.parts.map((p) => { p.material.alphaMap = k.a; p.material.map = k.d; return { geometry: p.geometry, material: p.material, mat: grassMat(p.material, k.a) }; }) }));
   const flowerKinds = partsOf(fl.scene).map((k) => ({ ...k, parts: k.parts.filter((p) => !/LEAF/i.test(p.material?.name ?? '')).map((p) => ({ /* leaves stay hidden in the sward */ geometry: p.geometry, material: p.material, mat: plantMaterial({ map: p.material.map, color: p.material.color, glow: 0.6, sway: 0.05, up: 0.5 }) })) }));
   // the near sward: packed clumps (not the tiny tufts), every 0.42 m, 0.35-0.9 m tall
-  const swardOf = (fresh) => grassKinds.map((k, i) => [i, k]).filter(([, k]) => k.height > 0.12 && tris(k) < 2600 && k.fresh === fresh).map(([i]) => i); const swF = swardOf(true), swO = swardOf(false);
+  const swardOf = (fresh) => grassKinds.map((k, i) => [i, k]).filter(([, k]) => k.height > 0.12 && tris(k) < 1700 && k.fresh === fresh).map(([i]) => i); const swF = swardOf(true), swO = swardOf(false);
   const grass = [], flowers = [];
-  for (let r = from; r < to; ) { const step = 0.42; const da = (step / r) * (180 / Math.PI);
+  for (let r = from; r < to; ) { const step = 0.5; const da = (step / r) * (180 / Math.PI);
     for (let az = -40; az <= 40; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
       if (ground.skip(x, z) || (jr > 50 && hash(x * 2.9, z * 3.7) < (jr - 50) / 12)) continue; /* the clumps thin out into the cards beyond, no seam */ const y = ground.at(x, z), t = hash(x * 1.7, z * 2.3); const sward = hash(x * 5.3, z * 4.1) < 0.7 ? swF : swO; const kind = sward[Math.floor(hash(x, z) * sward.length) % sward.length]; const k = grassKinds[kind];
       const patch = 0.8 + 0.4 * hash(Math.floor(x / 7), Math.floor(z / 7)); /* taller and shorter patches, as a meadow grows */
