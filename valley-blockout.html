@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Valley block-out</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0f14; overflow: hidden; }
+    #world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    #overlay { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    #overlay text { font: 11px "Segoe UI", Arial, sans-serif; fill: #fff; paint-order: stroke; stroke: rgb(0 0 0 / .55); stroke-width: 3px; }
+  </style>
+</head>
+<body>
+  <canvas id="world"></canvas>
+  <!-- The frame overlay (docs/WORLD-SPEC.md section 2), in frame fractions: thirds, the horizon target, the calm zones for floating UI, and
+       the targets for the focal points. O toggles it, ?overlay=0 hides it. -->
+  <svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+    <g stroke="rgb(255 255 255 / .35)" stroke-width="1" vector-effect="non-scaling-stroke" fill="none">
+      <line x1="333" y1="0" x2="333" y2="1000" vector-effect="non-scaling-stroke" /><line x1="667" y1="0" x2="667" y2="1000" vector-effect="non-scaling-stroke" />
+      <line x1="0" y1="333" x2="1000" y2="333" vector-effect="non-scaling-stroke" /><line x1="0" y1="667" x2="1000" y2="667" vector-effect="non-scaling-stroke" />
+    </g>
+    <line x1="0" y1="550" x2="1000" y2="550" stroke="#ffd36e" stroke-dasharray="6 6" vector-effect="non-scaling-stroke" />
+    <g fill="rgb(120 200 255 / .12)" stroke="rgb(120 200 255 / .7)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke">
+      <rect x="0" y="660" width="420" height="200" vector-effect="non-scaling-stroke" /><rect x="0" y="50" width="380" height="350" vector-effect="non-scaling-stroke" /><rect x="0" y="880" width="1000" height="120" vector-effect="non-scaling-stroke" />
+    </g>
+    <g fill="none" stroke="#ff6b6b" stroke-width="2" vector-effect="non-scaling-stroke">
+      <circle cx="650" cy="120" r="9" vector-effect="non-scaling-stroke" /><circle cx="160" cy="420" r="9" vector-effect="non-scaling-stroke" /><circle cx="900" cy="400" r="9" vector-effect="non-scaling-stroke" />
+      <circle cx="660" cy="500" r="9" vector-effect="non-scaling-stroke" /><circle cx="520" cy="580" r="9" vector-effect="non-scaling-stroke" /><circle cx="950" cy="600" r="9" vector-effect="non-scaling-stroke" /><circle cx="420" cy="700" r="9" vector-effect="non-scaling-stroke" />
+    </g>
+  </svg>
+  <div id="labels" style="position:fixed;inset:0;pointer-events:none;font:11px 'Segoe UI',Arial,sans-serif;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000">
+    <span style="position:absolute;left:66%;top:9%">main peak</span><span style="position:absolute;left:17%;top:40%">sunrise pass</span><span style="position:absolute;left:84%;top:37%">sunset saddle</span>
+    <span style="position:absolute;left:67%;top:48%">chapel</span><span style="position:absolute;left:53%;top:56%">mill</span><span style="position:absolute;left:43%;top:68%">lake inlet</span>
+    <span style="position:absolute;left:1%;top:67%">calm: lake</span><span style="position:absolute;left:1%;top:6%">calm: sky</span><span style="position:absolute;left:1%;top:89%">calm: soft foreground</span><span style="position:absolute;right:1%;top:54%">horizon 0.55</span>
+  </div>
+  <script type="module">
+    import { startBlockout } from './src/app/environment/valley/blockout.js';
+    const labels = document.getElementById('labels'), overlay = document.getElementById('overlay');
+    startBlockout(document.getElementById('world'), overlay);
+    const sync = () => { labels.style.display = overlay.style.display; }; sync(); window.addEventListener('keydown', () => setTimeout(sync));
+  </script>
+</body>
+</html>
