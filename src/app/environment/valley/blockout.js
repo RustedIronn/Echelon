@@ -150,7 +150,7 @@ function zoneColour(x, h, z, slope) {
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 13) { SURF[0] = 1 - smooth(5, 13, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(5, 13, d)); }
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 9) { SURF[0] = 1 - smooth(4.5, 8, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(4.5, 8, d)); } // a narrow stony margin, not a beach
   { const lk = inLake(x, z); if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.65 * (1 - smooth(1.1, 1.3, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
@@ -219,14 +219,30 @@ function buildWater() {
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
   const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.name = 'lake'; lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
-  let riverY = Infinity; const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length) * (0.72 + 0.56 * fbm(p.x / 28, p.y / 28, 2)); /* pools and narrows */
-    const y = inLake(p.x, p.y) < 1.15 ? -0.4 : Math.min(riverY, heightAt(p.x, p.y, true, 'river') + 1.3); riverY = y; /* the water only ever runs downhill; where it enters the lake it sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
-  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
-  const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x3f8486, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide }) /* matte milky glacial water; the lake carries the reflections */);
-  if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
-    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-{ vec2 p = vlWorld.xz; float riffle = smoothstep(0.54, 0.7, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))) * (0.6 + 0.4 * vlNoise(p * 1.3)); float silt = vlFbm(p * 0.04);
-  diffuseColor.rgb = mix(diffuseColor.rgb * (0.85 + 0.3 * silt), vec3(0.86, 0.93, 0.94), riffle * 0.75); } /* white water where it runs over the stones */`); }; riverMat.customProgramCacheKey = () => 'valley-river'; }
+  // the stream: five strips across, so the water is deep in the middle and shallow at the edges; aFlow carries (across, along in metres)
+  let riverY = Infinity, along = 0; const P = [], F = [], I = []; const X = 5;
+  for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length) * (0.72 + 0.56 * fbm(p.x / 28, p.y / 28, 2)); /* pools and narrows */
+    if (i) along += p.distanceTo(riverPts[i - 1]);
+    const y = inLake(p.x, p.y) < 1.15 ? -0.4 : Math.min(riverY, heightAt(p.x, p.y, true, 'river') + 1.3); riverY = y; /* the water only ever runs downhill; where it enters the lake it sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y);
+    for (let k = 0; k < X; k += 1) { const u = k / (X - 1), off = (u * 2 - 1) * w; P.push(p.x + (tz / l) * off, yy, p.y - (tx / l) * off); F.push(u, along); }
+    if (i) { const a0 = (i - 1) * X, a1 = i * X; for (let k = 0; k < X - 1; k += 1) I.push(a0 + k, a0 + k + 1, a1 + k, a0 + k + 1, a1 + k + 1, a1 + k); } }
+  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setAttribute('aFlow', new THREE.Float32BufferAttribute(F, 2)); rg.setIndex(I); rg.computeVertexNormals();
+  const riverMat = lookMat(new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+  if (LOOK_ON) { const bed = new THREE.TextureLoader().load('/design-reference/world-redesign/textures/river_small_rocks.jpg'); bed.colorSpace = THREE.SRGBColorSpace; bed.wrapS = bed.wrapT = THREE.RepeatWrapping; bed.anisotropy = 8;
+    const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); sh.uniforms.tBed = { value: bed }; sh.uniforms.uTime = LOOK.uTime;
+      sh.vertexShader = 'attribute vec2 aFlow; varying vec2 vlFlow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vlFlow = aFlow;');
+      // a glacial stream (references 3, 7, 11): milky turquoise where it is deep, the pebble bed (scanned) showing through the shallows at
+      // its edges, white water streaming downstream over the stones, strongest on the rapid reaches; the sun glints on it
+      sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); float depth = 1.0 - smoothstep(0.3, 0.95, edge);
+  vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb * vec3(0.8, 0.92, 0.95);
+  vec3 water = mix(vec3(0.46, 0.62, 0.61), vec3(0.13, 0.35, 0.37), depth); water = mix(bedC, water, 0.3 + 0.62 * depth);
+  float sp = 1.2 + 1.6 * depth; float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0)));
+  float streak = vlNoise(vec2(fl.x * 8.0, fl.y * 0.3 - uTime * sp)) * vlNoise(vec2(fl.x * 21.0 + 3.0, fl.y * 0.8 - uTime * sp * 1.3));
+  float foam = smoothstep(0.34 - 0.16 * rapid, 0.62, streak) * (0.3 + 0.7 * rapid) * (0.5 + 0.5 * depth);
+  diffuseColor.rgb = mix(water, vec3(0.9, 0.95, 0.96), foam * 0.9);
+  float glint = step(0.93, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(normalize(vlWorld - cameraPosition), normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
+  diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; /* the sun sparkling on the moving water */ }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
   // rounded, half buried, pale where dry and darker at the waterline

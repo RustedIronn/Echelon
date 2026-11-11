@@ -48,7 +48,7 @@ export function applyValleyLook(material, { mountain = false, ground = false, gl
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    Object.assign(shader.uniforms, LOOK); if (ground && TEX_ON) Object.assign(shader.uniforms, TEX); if (mountain) Object.assign(shader.uniforms, MOUNTAIN_TEX);
+    Object.assign(shader.uniforms, LOOK); if (ground && TEX_ON) Object.assign(shader.uniforms, TEX); if (ground) shader.uniforms.tGravelB = TEX.tGravel; if (mountain) Object.assign(shader.uniforms, MOUNTAIN_TEX);
     const textured = ground && TEX_ON;
     shader.vertexShader = 'varying vec3 vlWorld; varying vec3 vlNormal;' + (ground ? ' attribute vec3 aSurf; varying vec3 vlSurf; attribute vec3 aLand; varying vec3 vlLand;' : '') + (mountain ? ' attribute float aRelief; varying float vlRelief;' : '') + '\n' + shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
 ${ground ? 'vlSurf = aSurf; vlLand = aLand;' : ''}${mountain ? ' vlRelief = aRelief;' : ''}
@@ -58,7 +58,7 @@ ${ground ? 'vlSurf = aSurf; vlLand = aLand;' : ''}${mountain ? ' vlRelief = aRel
 #endif
   vlWorld = (modelMatrix * wpv).xyz; vlNormal = normalize(mat3(modelMatrix) * objectNormal); }`);
     shader.fragmentShader = `uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uHaze; uniform float uDensity; uniform float uScaleHeight; uniform float uGlow; uniform float uSnowline; uniform float uTreeline; uniform float uRockOn;
-varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; varying vec3 vlLand;' : ''}${mountain ? ' varying float vlRelief; uniform sampler2D tCliff; uniform sampler2D tSnowS;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${mountain ? EROSION : ''}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
+varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; varying vec3 vlLand; uniform sampler2D tGravelB;' : ''}${mountain ? ' varying float vlRelief; uniform sampler2D tCliff; uniform sampler2D tSnowS;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${mountain ? EROSION : ''}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
     // the ground: scanned surfaces chosen by zone (gravel, track, forest floor in aSurf; meadow otherwise) and by distance (the close-up
     // sparse turf near the camera, the aerial grass-and-stone further out); the vertex colour only nudges the hue toward its zone
     // building surfaces, drawn in world space: whitewash with rain streaks and a darker splash zone, coursed stone with mortar, vertical larch
@@ -96,6 +96,8 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; va
     float slopeN = 1.0 - normalize(vlNormal).y; g2 = mix(g2, g2 * vec3(0.78, 0.82, 0.7), smoothstep(0.15, 0.4, slopeN) * smoothstep(0.55, 0.7, vlFbm(p / 25.0 + 4.0))); /* rougher, darker turf on the steeper banks */
     diffuseColor.rgb = mix(diffuseColor.rgb, g2, grassy); }
   // wet ground: darker, glossier soil and gravel at the water's edge (the gravel weight marks the river banks)
+  // the gravel banks and bars of the stream in a scanned pebble texture (river_small_rocks), wet and darker at the waterline
+  { float gv = clamp(vlSurf.x * 1.3, 0.0, 1.0) * (1.0 - smoothstep(250.0, 900.0, d)); if (gv > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(tGravelB, p / 2.6).rgb * 0.85, gv); }
   diffuseColor.rgb *= 1.0 - 0.35 * clamp(vlSurf.x * 1.4, 0.0, 1.0) * (1.0 - smoothstep(-0.3, 1.2, vlWorld.y - 0.2));
   // under the near blades the ground is the shaded base of the sward: deep green-brown, never the pale top colour
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.52, 0.34), open * (1.0 - smoothstep(48.0, 80.0, d)));
