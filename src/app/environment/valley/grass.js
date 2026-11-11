@@ -68,7 +68,7 @@ function clumpGeometry(seed, flowerKind) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C.map((v) => Math.max(0, v) ** 2.2 * 1.6), 3)); /* the colours above are display colours; the renderer wants linear light */ g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setIndex(I); return g;
 }
 // sites: [x, y, z, size, tone, flowerKind (-1 none, 0 buttercup, 1 daisy, 2 harebell, 3 knapweed)]
-export function planBlades(ground, { from = 9, to = 62, camera = [0, 0] } = {}) {
+export function planBlades(ground, { from = 38, to = 62, camera = [0, 0] } = {}) {
   const out = []; const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   for (let r = from; r < to; ) { const step = 0.45 + 0.012 * r; const da = (step / r) * (180 / Math.PI);
     for (let az = -40; az <= 40; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;

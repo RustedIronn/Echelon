@@ -6,6 +6,7 @@ import { buildForest } from './trees.js';
 import { planGrass, buildGrass, planBlades, buildBlades, WIND } from './grass.js';
 import { buildClouds } from './clouds.js';
 import { buildBirds, buildSmoke } from './motion.js';
+import { buildMeadow } from './meadow.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -276,7 +277,8 @@ export async function startBlockout(canvas, overlay) {
       for (let i = 0; i < 900; i += 1) { const a = (i / 900) * 6.283 + hash(i, 91) * 0.01; const k = 1.08 + 0.16 * hash(i, 92) + 0.06 * Math.sin(a * 7.0); if (hash(i, 93) < 0.25 + 0.3 * Math.sin(a * 3.0 + 1.0)) continue;
         const uu = Math.cos(a) * LAKE.rx * k, vv = Math.sin(a) * LAKE.rz * k; const x = LAKE.x + uu * c + vv * sn, z = LAKE.z - uu * sn + vv * c; if (Math.hypot(x, z) > 330) continue;
         blades.push(x, Math.max(heightAt(x, z), 0.05), z, 1.9 + 0.9 * hash(i, 94), hash(i, 95), -1); }
-      scene.add(buildBlades(blades)); /* real blades near, cards beyond */
+      scene.add(buildBlades(blades)); /* procedural blades from 38 m, cards beyond */
+      if (Q.get('scanned') !== '0') { try { const meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }); scene.add(meadow); window.__meadowCounts = meadow.userData.counts; } catch (e) { console.warn('meadow', e); } } /* scanned grass and real flowers close in */
     }
     scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
