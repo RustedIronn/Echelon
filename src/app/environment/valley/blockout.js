@@ -87,7 +87,7 @@ let RESHAPE = null; // per-azimuth vertical stretch of the real heights, so the 
 export async function loadDem(url = '/design-reference/world-redesign/dem/dom') {
   if (Q.get('dem') === '0') return null;
   try { const [meta, buf] = await Promise.all([fetch(url + '.json').then((r) => r.json()), fetch(url + '.f32').then((r) => r.arrayBuffer())]);
-    const mLat = 111320, mLon = 111320 * Math.cos(meta.summit[0] * DEG); DEM = { meta, data: new Float32Array(buf), blur: null, mLat, mLon, vLat: meta.summit[0] + MASSIF.distance / mLat, vLon: meta.summit[1], summit: toXZ(MASSIF.az, MASSIF.distance) }; DEM.blur = blurGrid(DEM.data, meta.width, meta.height, 7); return DEM; } catch { return null; }
+    const mLat = 111320, mLon = 111320 * Math.cos(meta.summit[0] * DEG); DEM = { meta, data: new Float32Array(buf), blur: null, mLat, mLon, vLat: meta.summit[0] + MASSIF.distance / mLat, vLon: meta.summit[1], summit: toXZ(MASSIF.az, MASSIF.distance) }; DEM.blur = blurGrid(DEM.data, meta.width, meta.height, 7); DEM.mid = blurGrid(DEM.data, meta.width, meta.height, 2); return DEM; } catch { return null; }
 }
 // the terrain's local relief: the real height minus its smoothed surroundings (about 200 m), exaggerated so ridges stand sharper and
 // couloirs cut deeper, the way the eye remembers mountains; the overall shape and the summit stay where the data puts them
@@ -102,7 +102,10 @@ function demHeight(x, z) {
   if (!DEM) return NaN; const r = Math.hypot(x, z), b = (180 + Math.atan2(x, -z) / DEG - MASSIF.az) * DEG; const lat = DEM.vLat + (r * Math.cos(b)) / DEM.mLat, lon = DEM.vLon + (r * Math.sin(b)) / DEM.mLon;
   const m = DEM.meta, fx = (lon - m.west) / m.dLon, fy = (m.north - lat) / m.dLat, ix = Math.floor(fx), iy = Math.floor(fy); if (ix < 0 || iy < 0 || ix >= m.width - 1 || iy >= m.height - 1) return NaN;
   const tx = fx - ix, ty = fy - iy, i = iy * m.width + ix; const bil = (d) => (d[i] * (1 - tx) + d[i + 1] * tx) * (1 - ty) + (d[i + m.width] * (1 - tx) + d[i + m.width + 1] * tx) * ty;
-  const raw = bil(DEM.data), smooth0 = bil(DEM.blur); DEM_RELIEF_OUT = (raw - smooth0) * RELIEF; return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
+  const raw = bil(DEM.data), smooth0 = bil(DEM.blur), mid = bil(DEM.mid);
+  // the ridges and couloirs (forms of 90-400 m) are exaggerated, crests more than hollows so they come to an edge; the small bumps under
+  // about 90 m stay at their real size, so the crown is not lumpy
+  const rel = mid - smooth0; const form = rel > 0 ? rel * Math.min(1.7, 1 + 0.01 * rel) : rel; DEM_RELIEF_OUT = form * RELIEF + 1.1 * (raw - mid); return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 export function heightAt(x, z, cheap = false, noPads = false) {

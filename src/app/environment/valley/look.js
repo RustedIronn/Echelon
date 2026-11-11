@@ -128,9 +128,9 @@ ${textured ? `
   float cut = 0.55 * fine + 0.45 * coarse; float gully = smoothstep(0.52, 0.7, cut) * steep, spur = smoothstep(0.46, 0.3, cut) * steep;
   vec3 cliff = (texture2D(tCliff, vlWorld.zy / 70.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 70.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 70.0).rgb * w.z);
   vec3 cliff2 = (texture2D(tCliff, vlWorld.zy / 290.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 290.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 290.0).rgb * w.z);
-  vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.97, 0.98, 1.02), 0.45); // limestone and gneiss grey
+  vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.95, 0.97, 1.02), 0.62); // gneiss grey, not brown
   rock *= 0.78 + 0.45 * rib - 0.35 * cav;                                           // lit ribs, shadowed gullies: the relief reads even in backlight
-  rock *= (1.0 - 0.34 * gully + 0.16 * spur) * (0.9 + 0.2 * fine); rock = mix(rock, rock * vec3(0.82, 0.8, 0.78), 0.5 * gully); // the runnels, water-stained
+  rock *= (1.0 - 0.34 * gully + 0.16 * spur); rock = mix(rock, rock * vec3(0.82, 0.8, 0.78), 0.5 * gully); // the runnels, water-stained
   // alpine grassland above the forest: continuous turf on the gentler ground, giving way to rock along the runnels, on the ribs and where it
   // is steep, so the boundary follows the erosion (vertical) instead of blotches; thinning out 350-650 m above the treeline
   float grassBand = 1.0 - smoothstep(uTreeline + 200.0, uTreeline + 520.0, h + 220.0 * (coarse - 0.5));
@@ -143,14 +143,17 @@ ${textured ? `
   hold *= smoothstep(0.42, 0.58, vlFbm(p / 110.0 + 4.0) + 0.25 * smoothstep(line, line + 330.0, h)); // below the cap, old snow lies in patches on the shelves, never one sheet
   hold = max(hold, gully * 0.95) * (1.0 - 0.9 * spur * smoothstep(0.55, 0.3, up)); // white streaks down the runnels, dark ribs between
   float snow = smoothstep(line - 25.0, line + 25.0, h + 380.0 * couloir + 90.0 * (fine - 0.5)) * max(hold, couloir * 0.9);
-  float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.12, 0.26, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top
+  float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.36, 0.52, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top, but no snow holds on faces steeper than about 60 degrees: the horns stand dark
   cap *= 1.0 - 0.92 * max(spur, rib * 0.7) * smoothstep(0.62, 0.32, up);        // the ribs and steep rock break through it
   snow = max(snow, cap);
   vec3 snowCol = vec3(0.8, 0.83, 0.88) * (0.82 + 0.3 * texture2D(tSnowS, p / 30.0).r) * (0.9 + 0.12 * vlFbm(p / 18.0)); // snow with its own grain
   snowCol *= 0.86 + 0.22 * rib - 0.16 * cav; snowCol = mix(snowCol, snowCol * vec3(0.86, 0.9, 1.0), cav * 0.6);         // bright on the crests, blue-grey in the hollows
   snow *= 1.0 - 0.55 * smoothstep(0.62, 0.8, vlFbm(p / 22.0 + 7.0)) * smoothstep(0.5, 0.3, up); // rocks poke through the steeper snow
-  float flat_ = smoothstep(0.75, 0.92, up); float crev = smoothstep(0.62, 0.8, vlNoise(vec2(dot(p, normalize(n.xz + 1e-4)) / 9.0, dot(p, vec2(-n.z, n.x)) / 70.0))) * flat_;
+  float flat_ = smoothstep(0.62, 0.85, up); float crev = smoothstep(0.62, 0.8, vlNoise(vec2(dot(p, normalize(n.xz + 1e-4)) / 9.0, dot(p, vec2(-n.z, n.x)) / 70.0))) * flat_;
   snowCol *= 1.0 - 0.35 * crev; snowCol = mix(snowCol, snowCol * vec3(0.86, 0.85, 0.83), flat_ * smoothstep(line + 500.0, line + 150.0, h) * (0.5 + 0.5 * vlFbm(p / 60.0))); // crevasses, and old grey snow toward the foot
+  { vec2 fl = normalize(n.xz + 1e-4); float across = dot(p, vec2(-fl.y, fl.x)), along = dot(p, fl); /* the glacier: patchy old snow and ice, and dark moraine lines running down its flow */
+    float moraine = smoothstep(0.64, 0.7, vlFbm(vec2(across / 110.0, along / 1800.0) + 2.3)) * flat_;
+    snowCol *= mix(1.0, 0.82 + 0.26 * vlFbm(p / 240.0), flat_); snowCol = mix(snowCol, vec3(0.32, 0.31, 0.3), moraine * 0.75); }
   vec3 alp = mix(rock, snowCol, snow);
   diffuseColor.rgb = mix(diffuseColor.rgb, alp, alpine); }`);
     if (mountain) shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
