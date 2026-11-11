@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
+import { applyValleyLook, setLook } from './look.js';
+const LOOK_ON = Q_LOOK();
+function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
+const lookMat = (m, o) => (LOOK_ON ? applyValleyLook(m, o) : m);
 
 // The valley block-out (docs/WORLD-SPEC.md, build step 1): grey-box land at true scale, colour masses for the zones, water shapes, hamlet
 // blocks and the composed sun and moon, built backwards from one frame. Nothing here is final art; it exists to lock the composition.
@@ -118,7 +122,7 @@ function buildTerrain() {
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
+  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
 }
 
 function buildWater() {
@@ -129,28 +133,28 @@ function buildWater() {
   const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
     const y = heightAt(p.x, p.y, true) - 0.9 + 0.0; P.push(p.x - (tz / l) * w, Math.max(0.05, y), p.y + (tx / l) * w, p.x + (tz / l) * w, Math.max(0.05, y), p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
-  group.add(new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ color: 0x6fa9a6, roughness: 0.85, metalness: 0.0, side: THREE.DoubleSide })));
+  group.add(new THREE.Mesh(rg, lookMat(new THREE.MeshStandardMaterial({ color: 0x6fa9a6, roughness: 0.85, metalness: 0.0, side: THREE.DoubleSide }))));
   return group;
 }
 
 // a block building: walls with a gabled roof; stone below, timber above is only a colour split at block-out stage
 function house(w, d, wall, roof, eave, ridge, colour = '#cfc6b6') {
-  const g = new THREE.Group(); const walls = new THREE.Mesh(new THREE.BoxGeometry(w, eave, d), new THREE.MeshLambertMaterial({ color: colour })); walls.position.y = eave / 2; g.add(walls);
+  const g = new THREE.Group(); const walls = new THREE.Mesh(new THREE.BoxGeometry(w, eave, d), lookMat(new THREE.MeshLambertMaterial({ color: colour }))); walls.position.y = eave / 2; g.add(walls);
   const shape = new THREE.Shape([new THREE.Vector2(-w / 2 - 0.6, 0), new THREE.Vector2(w / 2 + 0.6, 0), new THREE.Vector2(0, ridge - eave)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: d + 1.2, bevelEnabled: false }); rg.translate(0, eave, -(d + 1.2) / 2);
-  g.add(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: roof }))); return g;
+  g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof })))); return g;
 }
 function buildSettlements() {
   const group = new THREE.Group(); const place = (o, x, z, yaw = 0) => { o.position.set(x, heightAt(x, z, true) - 0.3, z); o.rotation.y = yaw; group.add(o); };
   // lower group: mill on the water, farmhouse, barn
   place(house(9, 7, 0, '#5a4b3f', 4.5, 8, '#b7aa94'), LOWER.x - 10, LOWER.z + 12, 0.4); place(house(12, 9, 0, '#4f4136', 5, 9.5, '#cfc3ad'), LOWER.x + 14, LOWER.z - 4, -0.2); place(house(16, 11, 0, '#4a3b2f', 5.5, 10.5, '#8a6a4c'), LOWER.x + 34, LOWER.z - 22, 0.1);
   // upper group: chapel with its tower, houses, the inn
-  const chapel = house(8, 15, 0, '#5a5550', 7, 12, '#f1eee6'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), new THREE.MeshLambertMaterial({ color: '#f1eee6' })); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
-  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), new THREE.MeshLambertMaterial({ color: '#4c4a48' })); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 30, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
+  const chapel = house(8, 15, 0, '#5a5550', 7, 12, '#f1eee6'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), lookMat(new THREE.MeshLambertMaterial({ color: '#f1eee6' }))); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), lookMat(new THREE.MeshLambertMaterial({ color: '#4c4a48' }))); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 30, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
   [[-38, -2], [-20, -30], [30, -6], [44, -28], [8, -44], [-46, -32]].forEach(([dx, dz], i) => place(house(10 + (i % 3) * 2, 8 + (i % 2) * 2, 0, '#4f4640', 5 + (i % 2), 9.5 + (i % 2), i % 2 ? '#c9bea9' : '#a58566'), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
   HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#3e3329', 2.6, 4.6, '#6e5640'), x, z, i * 1.1));
   // the hero tree: a dark mass on a trunk
-  const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), new THREE.MeshLambertMaterial({ color: '#4a3c2e' })); trunk.position.y = 4; tree.add(trunk);
-  const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), new THREE.MeshLambertMaterial({ color: '#3a5530' })); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); place(tree, HERO_TREE[0], HERO_TREE[1]);
+  const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), lookMat(new THREE.MeshLambertMaterial({ color: '#4a3c2e' }))); trunk.position.y = 4; tree.add(trunk);
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); place(tree, HERO_TREE[0], HERO_TREE[1]);
   return group;
 }
 
@@ -182,7 +186,7 @@ export async function startBlockout(canvas, overlay) {
   const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : 1.3); scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
   const bounce = new THREE.DirectionalLight(mood[6], night ? 0.08 : 0.85); bounce.position.set(0, 400, 1000); scene.add(bounce);
-  scene.fog = new THREE.FogExp2(mood[8], mood[9]);
+  if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 30000, glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
     scene.background = new THREE.Color('#0b1220'); sky.visible = false;
@@ -215,7 +219,7 @@ function buildMassif() {
     pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; const c = zoneColour(x, h, z, slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; ok[k] = 1; }
   const idx = []; for (let j = 0; j < H - 1; j += 1) for (let i = 0; i < W - 1; i += 1) { const a = j * W + i, b = a + 1, c = a + W, d = c + 1; if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
+  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), { mountain: true })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
 }
 
 // The hybrid mountain: measure the skyline of the real massif from the camera, then stretch its heights per azimuth so the outline matches the
@@ -237,7 +241,7 @@ export function fitSkyline(passes = 2) {
 // right scale. The final forest replaces these with real trees near and impostors far.
 function buildTrees(list) {
   const n = list.length / 4; const geo = new THREE.ConeGeometry(1, 1, 7); geo.translate(0, 0.5, 0);
-  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial(), n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+  const mesh = new THREE.InstancedMesh(geo, lookMat(new THREE.MeshLambertMaterial()), n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
   for (let i = 0; i < n; i += 1) { const x = list[i * 4], z = list[i * 4 + 1], larch = list[i * 4 + 2], v = list[i * 4 + 3]; const h = 16 + 14 * v; const y = heightAt(x, z, true) - 0.5;
     m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(h * (larch ? 0.26 : 0.21), h, h * (larch ? 0.26 : 0.21))); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(larch ? '#56703a' : '#26391f').multiplyScalar(0.85 + 0.3 * v)); }
   mesh.instanceMatrix.needsUpdate = true; mesh.name = `block-out trees (${n})`; mesh.frustumCulled = false; return mesh;
