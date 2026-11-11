@@ -137,7 +137,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
 const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
-const ZONE = { meadow: C('#5c6446'), hay: C('#666644'), pasture: C('#525e40'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#8a877f'), terrace: C('#5c6446'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
+const ZONE = { meadow: C('#5e6b3a'), hay: C('#6a6c3c'), pasture: C('#53643a'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#8a877f'), terrace: C('#5e6b3a'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
 const LAND_LIGHT = 1.65; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
@@ -336,7 +336,7 @@ const dirOf = (az, el) => new THREE.Vector3(Math.sin(az * DEG) * Math.cos(el * D
 const MOODS = {
   dawn: [0.035, 6, 2.6, 0.42, '#ffb27a', 1.4, '#9fb4d6', '#5a4a3c', '#d9b9a3', 1.05e-4],
   morning: [0.22, 4, 1.4, 0.36, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
-  noon: [0.5, 2.0, 1.7, 0.32, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
+  noon: [0.5, 1.6, 2.3, 0.32, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
   evening: [0.82, 4, 1.6, 0.38, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
   dusk: [0.968, 7, 2.8, 0.45, '#ff9a5a', 1.2, '#93a3c8', '#4b3d33', '#d8a98f', 1.1e-4],
   night: [null, 0, 0, 0.9, '#a9bde6', 0.75, '#2a3858', '#11161e', '#1b2433', 0.9e-4], // moonlight strong enough to read the valley by
@@ -421,7 +421,7 @@ export async function startBlockout(canvas, overlay) {
   }
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
-  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.1) saturate(1.14)' : 'contrast(1.12) saturate(1.16) brightness(1.03)'; document.body.classList.add('graded'); }
+  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.1) saturate(1.24)' : 'contrast(1.1) saturate(1.3) brightness(1.05)'; document.body.classList.add('graded'); }
   // motion: birds over the meadows, smoke from the chimneys (more in the cold and the evening), one clock for everything that moves
   scene.updateMatrixWorld(true); const chimneys = []; scene.traverse((o) => { if (o.name === 'chimney') chimneys.push(o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0))); });
   const warmHour = ['dawn', 'dusk', 'evening', 'night'].includes(Q.get('tod')); const smoke = LOOK_ON && Q.get('smoke') !== '0' ? buildSmoke(chimneys.filter((_, i) => season === 'winter' || warmHour || i % 3 === 0), { strength: night ? 0.35 : 1 }) : null; if (smoke) scene.add(smoke.group);
