@@ -135,6 +135,7 @@ ${textured ? `
   vec3 cliff = (texture2D(tCliff, vlWorld.zy / 70.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 70.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 70.0).rgb * w.z);
   vec3 cliff2 = (texture2D(tCliff, vlWorld.zy / 290.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 290.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 290.0).rgb * w.z);
   vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.95, 0.97, 1.02), 0.62); // gneiss grey, not brown
+  rock = mix(rock, rock * vec3(0.74, 0.79, 0.88), smoothstep(uSnowline + 150.0, uSnowline + 650.0, h)); // the high granite: dark blue-grey
   rock *= 0.78 + 0.45 * rib - 0.35 * cav;                                           // lit ribs, shadowed gullies: the relief reads even in backlight
   rock *= (1.0 - 0.2 * gully + 0.1 * spur); rock = mix(rock, rock * vec3(0.85, 0.83, 0.8), 0.35 * gully); // the runnels, water-stained, quietly
   // geology: bedding planes dipping gently across the massif; harder beds stand as cliff bands of their own tone, softer ones weather back

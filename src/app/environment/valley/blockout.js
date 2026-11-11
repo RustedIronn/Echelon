@@ -93,6 +93,7 @@ export async function loadDem(url = '/design-reference/world-redesign/dem/dom') 
 // the terrain's local relief: the real height minus its smoothed surroundings (about 200 m), exaggerated so ridges stand sharper and
 // couloirs cut deeper, the way the eye remembers mountains; the overall shape and the summit stay where the data puts them
 const RELIEF = Number(Q.get('relief3d') ?? 2.4);
+const NEEDLES = Number(Q.get('needles') ?? 1); // ?needles=0 for the plain crown
 function blurGrid(src, w, h, r) { const tmp = new Float32Array(src.length), out = new Float32Array(src.length);
   for (let pass = 0; pass < 2; pass += 1) { const a = pass ? out : src;
     for (let y = 0; y < h; y += 1) { let acc = 0; for (let x = -r; x <= r; x += 1) acc += a[y * w + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x += 1) { tmp[y * w + x] = acc / (2 * r + 1); acc += a[y * w + Math.min(w - 1, x + r + 1)] - a[y * w + Math.max(0, x - r)]; } }
@@ -106,7 +107,13 @@ function demHeight(x, z) {
   const raw = bil(DEM.data), smooth0 = bil(DEM.blur), mid = bil(DEM.mid);
   // the ridges and couloirs (forms of 90-400 m) are exaggerated, crests more than hollows so they come to an edge; the small bumps under
   // about 90 m stay at their real size, so the crown is not lumpy
-  const rel = mid - smooth0; const form = rel > 0 ? rel * Math.min(1.7, 1 + 0.01 * rel) : rel; DEM_RELIEF_OUT = form * RELIEF + 1.1 * (raw - mid); return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
+  const rel = mid - smooth0; const form = rel > 0 ? rel * Math.min(1.7, 1 + 0.01 * rel) : rel; DEM_RELIEF_OUT = form * RELIEF + 1.1 * (raw - mid);
+  // the granite needles (reference: the Chamonix Aiguilles): on the upper crown, sharp spires where two ridged fields cross, notched cols
+  // between them; so steep that no snow holds on their faces, only in the couloirs between
+  const crown = smooth(1700, 2500, smooth0 - MASSIF.lakeAltitude) * NEEDLES; if (crown > 0) { const u = x / 340, v = z / 340;
+    const rn = ridged(u, v, 2) * ridged(u * 1.55 + 7.3, v * 1.55 - 2.1, 2); const spire = Math.pow(rn, 3.4); const notch = Math.pow(1 - ridged(u * 0.8 + 3.1, v * 0.8, 2), 2);
+    DEM_RELIEF_OUT += crown * (spire * 560 - notch * 180); }
+  return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 export function heightAt(x, z, cheap = false, noPads = false) {
