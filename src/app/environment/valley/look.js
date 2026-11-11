@@ -9,12 +9,18 @@ import * as THREE from 'three';
 export const LOOK = {
   uSunDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() }, uSunCol: { value: new THREE.Color(1, 0.95, 0.85) },
   uHaze: { value: new THREE.Color(0.75, 0.8, 0.86) }, uDensity: { value: 1 / 16000 }, uScaleHeight: { value: 1300 }, uGlow: { value: 1.2 },
-  uSnowline: { value: 1500 }, uTreeline: { value: 640 }, uRockOn: { value: 1 },
+  uSnowline: { value: 1500 }, uTreeline: { value: 640 }, uRockOn: { value: 1 }, uCover: { value: 0.5 }, uCloudOn: { value: 0 },
 };
 const NOISE = `
 float vlHash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float vlNoise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(vlHash(i),vlHash(i+vec2(1,0)),f.x),mix(vlHash(i+vec2(0,1)),vlHash(i+vec2(1,1)),f.x),f.y); }
-float vlFbm(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vlNoise(p); p=p*2.03+17.1; a*=0.5; } return s; }`;
+float vlFbm(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vlNoise(p); p=p*2.03+17.1; a*=0.5; } return s; }
+float vlFb(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<6;i++){ s+=a*vlNoise(p); p=p*2.02+vec2(5.1,1.7); a*=0.5; } return s; } // the cloud layer's own noise
+uniform float uCover; uniform float uCloudOn;
+float vlCloudShade(vec3 w) { if (uCloudOn < 0.5) return 1.0; vec3 L = normalize(uSunDir); if (L.y < 0.03) return 1.0;
+  vec2 p = w.xz + L.xz * (2800.0 - w.y) / L.y; vec2 warp = vec2(vlFb(p / 5000.0), vlFb(p / 5000.0 + 9.2)) - 0.5;
+  float dens = smoothstep(uCover, uCover + 0.22, vlFb(p / 3200.0 + warp * 1.6)) * (0.65 + 0.35 * vlFb(p / 700.0 + 3.0));
+  return 1.0 - 0.72 * clamp(dens * 1.25, 0.0, 1.0); }`;
 
 // Scanned ground (Poly Haven, CC0; design-reference/world-redesign/textures): colour maps that replace the block-out colours, kept in the
 // zone's hue by a gentle tint from the vertex colour. Off until approved: ?textures=1 shows them.
@@ -103,9 +109,15 @@ ${textured ? `
     // surface is seen edge-on (the glowing meadows and crowns of the references); nothing when the sun is down
     if (glow > 0) shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', `{ vec3 vv = normalize(cameraPosition - vlWorld); vec3 nn = normalize(vlNormal); float fwd = pow(max(dot(-vv, normalize(uSunDir)), 0.0), 3.0);
   float edge = pow(1.0 - abs(dot(nn, vv)), 1.5); float day = smoothstep(-0.06, 0.04, uSunDir.y); float low = 1.0 - smoothstep(0.05, 0.3, uSunDir.y); /* a low sun shines through grass the most */
-  outgoingLight += diffuseColor.rgb * uSunCol * fwd * (0.35 + 0.65 * edge) * ${glow.toFixed(3)} * day * (1.0 + 1.6 * low);
   outgoingLight += diffuseColor.rgb * uHaze * 0.22 * ${glow.toFixed(3)} * day; /* the bright sky and haze around the low sun light the blades from every side */ }
 #include <opaque_fragment>`);
+    // the light through the blades and needles is sunlight, so it belongs inside the sun's own lighting, where a shadow cuts it off:
+    // that is what draws the long shadows across a meadow seen against the sun
+    // and cloud shadows: the sun's light is dimmed where the cloud layer (clouds.js, the same pattern) lies between the ground and the sun
+    if (material.isMeshLambertMaterial) shader.fragmentShader = shader.fragmentShader.replace('#include <lights_lambert_pars_fragment>', THREE.ShaderChunk.lights_lambert_pars_fragment.replace('vec3 irradiance = dotNL * directLight.color;', `vec3 irradiance = dotNL * directLight.color;
+  ${glow > 0 ? `{ float fwdG = pow(max(dot(-geometryViewDir, directLight.direction), 0.0), 3.0); float edgeG = pow(1.0 - abs(dot(geometryNormal, geometryViewDir)), 1.5);
+    float lowG = 1.0 - smoothstep(0.05, 0.3, uSunDir.y); irradiance += directLight.color * fwdG * (0.35 + 0.65 * edgeG) * ${glow.toFixed(3)} * (1.0 + 1.6 * lowG) * 1.1; }` : ''}
+  irradiance *= vlCloudShade(vlWorld);`));
   };
   material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}-${ground ? 'g' : ''}${glow}`;
   return material;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
-import { applyValleyLook, setLook } from './look.js';
+import { applyValleyLook, setLook, LOOK } from './look.js';
 import { buildForest } from './trees.js';
 import { planGrass, buildGrass } from './grass.js';
 import { buildClouds } from './clouds.js';
@@ -244,7 +244,7 @@ export async function startBlockout(canvas, overlay) {
   const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : LOOK_ON ? 1.7 : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
   const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#d9dcb4' : mood[6], night ? 0.08 : LOOK_ON ? 1.15 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
-  if (LOOK_ON && Q.get('clouds') !== '0') scene.add(buildClouds({ coverage: Number(Q.get('cover') ?? (night ? 0.58 : 0.5)), night })); // ?clouds=0 for a clear sky, ?cover=0.3..0.7
+  if (LOOK_ON && Q.get('clouds') !== '0') { const cover = Number(Q.get('cover') ?? (night ? 0.58 : 0.5)); scene.add(buildClouds({ coverage: cover, night })); LOOK.uCover.value = cover; LOOK.uCloudOn.value = 1; } // ?clouds=0 for a clear sky, ?cover=0.3..0.7
   if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 30000, glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
@@ -255,6 +255,17 @@ export async function startBlockout(canvas, overlay) {
   } else { light.position.copy(dirOf(sunPose.az, Math.max(sunPose.el, 1.5))).multiplyScalar(1000); sunDisc(scene, dirOf(sunPose.az, sunPose.el), mood[4]); }
   const resize = () => { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   window.addEventListener('resize', resize); resize();
+  // shadows: the sun's, over the near and middle valley (about 1.8 km square round the lake, the hamlet and the near woods), soft-edged;
+  // everything there casts and receives except the grass (which only receives) and the sky, water and lights. ?shadows=0 to compare.
+  if (LOOK_ON && !night && Q.get('shadows') !== '0') {
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const centre = new THREE.Vector3(0, 15, -480); light.target.position.copy(centre); scene.add(light.target);
+    light.position.copy(centre).addScaledVector(dirOf(sunPose.az, Math.max(sunPose.el, 2)), 5000); light.castShadow = true;
+    const sc = light.shadow.camera; sc.left = -950; sc.right = 950; sc.top = 950; sc.bottom = -950; sc.near = 100; sc.far = 12000; sc.updateProjectionMatrix();
+    light.shadow.mapSize.set(4096, 4096); light.shadow.bias = -0.0005; light.shadow.normalBias = 0.6; light.shadow.radius = 3;
+    scene.traverse((o) => { if (!o.isMesh || o.isSprite) return; const n = o.name || ''; if (/cloud|sky|moon|massif/i.test(n) || o.material?.type === 'ShaderMaterial' || o.material?.isMeshBasicMaterial) return;
+      o.receiveShadow = true; o.castShadow = !/meadow grass/.test(n); });
+  }
   let frames = 0; renderer.setAnimationLoop(() => { renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
   window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }

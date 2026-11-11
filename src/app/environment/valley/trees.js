@@ -58,6 +58,14 @@ function impostorMaterial(baked) {
   return m;
 }
 
+// the impostor's shadow: the same card, turned toward the light (in the shadow pass the camera is the sun) and cut out by the crown's alpha
+function impostorDepth(baked) {
+  const m = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: baked.colour, alphaTest: 0.45, side: THREE.DoubleSide });
+  m.onBeforeCompile = (shader) => { shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+{ vec3 vlBase = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz; vec2 vlToCam = normalize(cameraPosition.xz - vlBase.xz + vec2(1e-4)); float vlFlip = sign(instanceMatrix[0][0]);
+  vec3 right = vec3(vlToCam.y, 0.0, -vlToCam.x); transformed = vec3(right.x * position.x, position.y, right.z * position.x * vlFlip); }`); };
+  return m;
+}
 export async function buildForest(renderer, list, hero = null) { // list: x, y, z, larch(0|1), height, variant per tree
   const loader = new GLTFLoader(); const [spruce, larch] = await Promise.all([loader.loadAsync(MODELS.spruce), loader.loadAsync(MODELS.larch)]);
   const heroModel = hero ? spruce.scene.clone(true) : null; /* cloned before baking: the bake re-parents the model */
@@ -65,7 +73,7 @@ export async function buildForest(renderer, list, hero = null) { // list: x, y, 
   for (const kind of [0, 1]) {
     const mine = []; for (let i = 0; i < list.length; i += 6) if (list[i + 3] === kind) mine.push(i);
     if (!mine.length) continue; const b = kinds[kind]; const geo = new THREE.PlaneGeometry(b.aspect, 1); geo.translate(0, 0.5, 0);
-    const mesh = new THREE.InstancedMesh(geo, impostorMaterial(b), mine.length); const m = new THREE.Matrix4(); const c = new THREE.Color();
+    const mesh = new THREE.InstancedMesh(geo, impostorMaterial(b), mine.length); mesh.customDepthMaterial = impostorDepth(b); /* the shadow is the tree's silhouette seen from the sun */ const m = new THREE.Matrix4(); const c = new THREE.Color();
     mine.forEach((i, k) => { const h = list[i + 4], v = list[i + 5]; m.makeScale(h * 1.2 * (v < 0.5 ? -1 : 1), h, h); /* crowns a little wider: a forest reads as a closed canopy from afar */ m.setPosition(list[i], list[i + 1] - 0.4, list[i + 2]); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.62, 0.8, 0.6).multiplyScalar(0.8 + 0.35 * v)); /* deeper, greener needles than the unlit scan */ });
     mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = `${kind ? 'larch' : 'spruce'} impostors (${mine.length})`; group.add(mesh);
   }
