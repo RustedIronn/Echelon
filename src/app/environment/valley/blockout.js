@@ -7,6 +7,8 @@ import { planGrass, buildGrass, planBlades, buildBlades, WIND } from './grass.js
 import { buildClouds } from './clouds.js';
 import { buildBirds, buildSmoke } from './motion.js';
 import { buildMeadow } from './meadow.js';
+import { alpineHouse, chapel } from './buildings.js';
+import { buildPath, footbridge } from './paths.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -50,6 +52,12 @@ const riverCurve = new THREE.SplineCurve(RIVER); const riverPts = riverCurve.get
 export const LOWER = { x: 60, z: -345 }; // the mill stands on the river bank // the working group: mill on the river, farm, barn
 export const UPPER = { ...(() => { const [x, z] = toXZ(13.2, 430); return { x, z }; })(), y: 22 }; // the old heart on its terrace, near enough to read as a home
 export const HUTS = [[-150, -430], [-260, -760], [255, -560], [372, -410]];
+// the building sites (x, z, radius): the ground is levelled under each (heightAt), so no house sinks or stands on a tall plinth, and the
+// meadow keeps off them; the same places buildSettlements builds on
+export const SITES = [[LOWER.x - 10, LOWER.z + 12, 7], [LOWER.x - 28, LOWER.z + 4, 9], [LOWER.x - 46, LOWER.z - 16, 11], [UPPER.x - 2, UPPER.z + 26, 13],
+  ...[[-34, 14], [-60, -2], [28, 18], [54, 2], [-20, -24], [12, -30]].map(([dx, dz]) => [UPPER.x + dx, UPPER.z + dz, 9]), [UPPER.x + 80, UPPER.z - 12, 8], ...HUTS.map(([x, z]) => [x, z, 4.5])];
+// the footpath from the foreground through the meadow, along the east bank to the mill, and over the footbridge to the farm
+export const FOOTPATH = new THREE.SplineCurve([[6, -40], [30, -110], [60, -200], [72, -260], [60, -316], [44, -330], [33, -337]].map(([x, z]) => new THREE.Vector2(x, z))).getSpacedPoints(200);
 export const HERO_TREE = [-118, -360];
 // the track: from the mill up the slope to the chapel, worn into the turf
 export const TRACK = new THREE.SplineCurve([[LOWER.x + 6, LOWER.z - 8], [LOWER.x + 40, LOWER.z - 30], [LOWER.x + 52, LOWER.z - 60], [UPPER.x - 30, UPPER.z + 90], [UPPER.x - 8, UPPER.z + 40]].map(([x, z]) => new THREE.Vector2(x, z))).getSpacedPoints(120);
@@ -96,17 +104,18 @@ function demHeight(x, z) {
   const raw = bil(DEM.data), smooth0 = bil(DEM.blur); DEM_RELIEF_OUT = (raw - smooth0) * RELIEF; return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
-export function heightAt(x, z, cheap = false) {
+export function heightAt(x, z, cheap = false, noPads = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5); // the floor
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
-  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5), 12); } // the terrace
+  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(55, 95, d) /* a level top to build on */, 12); } // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
   const m = profile(RANGE, az); const mh = Math.tan(m[1] * DEG) * m[2] + FRAME.eye; const crest = smooth(m[2] - 5200, m[2], r) * (1 - smooth(m[2], m[2] + 3500, r));
   let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * reshapeAt(az), wd); }
   h = smax(h, mountain, 120);
+  if (!noPads) for (const site of SITES) { const d = Math.hypot(x - site[0], z - site[1]); if (d < site[2] + 16) { if (site[3] === undefined) site[3] = heightAt(site[0], site[1], true, true); h = lerp(site[3], h, smooth(site[2] + 1, site[2] + 16, d)); } } // the building pads
   if (!cheap) { const [d] = riverDistance(x, z); h -= 2.2 * (1 - smooth(5, 16, d)); }
   const l = inLake(x, z); if (l < 1.26) h = Math.min(lerp(-2.5, -0.3, smooth(0.9, 1.26, l)), h); else if (l < 1.9) h = lerp(0.05, Math.max(h, 0.25), smooth(1.26, 1.5, l)); /* under the water inside its outline, a low bank rising just outside */ /* the bed stays under the water to the very edge of the lake, then a low shore */
   return h;
@@ -130,7 +139,6 @@ function zoneColour(x, h, z, slope) {
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
   const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 13) { SURF[0] = 1 - smooth(5, 13, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(5, 13, d)); }
   if (inLake(x, z) < 1.5) return ZONE.shore;
-  if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) { SURF[1] = 1; return ZONE.track; }
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
   // the plots themselves are drawn per pixel by the ground shader (look.js); here only the broad use and the wet ground along the water,
@@ -202,35 +210,23 @@ function buildWater() {
   return group;
 }
 
-// a block building: walls with a gabled roof; stone below, timber above is only a colour split at block-out stage
-function house(w, d, wall, roof, eave, ridge, colour = '#cfc6b6') {
-  const g = new THREE.Group(); const walls = new THREE.Mesh(new THREE.BoxGeometry(w, eave, d), lookMat(new THREE.MeshLambertMaterial({ color: colour }), { surface: colour === '#eeebe3' ? 'plaster' : 'timber' })); walls.position.y = eave / 2; g.add(walls);
-  const shape = new THREE.Shape([new THREE.Vector2(-w / 2 - 0.6, 0), new THREE.Vector2(w / 2 + 0.6, 0), new THREE.Vector2(0, ridge - eave)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: d + 1.2, bevelEnabled: false }); rg.translate(0, eave, -(d + 1.2) / 2);
-  g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }), { surface: 'roof' }))); return g;
-}
-// An Alpine house (docs/WORLD-SPEC.md section 6): a whitewashed or stone ground floor, a dark larch-timber upper floor with a balcony along
-// the sunny front, a shallow roof of stone slabs or shingles with deep eaves, small windows with shutters, a chimney. w along the ridge.
-const LAMPS = ["dusk", "night"].includes(Q.get("tod")) ? Q.get("tod") : null; // the windows light when it gets dark, house by house
-function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5a55', low = 3.0, high = 3.2, pitch = 0.42, seed = 0 } = {}) {
-  const g = new THREE.Group(); const box = (sx, sy, sz, col, x, y, z, surface = null) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), lookMat(new THREE.MeshLambertMaterial({ color: col }), { surface })); m.position.set(x, y, z); g.add(m); return m; };
-  box(w, low, d, stone, 0, low / 2, 0, seed % 3 === 1 ? "stone" : "plaster"); box(w * 0.995, high, d * 0.995, timber, 0, low + high / 2, 0, "timber");
-  const eave = low + high, rise = (d / 2 + 1.4) * pitch; const shape = new THREE.Shape([new THREE.Vector2(-d / 2 - 1.4, 0), new THREE.Vector2(d / 2 + 1.4, 0), new THREE.Vector2(0, rise)]);
-  const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }), { surface: 'roof' })));
-  box(w * 0.55, 0.1, 1.3, '#4a3221', 0, low + 0.3, d / 2 + 0.65); box(w * 0.55, 1.0, 0.08, '#4a3221', 0, low + 0.85, d / 2 + 1.28); // the balcony
-  const win = '#1d1916', shut = seed % 2 ? '#3d5a3a' : '#6a4a2c'; const n = Math.max(2, Math.floor(w / 3.2));
-  for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { const pane = box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); if (LAMPS && hash(seed * 7.3 + k, y) > 0.38) { pane.material.emissive.set("#ffae55"); pane.material.emissiveIntensity = LAMPS === "night" ? 2.6 : 1.4; } /* lamplight: most windows lit when it gets dark, not all */ box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
-  box(0.8, 1.8, 0.8, '#8a8378', w * 0.25, eave + rise * 0.6, -d * 0.15).name = 'chimney';
-  return g;
-}
+// The hamlet (buildings.js): every building faces the camera, its front with the balcony and windows toward the viewer and turned a little
+// each, seated on the highest ground under its footprint, the stone plinth taking up the slope; the windows light when it gets dark
+const LAMPS = ["dusk", "night"].includes(Q.get("tod")) ? Q.get("tod") : null;
 function buildSettlements() {
-  const group = new THREE.Group(); const place = (o, x, z, yaw = 0) => { o.position.set(x, heightAt(x, z, true) - 0.3, z); o.rotation.y = yaw; group.add(o); };
-  // lower group: mill on the water, farmhouse, barn
-  place(alpineHouse(9, 7, { stone: '#bdb5a6', timber: '#4f3624', roof: '#4d4740', seed: 1 }), LOWER.x - 10, LOWER.z + 12, 0.4); /* the mill */ place(alpineHouse(12, 10, { seed: 2 }), LOWER.x - 28, LOWER.z + 4, -0.2); /* the farmhouse, left of the chapel line */ place(alpineHouse(17, 12, { stone: '#a9a196', timber: '#5a3c27', roof: '#55504a', low: 3.4, high: 4.2, seed: 3 }), LOWER.x - 44, LOWER.z - 18, 0.1); /* the barn and hay loft */
-  // upper group: chapel with its tower, houses, the inn
-  const chapel = house(8, 15, 0, '#4d4945', 7, 11, '#eeebe3'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), lookMat(new THREE.MeshLambertMaterial({ color: '#f1eee6' }))); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
-  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), lookMat(new THREE.MeshLambertMaterial({ color: '#4c4a48' }))); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 10, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
-  [[-44, -22], [-26, -50], [36, -24], [54, -46], [12, -62], [-58, -46]].forEach(([dx, dz], i) => place(alpineHouse(10 + (i % 3) * 2, 8 + (i % 2) * 2, { stone: i % 3 === 1 ? '#c8bfae' : '#ddd6c7', timber: i % 2 ? '#4e3524' : '#6a4a30', roof: i % 2 ? '#56524c' : '#4b4038', low: 3 + (i % 2) * 0.4, seed: i }), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
-  HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#4a3f36', 2.6, 4.2, '#5a4130'), x, z, i * 1.1)); /* hay huts: weathered larch, silver-brown */
+  const group = new THREE.Group();
+  const place = (o, x, z, turn = 0) => { const yaw = Math.atan2(-x, -z) + turn; const [fw, fd] = o.userData.foot ?? [6, 6]; const c = Math.cos(yaw), s = Math.sin(yaw); let top = -Infinity;
+    for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) { const lx = (u * fw) / 2, lz = (v * fd) / 2; top = Math.max(top, heightAt(x + lx * c + lz * s, z - lx * s + lz * c, true)); }
+    o.position.set(x, top + 0.05, z); o.rotation.y = yaw; group.add(o); return o; };
+  // the lower group by the river: the mill on the water, the farmhouse, the barn
+  place(alpineHouse(9, 7, { seed: 1, stoneFloor: true, lamps: LAMPS }), LOWER.x - 10, LOWER.z + 12, 0.25); /* the mill */
+  place(alpineHouse(12, 10, { seed: 2, lamps: LAMPS }), LOWER.x - 28, LOWER.z + 4, -0.15); /* the farmhouse */
+  place(alpineHouse(15, 11, { seed: 3, barn: true, low: 3.2, high: 4.4 }), LOWER.x - 46, LOWER.z - 16, 0.55); /* the barn and hay loft */
+  // the upper group: the chapel at the front of the terrace, the focal point, its tower toward the valley; houses beside and behind it, lower
+  place(chapel(), UPPER.x - 2, UPPER.z + 26, 0.1);
+  [[-34, 14, 0.2], [-60, -2, -0.15], [28, 18, -0.25], [54, 2, 0.3], [-20, -24, 0.1], [12, -30, -0.2]].forEach(([dx, dz, t], i) => place(alpineHouse(10 + (i % 3) * 2, 8 + (i % 2) * 2, { seed: i + 4, stoneFloor: i % 3 === 1, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff' }), UPPER.x + dx, UPPER.z + dz, t));
+  place(alpineHouse(9, 8, { seed: 11, barn: true, low: 2.6, high: 3.6 }), UPPER.x + 80, UPPER.z - 12, 0.5); /* the upper barn */
+  HUTS.forEach(([x, z], i) => place(alpineHouse(5, 4, { seed: 20 + i, barn: true, low: 1.0, high: 2.4, pitch: 0.5 }), x, z, (hash(i, 3) - 0.5) * 1.2)); /* hay huts out in the meadows */
   // the hero tree: a dark mass on a trunk
   const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), lookMat(new THREE.MeshLambertMaterial({ color: '#4a3c2e' }))); trunk.position.y = 4; tree.add(trunk);
   const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); tree.name = 'hero placeholder'; place(tree, HERO_TREE[0], HERO_TREE[1]);
@@ -260,6 +256,10 @@ export async function startBlockout(canvas, overlay) {
   const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(FRAME.vfov, 1, 0.5, 30000); camera.position.set(0, FRAME.eye, 0); camera.rotation.set(FRAME.pitch * DEG, 0, 0, 'YXZ');
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
+  // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
+  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }));
+    let a = null, b = null; for (let i = 1; i < FOOTPATH.length && !b; i += 1) { const w = wet(FOOTPATH[i].x, FOOTPATH[i].y); if (w && !a) a = FOOTPATH[i - 1]; if (!w && a) b = FOOTPATH[i]; }
+    if (a && b) scene.add(footbridge(a, b, Math.max(heightAt(a.x, a.y), heightAt(b.x, b.y)))); }
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
   // trees of the valley floor: alders and spruce along the river banks, and lone trees and small groups on the field boundaries, so the
   // middle distance has the scattered life of a lived-in valley instead of an empty lawn
@@ -271,7 +271,7 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], (16 + 14 * v) * (1 + 0.25 * smooth(2600, 7000, Math.hypot(x, z))), v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
+  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
     if (Q.get('blades') !== '0') {
       const blades = Q.get('blades') === '1' ? planBlades({ at: (x, z) => heightAt(x, z), skip, zone }) : []; /* the scanned meadow covers the near ground now */
@@ -283,7 +283,7 @@ export async function startBlockout(canvas, overlay) {
       scene.add(buildBlades(blades)); /* procedural blades from 38 m, cards beyond */
       /* the scanned meadow below */
     }
-    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 56 }); let meadow = null;
+    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48 }); let meadow = null;
     if (Q.get('scanned') !== '0') { try { meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;

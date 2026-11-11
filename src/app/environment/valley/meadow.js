@@ -78,7 +78,7 @@ function buildCards(sites, textures) {
   const group = new THREE.Group(); const n = sites.length / 5; const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
   textures.forEach((tex, v) => { const mine = []; for (let i = 0; i < n; i += 1) { const w = hash(Math.floor(sites[i * 5] / 16), Math.floor(sites[i * 5 + 2] / 16)) * 0.75 + hash(sites[i * 5], sites[i * 5 + 2]) * 0.25; if ((w < 0.5 ? 0 : w < 0.72 ? 1 : w < 0.88 ? 2 : 3) === v) mine.push(i); } if (!mine.length) return; /* the flower mixes in drifts */
     const mesh = new THREE.InstancedMesh(geo, plantMaterial({ map: tex, glow: 1.1, sway: 0.03, up: 1.0, alphaTest: 0.45 }), mine.length);
-    mine.forEach((i, k) => { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.85 + 0.4 * t), s)); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(1.06 + 0.16 * t, 1.12 + 0.07 * t, 1.02 + 0.14 * t) /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
+    mine.forEach((i, k) => { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.85 + 0.4 * t), s)); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.98 + 0.14 * t, 1.04 + 0.06 * t, 0.9 + 0.12 * t) /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
     mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = 'meadow cards (baked scans)'; group.add(mesh); });
   return group;
 }
@@ -97,9 +97,9 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
   const grass = [], flowers = [];
   for (let r = from; r < to; ) { const step = 0.42; const da = (step / r) * (180 / Math.PI);
     for (let az = -40; az <= 40; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
-      if (ground.skip(x, z)) continue; const y = ground.at(x, z), t = hash(x * 1.7, z * 2.3); const sward = hash(x * 5.3, z * 4.1) < 0.7 ? swF : swO; const kind = sward[Math.floor(hash(x, z) * sward.length) % sward.length]; const k = grassKinds[kind];
+      if (ground.skip(x, z) || (jr > 50 && hash(x * 2.9, z * 3.7) < (jr - 50) / 12)) continue; /* the clumps thin out into the cards beyond, no seam */ const y = ground.at(x, z), t = hash(x * 1.7, z * 2.3); const sward = hash(x * 5.3, z * 4.1) < 0.7 ? swF : swO; const kind = sward[Math.floor(hash(x, z) * sward.length) % sward.length]; const k = grassKinds[kind];
       const patch = 0.8 + 0.4 * hash(Math.floor(x / 7), Math.floor(z / 7)); /* taller and shorter patches, as a meadow grows */
-      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [0.92 + 0.14 * t, 0.96 + 0.08 * hash(x, 3), 0.86 + 0.14 * hash(z, 5)] });
+      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [1.18 + 0.16 * t, 1.16 + 0.1 * hash(x, 3), 1.3 + 0.16 * hash(z, 5)] }); /* matched to the cards' tone, seen from the same height */
       // flowers in drifts: the drift pattern (about 10 m) decides where, the ground decides which
       const drift = hash(Math.floor(x / 9), Math.floor(z / 9)), zone = ground.zone(x, z);
       if (hash(x * 3.1, z * 1.3) < 0.22 * drift) { const fk = zone === 'wet' ? (drift > 0.6 ? 1 : 3) : zone === 'dry' ? (drift > 0.5 ? 2 : 0) : [2, 2, 1, 3, 0][Math.floor(drift * 5)];
