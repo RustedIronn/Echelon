@@ -13,7 +13,7 @@ const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
 function kindsOf(root) {
   root.updateMatrixWorld(true); const out = [];
   root.traverse((o) => { if (!o.isMesh) return; const geo = o.geometry.clone().applyMatrix4(o.matrixWorld); geo.computeBoundingBox(); const b = geo.boundingBox; geo.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-    const src = o.material; const m = new THREE.MeshLambertMaterial({ map: src.map, normalMap: src.normalMap, aoMap: src.aoMap ?? null, color: src.color ?? 0xffffff }); applyValleyLook(m, {});
+    const src = o.material; const m = new THREE.MeshLambertMaterial({ map: src.map, normalMap: src.normalMap, aoMap: src.aoMap ?? null, color: (src.color ?? new THREE.Color(1, 1, 1)).clone().multiplyScalar(1.35), normalScale: new THREE.Vector2(0.7, 0.7) }); /* lifted a little: backlit moss would otherwise read as a black lump */ applyValleyLook(m, {});
     out.push({ geometry: geo, material: m, size: Math.max(b.max.x - b.min.x, b.max.z - b.min.z), height: b.max.y - b.min.y }); });
   return out;
 }
