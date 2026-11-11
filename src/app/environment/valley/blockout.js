@@ -350,9 +350,9 @@ const dirOf = (az, el) => new THREE.Vector3(Math.sin(az * DEG) * Math.cos(el * D
 // moods keyed by time: [sun f, sky turbidity, rayleigh, exposure, sun colour, sun intensity, ambient sky, ambient ground, fog colour, fog density]
 const MOODS = {
   dawn: [0.06, 5, 2.4, 0.42, '#ffb27a', 1.4, '#9fb4d6', '#5a4a3c', '#d9b9a3', 1.05e-4],
-  morning: [0.15, 2.2, 2.4, 0.34, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
-  noon: [0.5, 1.2, 3.0, 0.32, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
-  evening: [0.85, 2.6, 2.2, 0.36, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
+  morning: [0.15, 1.6, 3.0, 0.4, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
+  noon: [0.5, 1.2, 3.0, 0.355, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
+  evening: [0.85, 2.0, 2.8, 0.42, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
   dusk: [0.968, 7, 2.8, 0.45, '#ff9a5a', 1.2, '#93a3c8', '#4b3d33', '#d8a98f', 1.1e-4],
   night: [null, 0, 0, 0.9, '#a9bde6', 0.75, '#2a3858', '#11161e', '#1b2433', 0.9e-4], // moonlight strong enough to read the valley by
 };
@@ -413,7 +413,7 @@ export async function startBlockout(canvas, overlay) {
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
       meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone, path: (x, z) => polyDistance(FOOTPATH, x, z), moist: (x, z) => clamp(0.5 - microAt(x, z) * 1.1 + (zone(x, z) === 'wet' ? 0.3 : 0), 0, 1) }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
-  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); { const gain = night ? 1 : ['dawn', 'dusk'].includes(Q.get('tod')) ? 0.8 : 0.33; sky.material.fragmentShader = sky.material.fragmentShader.replace('gl_FragColor = vec4( texColor, 1.0 );', `gl_FragColor = vec4( texColor * ${gain.toFixed(2)}, 1.0 );`); sky.material.needsUpdate = true; } /* the sky's own exposure: deep blue overhead instead of a clipped white */ const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0019; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.9; /* a tighter glow round the sun, so the sky does not wash over the frame */
+  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); { const gain = night ? 1 : ['dawn', 'dusk'].includes(Q.get('tod')) ? 0.8 : 0.33; sky.material.fragmentShader = sky.material.fragmentShader.replace('vec3 texColor = ( Lin + L0 ) * 0.04 + sundiscColor', `vec3 texColor = ( Lin + L0 ) * 0.04 * ${gain.toFixed(2)} + sundiscColor * 1.6`); /* the sky dimmed, the sun's disc not */ sky.material.needsUpdate = true; } /* the sky's own exposure: deep blue overhead instead of a clipped white */ const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0009; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.9; /* a tighter glow round the sun, so the sky does not wash over the frame */
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };
   const light = new THREE.DirectionalLight(mood[4], mood[5] * (night ? 1 : LAND_LIGHT)); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.55 : LOOK_ON ? 1.7 * LAND_LIGHT : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
@@ -445,13 +445,14 @@ export async function startBlockout(canvas, overlay) {
   }
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
-  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.1) saturate(1.24)' : 'contrast(1.1) saturate(1.3) brightness(1.05)'; document.body.classList.add('graded'); }
+  if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.05) saturate(1.2)' : 'contrast(1.04) saturate(1.22)' /* colour, not contrast on top of a bright sky: the sun's disc must survive */; document.body.classList.add('graded'); }
   // motion: birds over the meadows, smoke from the chimneys (more in the cold and the evening), one clock for everything that moves
   scene.updateMatrixWorld(true); const chimneys = []; scene.traverse((o) => { if (o.name === 'chimney') chimneys.push(o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0))); });
   const warmHour = ['dawn', 'dusk', 'evening', 'night'].includes(Q.get('tod')); const smoke = LOOK_ON && Q.get('smoke') !== '0' ? buildSmoke(chimneys.filter((_, i) => season === 'winter' || warmHour || i % 3 === 0), { strength: night ? 0.35 : 1 }) : null; if (smoke) scene.add(smoke.group);
   const birds = LOOK_ON && !night && Q.get('birds') !== '0' ? buildBirds() : null; if (birds) scene.add(birds.mesh);
   const lakeMesh = scene.getObjectByName('lake');
   let frames = 0; renderer.setAnimationLoop(() => { const tNow = performance.now() / 1000 + Number(Q.get('t') ?? 0); WIND.uTime.value = tNow; if (lakeMesh?.material.uniforms?.uTime) lakeMesh.material.uniforms.uTime.value = tNow; birds?.update(tNow); smoke?.update(tNow); renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
+  if (LOOK_ON && !night) sunDisc(scene, dirOf(sunPose.az, sunPose.el), mood[4]); /* the sun's own disc and halo, hidden by the peaks when it is behind them */
   window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season }; window.__renderer = renderer;
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
 }
@@ -459,10 +460,10 @@ export async function startBlockout(canvas, overlay) {
 // The sun as a disc with a soft glow (Sky.js alone loses the disc in the haze): additive, depth-tested so ridges cut it.
 export function sunDisc(scene, dir, colour) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.08, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.25, 'rgba(255,255,255,0.25)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
+  grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.04, 'rgba(255,255,255,0.95)'); grad.addColorStop(0.12, 'rgba(255,255,255,0.4)'); grad.addColorStop(0.35, 'rgba(255,255,255,0.1)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); /* a bright core falling off smoothly, as the eye sees the sun */ g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), color: colour, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
-  glow.scale.setScalar(4600); /* a wide soft halo: the eye and the lens both bloom round the sun */ glow.position.copy(dir).multiplyScalar(20000); scene.add(glow);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(105, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(colour).multiplyScalar(6), fog: false })); disc.position.copy(dir).multiplyScalar(20000); disc.lookAt(0, 0, 0); scene.add(disc);
+  glow.scale.setScalar(1700); /* a wide soft halo: the eye and the lens both bloom round the sun */ glow.position.copy(dir).multiplyScalar(20000); scene.add(glow);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(95, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(colour).multiplyScalar(6), fog: false })); disc.position.copy(dir).multiplyScalar(20000); disc.lookAt(0, 0, 0); scene.add(disc);
 }
 
 // The massif at the elevation data's own 60 m spacing (every second sample), so ridges, couloirs and glacier basins keep their shape.
