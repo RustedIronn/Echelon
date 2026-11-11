@@ -82,7 +82,7 @@ export function fenceAlong(points, at, { post = 2.6 } = {}) { const g = new THRE
     for (let k = 0; k <= n; k += 1) { if (k === n && i < points.length - 2) continue; const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n; const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.3, 0.12), wood); p.position.set(x, at(x, z) + 0.55, z); p.castShadow = true; g.add(p); }
     for (const ry of [0.55, 1.0]) { const x = (a[0] + b[0]) / 2, z = (a[1] + b[1]) / 2; const r = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.1, len), wood); r.position.set(x, (at(a[0], a[1]) + at(b[0], b[1])) / 2 + ry, z); r.rotation.y = yaw; r.castShadow = true; g.add(r); } }
   g.name = 'fence'; return g; }
-export function wallAlong(points, at, { height = 0.9 } = {}) { const g = new THREE.Group(); const stone = surface('rustic_stone_wall');
+export function wallAlong(points, at, { height = 1.3 } = {}) { const g = new THREE.Group(); const stone = surface('rustic_stone_wall');
   for (let i = 0; i < points.length - 1; i += 1) { const a = points[i], b = points[i + 1]; const len = Math.hypot(b[0] - a[0], b[1] - a[1]); const x = (a[0] + b[0]) / 2, z = (a[1] + b[1]) / 2;
     const m = new THREE.Mesh(metricUV(new THREE.BoxGeometry(0.7, height + 1.2, len + 0.3)), stone); m.position.set(x, Math.max(at(a[0], a[1]), at(b[0], b[1])) + height / 2 - 0.6, z); m.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); m.castShadow = true; m.receiveShadow = true; g.add(m); }
   g.name = 'dry-stone wall'; return g; }

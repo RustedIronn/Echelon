@@ -128,7 +128,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
   const floorH = h;
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
   { const d = Math.hypot(x - UPPER.x, z - UPPER.z); if (d < 190) { const a = Math.atan2(x - UPPER.x, z - UPPER.z); const R = terraceEdge(a), W = 34 + 18 * fbm(Math.cos(a) * 2 + 5, Math.sin(a) * 2, 2);
-      const t = clamp((d - R) / W, 0, 1); const gully = 1.6 * Math.max(0, fbm(a * 7 + 3, 1.3, 2) - 0.52) * Math.sin(Math.PI * t) * 4; /* small gullies down the bank */
+      const t = clamp((d - R) / W, 0, 1); const gully = 0.7 * Math.max(0, fbm(a * 7 + 3, 1.3, 2) - 0.52) * Math.sin(Math.PI * t) * 4; /* small gullies down the bank */
       h = smax(h, UPPER.y * (1 - t * t * (3 - 2 * t)) - gully + 2 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(R - 10, R + 20, d), 8); } } // the terrace: a level top, a steeper bank // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
@@ -153,7 +153,7 @@ function zoneColour(x, h, z, slope) {
   SURF[0] = 0; SURF[1] = 0; SURF[2] = 0;
   const r = Math.hypot(x, z); const n = fbm(x / 90, z / 90, 3);
   if (h > SNOWLINE + 260 * (n - 0.5) && slope < 1.25 && !(SNOWLINE < 600 && h < 600 && h > 48 && slope > 0.22)) return ZONE.snow; // in winter the woods stay: dark against the snow
-  if (slope > 1.0 || h > 1100) return h > 1100 && slope < 0.7 ? ZONE.scree : ZONE.rock;
+  if ((slope > 1.0 && h > 70) || h > 1100) return h > 1100 && slope < 0.7 ? ZONE.scree : ZONE.rock; // steep banks down on the valley floor stay turf
   if (h > 640 + 160 * (n - 0.5)) return ZONE.scree.clone().lerp(ZONE.pasture, 0.55); // above the treeline: alpine pasture over scree
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
@@ -186,7 +186,7 @@ function landUse(x, z) {
 function buildTerrain() {
   const A = 561, R = 500, r0 = 3, r1 = 16000; /* finer: about 0.2 degrees and 1.7% in range, so slopes keep their small ridges and gullies */ const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3), land = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.2 ? 320 * smooth(0.2, 0.4, demWeight(x, z)) : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
-    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2]; if (r < 3500 && h < 140) { const L = landUse(x, z); land[k] = L[0]; land[k + 1] = L[1]; land[k + 2] = L[2]; }
+    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2]; if (r < 3500 && h < 140 && Q.get("land") !== "0") { const L = landUse(x, z); land[k] = L[0]; land[k + 1] = L[1]; land[k + 2] = L[2]; }
     if (c !== ZONE.forest && c !== ZONE.larch && r > 300 && r < 6000 && h > 40 && trees.length < 640000 && ((slope > 0.12 && h < 600 && hash(i * 1.3, j * 2.1) < 0.045) || (h > 600 && h < 780 && slope < 0.9 && hash(i * 2.7, j * 0.9) < 0.03 * (1 - (h - 600) / 180)))) trees.push(x, z, h > 600 ? 1 : 0, h > 600 ? 0.05 * hash(i, j) : 0.2 + 0.5 * hash(j, i)); /* lone trees breaking the forest edge; a few stunted larches above the treeline */
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 9000 && trees.length < 640000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / (75 + 0.02 * Math.max(0, r - 2600)); /* the far slopes wooded tree by tree, a little sparser with distance */ while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
@@ -361,7 +361,10 @@ export async function startBlockout(canvas, overlay) {
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   if (LOOK_ON && Q.get('stones') !== '0') { try { ROCKS = rockSites(); scene.add(await buildRocks(ROCKS)); } catch (e) { console.warn('rocks', e); } } // the scanned rocks
   // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
-  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }), buildPath(FOOTPATH, { width: 3.8, at, wet, strength: 0.28, tile: 3.4 })); /* the worn line, and round it the faint trampled margin */ /* in winter the paths lie under the snow */
+  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') { /* paths between the houses: from the chapel door to each house and to the head of the track */ const door = new THREE.Vector2(UPPER.x - 2, UPPER.z + 40);
+      for (const [dx, dz] of [[-34, 14], [-60, -2], [28, 18], [54, 2], [-20, -24], [12, -30], [44, 32], [-50, 30]]) { const end = new THREE.Vector2(UPPER.x + dx, UPPER.z + dz + 6); const mid = door.clone().lerp(end, 0.5).add(new THREE.Vector2((hash(dx, dz) - 0.5) * 8, 4)); scene.add(buildPath(new THREE.QuadraticBezierCurve(door, mid, end).getSpacedPoints(30), { width: 1.1, at: (x, z) => heightAt(x, z, true), strength: 0.75 })); }
+      scene.add(buildPath(new THREE.LineCurve(door, TRACK[TRACK.length - 1]).getSpacedPoints(12), { width: 1.6, at: (x, z) => heightAt(x, z, true), strength: 0.8 })); }
+    if (season !== 'winter') scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }), buildPath(FOOTPATH, { width: 3.8, at, wet, strength: 0.28, tile: 3.4 })); /* the worn line, and round it the faint trampled margin */ /* in winter the paths lie under the snow */
     let a = null, b = null; for (let i = 1; i < FOOTPATH.length && !b; i += 1) { const w = wet(FOOTPATH[i].x, FOOTPATH[i].y); if (w && !a) a = FOOTPATH[i - 1]; if (!w && a) b = FOOTPATH[i]; }
     if (a && b) scene.add(footbridge(a, b, Math.max(heightAt(a.x, a.y), heightAt(b.x, b.y)))); }
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
@@ -432,7 +435,9 @@ export async function startBlockout(canvas, overlay) {
     const sc = light.shadow.camera; sc.left = -950; sc.right = 950; sc.top = 950; sc.bottom = -950; sc.near = 100; sc.far = 12000; sc.updateProjectionMatrix();
     light.shadow.mapSize.set(4096, 4096); light.shadow.bias = -0.0005; light.shadow.normalBias = 0.6; light.shadow.radius = 3;
     scene.traverse((o) => { if (!o.isMesh || o.isSprite) return; const n = o.name || ''; if (/cloud|sky|moon|massif/i.test(n) || o.material?.type === 'ShaderMaterial' || o.material?.isMeshBasicMaterial) return;
-      o.receiveShadow = true; o.castShadow = !/meadow/.test(n); });
+      o.receiveShadow = true; o.castShadow = !/meadow|terrain|path|lake|river/.test(n); });
+    // the terrace-top buildings throw their long shadows straight down the bank toward the viewer: they read as stripes, so they cast none
+    { const w = new THREE.Vector3(); scene.traverse((o) => { if (!o.isMesh) return; o.getWorldPosition(w); if (Math.hypot(w.x - UPPER.x, w.z - UPPER.z) < 120 && w.y > UPPER.y - 4) o.castShadow = false; }); } /* the ground does not shadow itself: at this grazing sun that only draws stripes on the banks */
   }
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
