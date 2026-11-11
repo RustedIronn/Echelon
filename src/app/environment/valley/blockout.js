@@ -44,6 +44,7 @@ function riverDistance(x, z) { let best = Infinity, along = 0; for (let i = 0; i
 
 // The land: the valley floor (lake level, rising gently to the south), the camera's knoll, the upper hamlet's terrace, the valley sides,
 // the foothills and the range, combined with a smooth maximum; the river and the lake are cut in.
+function reshapeAt(az) { if (!RESHAPE) return 1; const f = clamp((az + 60) / 0.25, 0, RESHAPE.length - 1), i = Math.floor(f), t = f - i; return lerp(RESHAPE[i], RESHAPE[Math.min(i + 1, RESHAPE.length - 1)], t); }
 const smax = (a, b, k) => (b <= a ? a : a + (b - a) * smooth(0, k, b - a)); // a soft maximum that never lifts the ground where the shapes are level
 
 // The real massif (docs/WORLD-SPEC.md section 4): Copernicus GLO-30 elevation of the Dom/Mischabel group (Valais), placed so that seen from
@@ -53,6 +54,7 @@ const smax = (a, b, k) => (b <= a ? a : a + (b - a) * smooth(0, k, b - a)); // a
 // ?dem=0 shows the procedural range instead.
 export const MASSIF = { az: 12.4, distance: 12000, lakeAltitude: 1500 };
 let DEM = null;
+let RESHAPE = null; // per-azimuth vertical stretch of the real heights, so the massif's outline follows the designed skyline (RANGE)
 export async function loadDem(url = '/design-reference/world-redesign/dem/dom') {
   if (Q.get('dem') === '0') return null;
   try { const [meta, buf] = await Promise.all([fetch(url + '.json').then((r) => r.json()), fetch(url + '.f32').then((r) => r.arrayBuffer())]);
@@ -73,7 +75,7 @@ export function heightAt(x, z, cheap = false) {
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
   const m = profile(RANGE, az); const mh = Math.tan(m[1] * DEG) * m[2] + FRAME.eye; const crest = smooth(m[2] - 5200, m[2], r) * (1 - smooth(m[2], m[2] + 3500, r));
-  let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh, wd); }
+  let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * reshapeAt(az), wd); }
   h = smax(h, mountain, 120);
   if (!cheap) { const [d] = riverDistance(x, z); h -= 2.2 * (1 - smooth(5, 16, d)); }
   const l = inLake(x, z); if (l < 1.6) h = lerp(-2.5, h, smooth(0.8, 1.6, l));
@@ -98,7 +100,7 @@ function zoneColour(x, h, z, slope) {
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
   const A = 401, R = 320, r0 = 12, r1 = 16000; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
-  for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 6000 && demWeight(x, z) > 0.02 ? 80 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
+  for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.001 ? 320 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
     const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
@@ -156,7 +158,7 @@ const MOODS = {
 };
 
 export async function startBlockout(canvas, overlay) {
-  await loadDem();
+  await loadDem(); if (DEM && Q.get('reshape') !== '0') fitSkyline();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(FRAME.vfov, 1, 0.5, 30000); camera.position.set(0, FRAME.eye, 0); camera.rotation.set(FRAME.pitch * DEG, 0, 0, 'YXZ');
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
@@ -194,10 +196,25 @@ export function sunDisc(scene, dir, colour) {
 function buildMassif() {
   const m = DEM.meta, step = 2, W = Math.floor(m.width / step), H = Math.floor(m.height / step); const pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), ok = new Uint8Array(W * H);
   for (let j = 0; j < H; j += 1) for (let i = 0; i < W; i += 1) { const lat = m.north - j * step * m.dLat, lon = m.west + i * step * m.dLon; const dN = (lat - DEM.vLat) * DEM.mLat, dE = (lon - DEM.vLon) * DEM.mLon;
-    const r = Math.hypot(dN, dE), a = Math.atan2(dE, dN) / DEG - 180 + MASSIF.az; const [x, z] = toXZ(a, r); const k = j * W + i; if (r < 5500 || Math.abs(a) > 62) continue;
+    const r = Math.hypot(dN, dE), a = ((Math.atan2(dE, dN) / DEG - 180 + MASSIF.az + 540) % 360) - 180; /* wrapped: due south must not jump from +180 to -180 */ const [x, z] = toXZ(a, r); const k = j * W + i; if (r < 5500 || Math.abs(a) > 62) continue;
     const h = heightAt(x, z, true); const e = 60; const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e);
     pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; const c = zoneColour(x, h, z, slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; ok[k] = 1; }
   const idx = []; for (let j = 0; j < H - 1; j += 1) for (let i = 0; i < W - 1; i += 1) { const a = j * W + i, b = a + 1, c = a + W, d = c + 1; if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
   const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
+}
+
+// The hybrid mountain: measure the skyline of the real massif from the camera, then stretch its heights per azimuth so the outline matches the
+// designed one (the pyramid peak, the shoulders, the sunset saddle) while every ridge, couloir and buttress keeps its real shape. The stretch is
+// smoothed over about 4 degrees (sharper changes shear the rock into false cliffs) and clamped, and refined twice because each stretch moves which ridge forms the outline.
+function skylineAt(az) { let best = -90; for (let r = 4500; r < 20000; r *= 1.006) { const [x, z] = toXZ(az, r); const e = Math.atan2(heightAt(x, z, true) - FRAME.eye, r) / DEG; if (e > best) best = e; } return best; }
+export function fitSkyline(passes = 2) {
+  const n = 481; RESHAPE = new Float32Array(n).fill(1);
+  for (let p = 0; p < passes; p += 1) {
+    const want = [], k = new Float32Array(n);
+    for (let i = 0; i < n; i += 1) { const az = -60 + i * 0.25; const [x, z] = toXZ(az, MASSIF.distance); const w = demWeight(x, z); const have = skylineAt(az); const target = profile(RANGE, az)[1];
+      k[i] = w > 0.05 && have > 0.5 ? lerp(1, clamp(RESHAPE[i] * Math.tan(target * DEG) / Math.tan(have * DEG), 0.65, 1.45), smooth(4, 10, Math.abs(az - MASSIF.az))) : RESHAPE[i]; /* the real summit crown stays as it is; only the flanks are reshaped */ want.push(target); }
+    for (let i = 0; i < n; i += 1) { let a = 0, s = 0; for (let j = -20; j <= 20; j += 1) { const q = i + j; if (q < 0 || q >= n) continue; const g = Math.exp(-(j * j) / 128); a += k[q] * g; s += g; } RESHAPE[i] = a / s; }
+  }
+  window.__blockoutReshape = Array.from(RESHAPE.filter((_, i) => i % 8 === 0), (v) => +v.toFixed(2));
 }
