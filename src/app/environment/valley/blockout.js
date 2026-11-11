@@ -242,14 +242,14 @@ function buildWater() {
       // a glacial stream (references 3, 7, 11): milky turquoise where it is deep, the pebble bed (scanned) showing through the shallows at
       // its edges, white water streaming downstream over the stones, strongest on the rapid reaches; the sun glints on it
       sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); float depth = 1.0 - smoothstep(0.3, 0.95, edge);
+{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); if (edge > 0.8 + 0.18 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7))) discard; /* ragged banks, never a ruled edge */ float depth = 1.0 - smoothstep(0.3, 0.85, edge);
   vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb * vec3(0.8, 0.92, 0.95);
-  vec3 water = mix(vec3(0.46, 0.62, 0.61), vec3(0.13, 0.35, 0.37), depth); water = mix(bedC, water, 0.3 + 0.62 * depth);
+  vec3 water = mix(vec3(0.5, 0.57, 0.53), vec3(0.19, 0.31, 0.31), depth); /* glacial meltwater: grey-green with silt, not cyan */ water = mix(bedC, water, 0.3 + 0.62 * depth);
   float sp = 1.2 + 1.6 * depth; float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0)));
   float streak = vlNoise(vec2(fl.x * 8.0, fl.y * 0.3 - uTime * sp)) * vlNoise(vec2(fl.x * 21.0 + 3.0, fl.y * 0.8 - uTime * sp * 1.3));
   float foam = smoothstep(0.34 - 0.16 * rapid, 0.62, streak) * (0.3 + 0.7 * rapid) * (0.5 + 0.5 * depth);
-  diffuseColor.rgb = mix(water, vec3(0.9, 0.95, 0.96), foam * 0.9);
-  float glint = step(0.93, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(normalize(vlWorld - cameraPosition), normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
+  diffuseColor.rgb = mix(water, vec3(0.84, 0.88, 0.87), foam * 0.6);
+  float glint = step(0.965, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(normalize(vlWorld - cameraPosition), normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
   diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; /* the sun sparkling on the moving water */ }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
@@ -278,7 +278,7 @@ function rockSites() {
     const tx = (ax / la + bx / lb) / 2, tz = (az / la + bz / lb) / 2, tl = Math.hypot(tx, tz) || 1; const nx = -tz / tl, nz = tx / tl; const w = lerp(3.2, 5.5, i / riverPts.length); const out_ = turn > 0 ? -1 : 1;
     if (Math.abs(turn) > 0.12) { const n = 3 + Math.floor(hash(i, 1) * 3); for (let k = 0; k < n; k += 1) { const off = out_ * (w + 0.8 + 2.4 * hash(i, k + 2)), along = (hash(k, i) - 0.5) * 8; add(p.x + nx * off + tx / tl * along, p.y + nz * off + tz / tl * along, 1.2 + 1.6 * hash(i + k, 5) ** 1.5, 'moss', 0.3); } // the cut bank
       for (let k = 0; k < 7; k += 1) { const off = -out_ * (w * 0.5 + 3.5 * hash(i, k + 20)), along = (hash(k + 20, i) - 0.5) * 12; add(p.x + nx * off + tx / tl * along, p.y + nz * off + tz / tl * along, 0.45 + 0.5 * hash(i, k + 30), 'moss', 0.4); } } // the bar
-    else if (hash(i, 9) < 0.25) add(p.x + nx * (w + 0.5) * (hash(i, 10) < 0.5 ? -1 : 1), p.y + nz * (w + 0.5), 0.6 + 0.6 * hash(i, 11), 'moss', 0.35); } // the odd stone on a straight reach
+    else if (hash(i, 9) < 0.55) add(p.x + nx * (w + 0.5) * (hash(i, 10) < 0.5 ? -1 : 1), p.y + nz * (w + 0.5), 0.6 + 0.6 * hash(i, 11), 'moss', 0.35); } // the odd stone on a straight reach
   // the lake: one boulder in the shallows on the near side, groups of stones on the shore
   const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot); const onLake = (a, k) => { const u = Math.cos(a) * LAKE.rx * k, v = Math.sin(a) * LAKE.rz * k; return [LAKE.x + u * c + v * sn, LAKE.z - u * sn + v * c]; };
   const shoreK = (a, at = 1.26) => { let lo = 0.95, hi = 1.6; for (let it = 0; it < 18; it += 1) { const mid = (lo + hi) / 2; const [x, z] = onLake(a, mid); if (lakeL(x, z) < at) lo = mid; else hi = mid; } return lo; }; /* where the wandering shore really is */
