@@ -3,7 +3,7 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { applyValleyLook, setLook, LOOK } from './look.js';
 import { buildForest } from './trees.js';
-import { planGrass, buildGrass } from './grass.js';
+import { planGrass, buildGrass, planBlades, buildBlades, WIND } from './grass.js';
 import { buildClouds } from './clouds.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
@@ -237,7 +237,10 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
+  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; const skip = (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
+    const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
+    if (Q.get('blades') !== '0') scene.add(buildBlades(planBlades({ at: (x, z) => heightAt(x, z), skip, zone }))); /* real blades near, cards beyond */
+    scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };
@@ -264,12 +267,12 @@ export async function startBlockout(canvas, overlay) {
     const sc = light.shadow.camera; sc.left = -950; sc.right = 950; sc.top = 950; sc.bottom = -950; sc.near = 100; sc.far = 12000; sc.updateProjectionMatrix();
     light.shadow.mapSize.set(4096, 4096); light.shadow.bias = -0.0005; light.shadow.normalBias = 0.6; light.shadow.radius = 3;
     scene.traverse((o) => { if (!o.isMesh || o.isSprite) return; const n = o.name || ''; if (/cloud|sky|moon|massif/i.test(n) || o.material?.type === 'ShaderMaterial' || o.material?.isMeshBasicMaterial) return;
-      o.receiveShadow = true; o.castShadow = !/meadow grass/.test(n); });
+      o.receiveShadow = true; o.castShadow = !/meadow/.test(n); });
   }
   // the photographic finish, done by the compositor (no extra GPU pass): a gentle grade, a touch more contrast and colour in the warm hours,
   // and a soft vignette (the page's overlay). ?grade=0 to compare.
   if (LOOK_ON && Q.get('grade') !== '0') { const warm = ['dawn', 'dusk', 'evening'].includes(Q.get('tod')); canvas.style.filter = night ? 'contrast(1.04)' : warm ? 'contrast(1.08) saturate(1.1)' : 'contrast(1.06) saturate(1.05)'; document.body.classList.add('graded'); }
-  let frames = 0; renderer.setAnimationLoop(() => { renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
+  let frames = 0; renderer.setAnimationLoop(() => { WIND.uTime.value = performance.now() / 1000; renderer.render(scene, camera); frames += 1; window.__blockout.frames = frames; });
   window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
 }

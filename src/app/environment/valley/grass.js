@@ -27,7 +27,7 @@ function grassTexture() {
 }
 
 // sites: [x, y, z, size, tone] per card; ground: { at(x,z), skip(x,z) }
-export function planGrass(ground, { from = 9, to = 420, camera = [0, 0] } = {}) {
+export function planGrass(ground, { from = 56, to = 420, camera = [0, 0] } = {}) {
   const out = []; const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   for (let r = from; r < to; ) { const size = 0.9 * (r / 40) ** 0.85; const step = size * 0.55; const da = (step / r) * (180 / Math.PI);
     for (let az = -41; az <= 41; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
@@ -46,4 +46,52 @@ export function buildGrass(sites) {
   const mesh = new THREE.InstancedMesh(geo, mat, n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
   for (let i = 0; i < n; i += 1) { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, s * (0.8 + 0.5 * t), s)); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.setRGB(0.95 + 0.1 * t, 1.0, 0.85 + 0.2 * t)); }
   mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = `meadow grass (${n} clumps)`; return mesh;
+}
+
+// Real grass close to the camera (from the frame's edge to about 60 m), where painted cards would show as flat: clumps of curved, tapering
+// blades of several heights and greens, darker at the base and lighter at the tip, with the odd flowering stem. The flowers follow the
+// ground: buttercups where it is damp, ox-eye daisies and harebells on the dry knoll, a hay-meadow mix elsewhere. The blades sway in the wind.
+export const WIND = { uTime: { value: 0 } };
+function clumpGeometry(seed, flowerKind) {
+  const rnd = (() => { let s = seed * 9301 + 49297; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
+  const P = [], C = [], N = [], I = []; const greens = [[0.25, 0.38, 0.11], [0.31, 0.43, 0.14], [0.36, 0.45, 0.17], [0.42, 0.47, 0.2], [0.28, 0.35, 0.12]];
+  const blade = (x0, z0, h, w, lean, dir, col, tip) => { const seg = 4, base = P.length / 3; const dx = Math.cos(dir), dz = Math.sin(dir), px = -dz, pz = dx;
+    for (let k = 0; k <= seg; k += 1) { const t = k / seg, bend = lean * t * t, ww = w * (1 - t * 0.92); const x = x0 + dx * bend, z = z0 + dz * bend, y = h * t * (1 - 0.18 * lean / h * t);
+      P.push(x - px * ww, y, z - pz * ww, x + px * ww, y, z + pz * ww); const c = col.map((v, i) => v * (0.42 + 0.45 * t) + (tip[i] - v) * t * t * 0.22); /* dark in the sward, lighter only at the very tip */ C.push(...c, ...c); N.push(dx * 0.3, 1, dz * 0.3, dx * 0.3, 1, dz * 0.3); }
+    for (let k = 0; k < seg; k += 1) { const a = base + k * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } };
+  for (let b = 0; b < 36; b += 1) { const r = 0.34 * Math.sqrt(rnd()), a = rnd() * 6.283; const h = 0.25 + 0.45 * rnd() ** 1.5; blade(Math.cos(a) * r, Math.sin(a) * r, h, 0.006 + 0.008 * rnd(), (0.05 + 0.25 * rnd()) * h, rnd() * 6.283, greens[Math.floor(rnd() * greens.length)], [0.72, 0.7, 0.4]); }
+  for (let b = 0; b < 4; b += 1) { const a = rnd() * 6.283, r = 0.15 * rnd(); blade(Math.cos(a) * r, Math.sin(a) * r, 0.6 + 0.3 * rnd(), 0.003, 0.08, rnd() * 6.283, [0.5, 0.5, 0.3], [0.78, 0.7, 0.5]); } // flowering grass stems
+  if (flowerKind >= 0) { const cols = [[0.95, 0.78, 0.1], [0.95, 0.94, 0.88], [0.55, 0.4, 0.75], [0.8, 0.45, 0.65]]; const col = cols[flowerKind];
+    for (let f = 0; f < 3; f += 1) { const a = rnd() * 6.283, r = 0.18 * rnd(), h = 0.3 + 0.25 * rnd(); const x = Math.cos(a) * r, z = Math.sin(a) * r; blade(x, z, h, 0.003, 0.02, a, [0.3, 0.42, 0.15], [0.3, 0.42, 0.15]);
+      const base = P.length / 3, s = flowerKind === 1 ? 0.03 : 0.02; for (let k = 0; k < 6; k += 1) { const t = (k / 6) * 6.283; P.push(x + Math.cos(t) * s, h + 0.004, z + Math.sin(t) * s); C.push(...col); N.push(0, 1, 0); }
+      P.push(x, h + 0.008, z); C.push(...(flowerKind === 1 ? [0.92, 0.72, 0.15] : col)); N.push(0, 1, 0); for (let k = 0; k < 6; k += 1) I.push(base + 6, base + k, base + ((k + 1) % 6)); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C.map((v) => Math.max(0, v) ** 2.2 * 1.6), 3)); /* the colours above are display colours; the renderer wants linear light */ g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setIndex(I); return g;
+}
+// sites: [x, y, z, size, tone, flowerKind (-1 none, 0 buttercup, 1 daisy, 2 harebell, 3 knapweed)]
+export function planBlades(ground, { from = 9, to = 62, camera = [0, 0] } = {}) {
+  const out = []; const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  for (let r = from; r < to; ) { const step = 0.45 + 0.012 * r; const da = (step / r) * (180 / Math.PI);
+    for (let az = -40; az <= 40; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
+      if (ground.skip(x, z)) continue; const zone = ground.zone(x, z); const fh = hash(x * 1.3, z * 0.7); const patch = hash(Math.floor(x / 6), Math.floor(z / 6));
+      const kind = fh > 0.8 && patch > 0.3 ? (zone === 'wet' ? 0 : zone === 'dry' ? (fh > 0.93 ? 2 : 1) : [0, 1, 3, 1][Math.floor(patch * 4)]) : -1;
+      out.push(x, ground.at(x, z), z, 0.95 + 0.45 * hash(z, x) + 0.006 * r, hash(x, z), kind); /* meadow height: blades 0.25-0.9 m */ }
+    r += step; }
+  return out;
+}
+export function buildBlades(sites) {
+  const group = new THREE.Group(); group.name = 'meadow blades';
+  const mat = applyValleyLook(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), { glow: 1.1 });
+  const look = mat.onBeforeCompile; mat.onBeforeCompile = (sh, r) => { sh.uniforms.uTime = WIND.uTime; sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+{ vec3 wb = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz; float gust = 0.5 + 0.5 * sin(uTime * 0.6 + wb.x * 0.05 + wb.z * 0.03);
+  float sway = (sin(uTime * 1.9 + wb.x * 0.7 + wb.z * 0.4) * 0.6 + sin(uTime * 3.1 + wb.z * 1.3) * 0.25) * (0.35 + 0.65 * gust);
+  transformed.x += sway * 0.09 * position.y * position.y / 0.25; transformed.z += sway * 0.04 * position.y * position.y / 0.25; }`); look(sh, r); };
+  mat.customProgramCacheKey = () => 'valley-blades';
+  const kinds = [-1, 0, 1, 2, 3]; const variants = 4;
+  for (const kind of kinds) for (let v = 0; v < variants; v += 1) {
+    const mine = []; for (let i = 0; i < sites.length; i += 6) if (sites[i + 5] === kind && Math.floor(sites[i + 4] * variants) === v) mine.push(i);
+    if (!mine.length) continue; const mesh = new THREE.InstancedMesh(clumpGeometry(v * 13 + kind + 7, kind), mat, mine.length); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+    mine.forEach((i, k) => { const s = sites[i + 3]; q.setFromAxisAngle(up, sites[i + 4] * 40); m.compose(new THREE.Vector3(sites[i], sites[i + 1] - 0.02, sites[i + 2]), q, new THREE.Vector3(s, s * (0.85 + 0.3 * sites[i + 4]), s)); mesh.setMatrixAt(k, m); });
+    mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.name = 'meadow blades'; group.add(mesh);
+  }
+  return group;
 }

@@ -64,6 +64,8 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
     vec3 tone = id < 0.33 ? mown : id < 0.66 ? f : lush; tone *= 0.94 + 0.12 * vlFbm(p / 18.0); /* the sward is never even */
     float seam = 1.0 - smoothstep(0.012, 0.05, d2 - d1);
     diffuseColor.rgb = mix(f, tone * (1.0 - 0.12 * seam), open); }
+  // under the near blades the ground is the shaded base of the sward: deep green-brown, never the pale top colour
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.52, 0.34), open * (1.0 - smoothstep(48.0, 80.0, d)));
   // the distant slopes, per pixel: forest where the ground climbs, alpine pasture in the clearings and up the avalanche paths, the forest
   // thinning toward the treeline; canopy drawn as a fine grain of crowns, so far woods read as woods and no vertex grid shows
   float far = smoothstep(1100.0, 1800.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);
