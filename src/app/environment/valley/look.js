@@ -83,6 +83,10 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; va
     float daisies = smoothstep(0.58, 0.72, vlFbm(p / 38.0 + 3.0)), pinks = smoothstep(0.64, 0.76, vlFbm(p / 52.0 + 9.0)); /* flower pockets in the hay */
     vec3 longC = f * (0.93 + 0.14 * vlFbm(p / 9.0)); longC = mix(longC, longC * vec3(1.16, 1.14, 1.2), daisies * 0.45); longC = mix(longC, longC * vec3(1.15, 0.95, 1.08), pinks * 0.35);
     vec3 tone = mix(mix(mix(longC, mownC, vlLand.x), grazedC, vlLand.y), dampC, vlLand.z);
+    tone *= 0.88 + 0.24 * vlFbm(p / 26.0 + 5.0); /* patches of richer and thinner sward */
+    // terracettes: the little contour paths grazing animals tread into every pasture bank
+    float bank = smoothstep(0.08, 0.25, 1.0 - normalize(vlNormal).y); float tread = smoothstep(0.78, 0.96, fract(vlWorld.y / 1.4 + 0.35 * vlNoise(p / 9.0)));
+    tone *= 1.0 - 0.2 * bank * tread * (0.4 + 0.6 * vlLand.y + 0.3 * (1.0 - vlLand.x)) * (1.0 - smoothstep(500.0, 1400.0, d));
     diffuseColor.rgb = mix(f, tone, open); }
   // the sward's grain wherever it is grass: clumps, darker damp patches, the odd bush and stone, at scales from 3 to 40 m, on the valley floor
   // and up the near valley walls alike, so nothing reads as a smooth lawn

@@ -7,7 +7,7 @@ import { planGrass, buildGrass, planBlades, buildBlades, WIND } from './grass.js
 import { buildClouds } from './clouds.js';
 import { buildBirds, buildSmoke } from './motion.js';
 import { buildMeadow } from './meadow.js';
-import { alpineHouse, chapel } from './buildings.js';
+import { alpineHouse, chapel, stadel, woodpile, garden, fenceAlong, wallAlong } from './buildings.js';
 import { buildPath, footbridge } from './paths.js';
 import { buildRocks } from './rocks.js';
 let TREE_LIST = [];
@@ -56,7 +56,8 @@ export const HUTS = [[-150, -430], [-260, -760], [255, -560], [372, -410]];
 // the building sites (x, z, radius): the ground is levelled under each (heightAt), so no house sinks or stands on a tall plinth, and the
 // meadow keeps off them; the same places buildSettlements builds on
 export const SITES = [[LOWER.x - 10, LOWER.z + 12, 7], [LOWER.x - 28, LOWER.z + 4, 9], [LOWER.x - 46, LOWER.z - 16, 11], [UPPER.x - 2, UPPER.z + 26, 13],
-  ...[[-34, 14], [-60, -2], [28, 18], [54, 2], [-20, -24], [12, -30]].map(([dx, dz]) => [UPPER.x + dx, UPPER.z + dz, 9]), [UPPER.x + 80, UPPER.z - 12, 8], ...HUTS.map(([x, z]) => [x, z, 4.5])];
+  ...[[-34, 14], [-60, -2], [28, 18], [54, 2], [-20, -24], [12, -30]].map(([dx, dz]) => [UPPER.x + dx, UPPER.z + dz, 9]), [UPPER.x + 80, UPPER.z - 12, 8], ...HUTS.map(([x, z]) => [x, z, 4.5]),
+  [UPPER.x + 44, UPPER.z + 32, 4], [UPPER.x - 50, UPPER.z + 30, 4], [LOWER.x - 38, LOWER.z + 24, 4]]; // the last three: granaries on stilts
 // the footpath from the foreground through the meadow, along the east bank to the mill, and over the footbridge to the farm
 export const FOOTPATH = new THREE.SplineCurve([[6, -40], [30, -110], [60, -200], [72, -260], [60, -316], [44, -330], [33, -337]].map(([x, z]) => new THREE.Vector2(x, z))).getSpacedPoints(200);
 export const HERO_TREE = [-118, -360];
@@ -111,6 +112,7 @@ const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.s
 export function heightAt(x, z, cheap = false, noPads = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5) + (r > 60 ? (1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5)) * Math.min(1, (r - 60) / 60) : 0); // the floor, with its small rises and hollows
+  const floorH = h;
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
   { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(55, 95, d) /* a level top to build on */, 12); } // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
@@ -120,7 +122,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
   let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * reshapeAt(az), wd); }
   h = smax(h, mountain, 120);
   if (!noPads) for (const site of SITES) { const d = Math.hypot(x - site[0], z - site[1]); if (d < site[2] + 16) { if (site[3] === undefined) site[3] = heightAt(site[0], site[1], true, true); h = lerp(site[3], h, smooth(site[2] + 1, site[2] + 16, d)); } } // the building pads
-  if (!cheap) { const [d] = riverDistance(x, z); h -= 2.2 * (1 - smooth(5, 16, d)); }
+  if (!cheap || noPads === 'river') { const [d] = riverDistance(x, z); h = lerp(Math.min(h, floorH + 0.6), h, smooth(7, 24, d)) - 2.2 * (1 - smooth(5, 16, d)); } // the channel cuts through whatever rises across it, down to the valley floor
   const l = inLake(x, z); if (l < 1.26) h = Math.min(lerp(-2.5, -0.3, smooth(0.9, 1.26, l)), h); else if (l < 1.9) h = lerp(0.05, Math.max(h, 0.25), smooth(1.26, 1.5, l)); /* under the water inside its outline, a low bank rising just outside */ /* the bed stays under the water to the very edge of the lake, then a low shore */
   return h;
 }
@@ -209,8 +211,8 @@ function buildWater() {
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
   const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.name = 'lake'; lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
-  const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
-    const y = inLake(p.x, p.y) < 1.15 ? -0.4 : heightAt(p.x, p.y, true) - 0.9; /* where it enters the lake the river sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+  let riverY = Infinity; const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
+    const y = inLake(p.x, p.y) < 1.15 ? -0.4 : Math.min(riverY, heightAt(p.x, p.y, true, 'river') + 1.3); riverY = y; /* the water only ever runs downhill; where it enters the lake it sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
   const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x3f8486, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide }) /* matte milky glacial water; the lake carries the reflections */);
   if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
@@ -265,15 +267,29 @@ function buildSettlements() {
   const place = (o, x, z, turn = 0) => { const yaw = Math.atan2(-x, -z) + turn; const [fw, fd] = o.userData.foot ?? [6, 6]; const c = Math.cos(yaw), s = Math.sin(yaw); let top = -Infinity;
     for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) { const lx = (u * fw) / 2, lz = (v * fd) / 2; top = Math.max(top, heightAt(x + lx * c + lz * s, z - lx * s + lz * c, true)); }
     o.position.set(x, top + 0.05, z); o.rotation.y = yaw; group.add(o); return o; };
-  // the lower group by the river: the mill on the water, the farmhouse, the barn
-  place(alpineHouse(9, 7, { seed: 1, stoneFloor: true, lamps: LAMPS }), LOWER.x - 10, LOWER.z + 12, 0.25); /* the mill */
-  place(alpineHouse(12, 10, { seed: 2, lamps: LAMPS }), LOWER.x - 28, LOWER.z + 4, -0.15); /* the farmhouse */
-  place(alpineHouse(15, 11, { seed: 3, barn: true, low: 3.2, high: 4.4 }), LOWER.x - 46, LOWER.z - 16, 0.55); /* the barn and hay loft */
-  // the upper group: the chapel at the front of the terrace, the focal point, its tower toward the valley; houses beside and behind it, lower
-  place(chapel(), UPPER.x - 2, UPPER.z + 26, 0.1);
-  [[-34, 14, 0.2], [-60, -2, -0.15], [28, 18, -0.25], [54, 2, 0.3], [-20, -24, 0.1], [12, -30, -0.2]].forEach(([dx, dz, t], i) => place(alpineHouse(10 + (i % 3) * 2, 8 + (i % 2) * 2, { seed: i + 4, stoneFloor: i % 3 === 1, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff' }), UPPER.x + dx, UPPER.z + dz, t));
+  // life round each house: a woodpile against the side wall, and in front of some a vegetable garden behind a rail fence
+  const lived = (house, i) => { const [w, d] = house.userData.size; const wp = woodpile(2.4 + hash(i, 1) * 1.6); wp.position.set(w / 2 + 0.5, 0, 0.6 - d * 0.2); wp.rotation.y = Math.PI / 2; house.add(wp);
+    if (hash(i, 2) > 0.35) { const gd = garden(5, 3.6); const gx = (hash(i, 3) < 0.5 ? -1 : 1) * (w / 2 - 1), gz = d / 2 + 4.6; gd.position.set(gx, 0, gz); house.add(gd); const fx = [[-2.8, -2.1], [2.8, -2.1], [2.8, 2.1], [-2.8, 2.1], [-2.8, -1.2]].map(([u, v]) => [gx + u, gz + v]); house.add(fenceAlong(fx, () => 0)); }
+    return house; };
+  // the lower group by the river: the mill on the water, the farmhouse, the barn, a granary
+  place(lived(alpineHouse(9, 7, { seed: 1, stoneFloor: true, lamps: LAMPS, pitch: 0.48 }), 1), LOWER.x - 10, LOWER.z + 12, 0.25); /* the mill */
+  place(lived(alpineHouse(13, 10, { seed: 2, lamps: LAMPS, pitch: 0.36, eaves: 1.8 }), 2), LOWER.x - 28, LOWER.z + 4, -0.15); /* the farmhouse, low and broad */
+  place(alpineHouse(15, 11, { seed: 3, barn: true, low: 3.2, high: 4.4, pitch: 0.5 }), LOWER.x - 46, LOWER.z - 16, 0.55); /* the barn and hay loft */
+  place(stadel(1), LOWER.x - 38, LOWER.z + 24, 0.3);
+  // the upper group: the chapel at the front of the terrace, the focal point, its tower toward the valley, in its churchyard wall; tall
+  // village houses and low farmhouses beside and behind it; two granaries in front
+  const ch = chapel(); ch.add(wallAlong([[-8, 15], [-8, -14], [8, -14], [8, 15], [1.6, 15]], () => 0.6)); ch.add(wallAlong([[-1.6, 15], [-8, 15]], () => 0.6)); place(ch, UPPER.x - 2, UPPER.z + 26, 0.1);
+  const UP = [[-34, 14, 0.2, 9, 8, 2, 0.52], [-60, -2, -0.15, 13, 10, 1, 0.36], [28, 18, -0.25, 10, 9, 2, 0.46], [54, 2, 0.3, 12, 9, 1, 0.4], [-20, -24, 0.1, 9, 8, 2, 0.56], [12, -30, -0.2, 11, 9, 1, 0.38]];
+  UP.forEach(([dx, dz, t, w, d, storeys, pitch], i) => place(lived(alpineHouse(w, d, { seed: i + 4, storeys, pitch, stoneFloor: i % 3 === 1, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff', eaves: storeys > 1 ? 1.2 : 1.7 }), i + 4), UPPER.x + dx, UPPER.z + dz, t));
   place(alpineHouse(9, 8, { seed: 11, barn: true, low: 2.6, high: 3.6 }), UPPER.x + 80, UPPER.z - 12, 0.5); /* the upper barn */
+  place(stadel(2), UPPER.x + 44, UPPER.z + 32, -0.2); place(stadel(3), UPPER.x - 50, UPPER.z + 30, 0.25);
   HUTS.forEach(([x, z], i) => place(alpineHouse(5, 4, { seed: 20 + i, barn: true, low: 1.0, high: 2.4, pitch: 0.5 }), x, z, (hash(i, 3) - 0.5) * 1.2)); /* hay huts out in the meadows */
+  // a dry-stone wall along the front of the terrace, broken where the track comes up; a rail fence beside the track
+  { const at = (x, z) => heightAt(x, z, true); const dir = Math.atan2(-UPPER.x, -UPPER.z); let run = [];
+    for (let k = -14; k <= 14; k += 1) { const a = dir + k * 0.06; const x = UPPER.x + Math.sin(a) * 64, z = UPPER.z + Math.cos(a) * 64; if (polyDistance(TRACK, x, z) < 7) { if (run.length > 1) group.add(wallAlong(run, at)); run = []; continue; } run.push([x, z]); }
+    if (run.length > 1) group.add(wallAlong(run, at));
+    const rail = []; for (let i = 6; i < TRACK.length - 8; i += 6) { const p = TRACK[i], q = TRACK[i + 1]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; rail.push([p.x - tz / l * 2.6, p.y + tx / l * 2.6]); }
+    group.add(fenceAlong(rail, at)); }
   // the hero tree: a dark mass on a trunk
   const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), lookMat(new THREE.MeshLambertMaterial({ color: '#4a3c2e' }))); trunk.position.y = 4; tree.add(trunk);
   const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); tree.name = 'hero placeholder'; place(tree, HERO_TREE[0], HERO_TREE[1]);

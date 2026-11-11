@@ -22,7 +22,7 @@ export function buildSmoke(chimneys, { strength = 1, windX = 0.6, windZ = -0.25 
   const group = new THREE.Group(); group.name = 'chimney smoke'; const per = 9; const puffs = [];
   chimneys.forEach((c, k) => { for (let i = 0; i < per; i += 1) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softDot(), color: '#aab0b9', transparent: true, depthWrite: false, opacity: 0 })); group.add(sp); puffs.push({ sp, c, i, seed: k * 13.7 + i }); } });
   const update = (t) => { for (const f of puffs) { const life = 14; const age = ((t + f.i * (life / per) + f.seed) % life) / life; // 0..1 over its life
-      const rise = age * 30, spread = 1.4 + age * 11; f.sp.position.set(f.c.x + windX * rise * (0.6 + age) + Math.sin(t * 0.3 + f.seed) * age * 2, f.c.y + rise, f.c.z + windZ * rise * (0.6 + age));
-      f.sp.scale.setScalar(spread); f.sp.material.opacity = strength * 0.95 * Math.min(1, age * 6) * (1 - age) ** 1.4; } };
+      const rise = age * 40, spread = 1.0 + age * 7; /* a thin plume that climbs, not a fog on the bank */ f.sp.position.set(f.c.x + windX * rise * (0.6 + age) + Math.sin(t * 0.3 + f.seed) * age * 2, f.c.y + rise, f.c.z + windZ * rise * (0.6 + age));
+      f.sp.scale.setScalar(spread); f.sp.material.opacity = strength * 0.5 * Math.min(1, age * 6) * (1 - age) ** 1.4; } };
   update(0); return { group, update };
 }
