@@ -182,11 +182,11 @@ function buildTerrain() {
 // The still lake: a true mirror where the air is calm, broken where a breath of wind crosses it (cat's-paws), and darker teal water seen
 // when looking down near the shore, more mirror toward the far side (Fresnel).
 const LAKE_SHADER = {
-  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 }, uLake: { value: new THREE.Vector4(LAKE.x, LAKE.z, LAKE.rx, LAKE.rz) }, uRot: { value: LAKE.rot } },
+  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 }, uLake: { value: new THREE.Vector4(LAKE.x, LAKE.z, LAKE.rx, LAKE.rz) }, uRot: { value: LAKE.rot }, uDay: { value: ['night'].includes(Q.get('tod')) ? 0.06 : ['dusk', 'dawn'].includes(Q.get('tod')) ? 0.55 : 1 } },
   vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vWorld;
 #include <common>
 void main() { vUv = textureMatrix * vec4(position, 1.0); vWorld = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uTime; uniform vec4 uLake; uniform float uRot; varying vec4 vUv; varying vec3 vWorld;
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uTime; uniform vec4 uLake; uniform float uRot; uniform float uDay; varying vec4 vUv; varying vec3 vWorld;
 float lh(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float ln(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(lh(i),lh(i+vec2(1,0)),f.x),mix(lh(i+vec2(0,1)),lh(i+vec2(1,1)),f.x),f.y); }
 float lf(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*ln(p); p=p*2.1+3.7; a*=0.5; } return s; }
@@ -201,7 +201,7 @@ void main() {
   vec2 q = vWorld.xz - uLake.xy; float cr = cos(uRot), sr = sin(uRot); vec2 e = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr) / uLake.zw; float l = length(e);
   float shallow = smoothstep(0.88, 1.08, l + 0.05 * (lf(p * 0.15) - 0.5));
   vec3 bed = mix(vec3(0.16, 0.15, 0.1), vec3(0.24, 0.22, 0.16), lf(p * 0.6)) * (0.8 + 0.3 * lf(p * 2.3));
-  vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow);
+  vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow) * uDay; /* the lake bed is lit by the day, dark at night */
   gl_FragColor = vec4(mix(body, refl * (0.84 - 0.1 * paws), clamp(f * 1.1 + 0.08, 0.0, 1.0) * (1.0 - 0.55 * shallow)), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
