@@ -110,7 +110,7 @@ function demHeight(x, z) {
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 export function heightAt(x, z, cheap = false, noPads = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
-  let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5); // the floor
+  let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5) + (r > 60 ? (1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5)) * Math.min(1, (r - 60) / 60) : 0); // the floor, with its small rises and hollows
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
   { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(55, 95, d) /* a level top to build on */, 12); } // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
@@ -151,14 +151,28 @@ function zoneColour(x, h, z, slope) {
   const wet = Math.max(1 - smooth(18, 85, d), 1 - smooth(1.5, 3.4, inLake(x, z))); return base.lerp(ZONE.wet, 0.75 * wet); // rushes, marsh marigold
 }
 
+// Land use, the farmer's year seen from the knoll: the valley floor in plots about 120 m across, each long hay meadow in flower, freshly
+// mown, or grazed short; their margins left long; damp rushes along the water and in the hollows; worn short round the houses and along
+// the paths. The foreground stays the long flowering meadow. Returns [mown, grazed, damp].
+function landUse(x, z) {
+  const r = Math.hypot(x, z); const cx = x / 120, cz = z / 120, ix = Math.floor(cx), iz = Math.floor(cz); let d1 = 9, d2 = 9, id = 0;
+  for (let j = -1; j <= 1; j += 1) for (let i = -1; i <= 1; i += 1) { const gx = ix + i, gz = iz + j; const ox = gx + 0.15 + 0.7 * hash(gx, gz + 0.5), oz = gz + 0.15 + 0.7 * hash(gz + 3.1, gx); const d = Math.hypot(cx - ox, cz - oz); if (d < d1) { d2 = d1; d1 = d; id = hash(gx * 3.1 + 7.7, gz * 1.3); } else if (d < d2) d2 = d; }
+  const edge = smooth(0.015, 0.06, d2 - d1); const keep = 1 - smooth(150, 230, r);
+  let mown = (id < 0.3 ? 1 : 0) * edge * (1 - keep), grazed = (id >= 0.3 && id < 0.58 ? 1 : 0) * edge * (1 - keep);
+  if (r < 1600) { let near = Infinity; for (const s of SITES) near = Math.min(near, Math.hypot(x - s[0], z - s[1]) - s[2]); const path = Math.min(polyDistance(FOOTPATH, x, z), polyDistance(TRACK, x, z));
+    const worn = Math.max(1 - smooth(4, 26, near), 1 - smooth(1.5, 6, path)); grazed = Math.max(grazed, worn); mown *= 1 - worn; }
+  const [dr] = r < 1600 ? riverDistance(x, z) : [Infinity]; const hollow = smooth(0.42, 0.3, fbm(x / 34, z / 34, 2)) * (r > 80 ? 1 : 0);
+  const damp = Math.max(1 - smooth(10, 42, dr), 1 - smooth(1.15, 1.55, inLake(x, z)), hollow * 0.7); return [mown * (1 - damp), grazed * (1 - damp), damp];
+}
+
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 561, R = 500, r0 = 3, r1 = 16000; /* finer: about 0.2 degrees and 1.7% in range, so slopes keep their small ridges and gullies */ const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
+  const A = 561, R = 500, r0 = 3, r1 = 16000; /* finer: about 0.2 degrees and 1.7% in range, so slopes keep their small ridges and gullies */ const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3), land = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.2 ? 320 * smooth(0.2, 0.4, demWeight(x, z)) : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
-    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2];
+    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2]; if (r < 3500 && h < 140) { const L = landUse(x, z); land[k] = L[0]; land[k + 1] = L[1]; land[k + 2] = L[2]; }
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 9000 && trees.length < 640000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / (75 + 0.02 * Math.max(0, r - 2600)); /* the far slopes wooded tree by tree, a little sparser with distance */ while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setAttribute('aRelief', new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1)); g.setIndex(idx); g.computeVertexNormals();
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setAttribute('aLand', new THREE.BufferAttribute(land, 3)); g.setAttribute('aRelief', new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1)); g.setIndex(idx); g.computeVertexNormals();
   const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true, glow: 0.55 })); mesh.name = 'blockout terrain'; TREE_LIST = trees; return mesh;
 }
 
@@ -318,7 +332,12 @@ export async function startBlockout(canvas, overlay) {
       /* the scanned meadow below */
     }
     const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.16 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 240 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
-    if (Q.get('scanned') !== '0') { try { meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
+    if (Q.get('scanned') !== '0') { try { // the cards follow the land use: none on the mown plots, short plain grass where it is grazed or damp; in the hay, flowers in pockets
+      const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
+        if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
+        const fl = fbm(x / 45 + 3, z / 45, 3) + 0.12 * (pick - 0.5); const kind = short || mw > 0.5 ? 0 : fl < 0.5 ? 0 : fl < 0.6 ? 1 : fl < 0.67 ? 2 : 3;
+        cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
+      meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0026; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.87; /* a tighter glow round the sun, so the sky does not wash over the frame */
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
