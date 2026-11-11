@@ -58,8 +58,9 @@ function impostorMaterial(baked) {
   return m;
 }
 
-export async function buildForest(renderer, list) { // list: x, y, z, larch(0|1), height, variant per tree
+export async function buildForest(renderer, list, hero = null) { // list: x, y, z, larch(0|1), height, variant per tree
   const loader = new GLTFLoader(); const [spruce, larch] = await Promise.all([loader.loadAsync(MODELS.spruce), loader.loadAsync(MODELS.larch)]);
+  const heroModel = hero ? spruce.scene.clone(true) : null; /* cloned before baking: the bake re-parents the model */
   const kinds = { 0: bake(renderer, spruce.scene), 1: bake(renderer, larch.scene) }; const group = new THREE.Group(); group.name = 'forest (impostors)';
   for (const kind of [0, 1]) {
     const mine = []; for (let i = 0; i < list.length; i += 6) if (list[i + 3] === kind) mine.push(i);
@@ -68,5 +69,9 @@ export async function buildForest(renderer, list) { // list: x, y, z, larch(0|1)
     mine.forEach((i, k) => { const h = list[i + 4], v = list[i + 5]; m.makeScale(h * 1.2 * (v < 0.5 ? -1 : 1), h, h); /* crowns a little wider: a forest reads as a closed canopy from afar */ m.setPosition(list[i], list[i + 1] - 0.4, list[i + 2]); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.62, 0.8, 0.6).multiplyScalar(0.8 + 0.35 * v)); /* deeper, greener needles than the unlit scan */ });
     mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = `${kind ? 'larch' : 'spruce'} impostors (${mine.length})`; group.add(mesh);
   }
+  // the lone hero tree in the meadow (a spruce: the summer larch reads pale and leafless at this distance): near enough to deserve the whole model, every branch lit and glowing into the light
+  if (heroModel) { const { holder } = normalise(heroModel); holder.traverse((o) => { if (!o.isMesh) return; const src = Array.isArray(o.material) ? o.material[0] : o.material;
+      o.material = applyValleyLook(new THREE.MeshLambertMaterial({ map: src.map, color: new THREE.Color(0.6, 0.78, 0.58), alphaTest: 0.45, alphaToCoverage: true, side: THREE.DoubleSide }), { glow: 1.0 }); });
+    holder.scale.set(hero.height * 1.3, hero.height, hero.height * 1.3); holder.position.set(hero.x, hero.y - 0.3, hero.z); holder.rotation.y = 1.3; holder.name = "hero spruce"; /* an old pasture spruce: broad, branched to the ground */ group.add(holder); }
   return group;
 }

@@ -162,7 +162,7 @@ function buildSettlements() {
   HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#3e3329', 2.6, 4.6, '#6e5640'), x, z, i * 1.1));
   // the hero tree: a dark mass on a trunk
   const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), lookMat(new THREE.MeshLambertMaterial({ color: '#4a3c2e' }))); trunk.position.y = 4; tree.add(trunk);
-  const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); place(tree, HERO_TREE[0], HERO_TREE[1]);
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12), lookMat(new THREE.MeshLambertMaterial({ color: '#3a5530' }))); crown.scale.set(1, 1.15, 1); crown.position.y = 14; tree.add(crown); tree.name = 'hero placeholder'; place(tree, HERO_TREE[0], HERO_TREE[1]);
   return group;
 }
 
@@ -190,7 +190,7 @@ export async function startBlockout(canvas, overlay) {
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
-  let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list); } catch (e) { console.warn('forest', e); } }
+  let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
   if (LOOK_ON && Q.get('grass') !== '0') { const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.15 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
