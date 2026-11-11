@@ -112,14 +112,19 @@ function demHeight(x, z) {
   const rel = mid - smooth0; const form = rel > 0 ? rel * Math.min(1.7, 1 + 0.01 * rel) : rel; DEM_RELIEF_OUT = form * RELIEF + 1.1 * (raw - mid);
   // the granite needles (reference: the Chamonix Aiguilles): on the upper crown, sharp spires where two ridged fields cross, notched cols
   // between them; so steep that no snow holds on their faces, only in the couloirs between
-  // the serrated crest (reference: the Chamonix Aiguilles), designed along the skyline as the camera sees it: one dominant summit, a second
-  // lower one to its right, and teeth of uneven height and spacing falling away on both sides - a ridge, never a row of equal fingers. Each
-  // peak is a sharp triangle in azimuth; small notches break their flanks; the whole fades down the face into buttresses.
-  const crown = smooth(1500, 2500, smooth0 - MASSIF.lakeAltitude) * NEEDLES; if (crown > 0) { const azp = Math.atan2(x, -z) / DEG; let ridge = 0;
-    for (const [pa, ph, pw] of CREST) { const d = Math.abs(azp - pa) / pw; if (d < 1) ridge = Math.max(ridge, ph * (1 - d) ** 0.9); }
-    const teeth = 0.1 * (ridged(azp * 2.3, 1.7, 2) - 0.5) + 0.05 * (ridged(azp * 7.1, 4.2, 2) - 0.5); const rr = Math.hypot(x, z);
-    DEM_RELIEF_OUT += crown * (ridge + teeth * (0.4 + ridge)) * 240 * (0.75 + 0.25 * ridged(x / 300, z / 300, 2)) - crown * 90 * (1 - ridge) * smooth(0.15, 0.6, ridged(azp * 1.3 + 3, rr / 900, 2)); }
-  return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
+  // The summit group shaped like Everest seen from the south-west: a great dark pyramid of flat rock faces meeting in hard ridges, a lower
+  // sharp second peak to its right across a col (Lhotse), and a long serrated wall to its left (Nuptse). Each is a cone of planes, so the
+  // ridges and the apex are edges, never rounded; ridged noise breaks the faces into buttresses and couloirs.
+  const total = smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude; if (NEEDLES <= 0) return total;
+  const sx = DEM.summit[0], sz = DEM.summit[1]; const cone = (cx, cz, H, faces) => { let m = -Infinity; for (const [dx, dz, sl] of faces) m = Math.max(m, (dx * (x - cx) + dz * (z - cz)) * sl); return H - m; };
+  if (Math.hypot(x - sx, z - sz) > 5200) return total;
+  const everest = cone(sx, sz, 3800, [[-0.8, 0.6, 1.02], [0.75, 0.66, 1.35], [0, -1, 0.9], [-0.98, -0.2, 0.72]]); /* a broad pyramid: its faces carry the whole upper mountain */
+  const lhotse = cone(sx + 1900, sz - 100, 3250, [[-0.7, 0.7, 1.5], [0.8, 0.6, 1.1], [0, -1, 0.9]]);
+  const nuptse = cone(sx - 2300, sz + 700, 2900, [[0, 1, 1.4], [0, -1, 1.0], [1, 0, 0.3], [-1, 0, 0.45]]) - 130 * ridged(x / 190, 3.3, 2);
+  const rough = 150 * (ridged(x / 240, z / 240, 3) - 0.55) + 45 * (ridged(x / 80, z / 80, 2) - 0.5);
+  const designed = Math.max(everest, lhotse, nuptse) + rough; const w = smooth(1250, 1800, designed); /* the designed peaks replace the real crown high up and melt into the real flanks below */
+  const out = lerp(total, designed, w); DEM_RELIEF_OUT += out - total; return out;
+
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 // the lake's outline with its wandering shore: bays and little points instead of an ellipse
@@ -151,7 +156,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
 const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
-const ZONE = { meadow: C('#486c3a'), hay: C('#566c38'), pasture: C('#426237'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#8a877f'), terrace: C('#486c3a'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
+const ZONE = { meadow: C('#486c3a'), hay: C('#566c38'), pasture: C('#426237'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#6a6a66'), terrace: C('#486c3a'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
 const LAND_LIGHT = 1.45; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
@@ -164,7 +169,7 @@ function zoneColour(x, h, z, slope) {
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if ((slope > 0.22 && h > 48) || (slope > 0.1 && h > 160 && fbm(x / 420 + 9, z / 420, 2) > 0.38)) { /* the foothills wooded too, with clearings */ /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.05 && h > 220; if (avalanche) return ZONE.pasture.clone().lerp(ZONE.forest, 0.25); /* narrow avalanche lanes, high up, grassed and dark */ SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 9) { SURF[0] = 1 - smooth(4.5, 8, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(4.5, 8, d)); } // a narrow stony margin, not a beach
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 7.5) { SURF[0] = 1 - smooth(4.5, 7, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(4.5, 8, d)); } // a narrow stony margin, not a beach
   { const lk = lakeL(x, z); if (lk < 1.5) { SURF[0] = 0.75 * (1 - smooth(1.24, 1.36, lk)) * (0.5 + 0.5 * fbm(x / 14, z / 14, 2)); /* stony patches in the mud at the waterline */ } if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.75 * (1 - smooth(1.24, 1.44, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
@@ -248,15 +253,20 @@ function buildWater() {
       // a glacial stream (references 3, 7, 11): milky turquoise where it is deep, the pebble bed (scanned) showing through the shallows at
       // its edges, white water streaming downstream over the stones, strongest on the rapid reaches; the sun glints on it
       sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); if (edge > 0.8 + 0.18 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7))) discard; /* ragged banks, never a ruled edge */ float depth = 1.0 - smoothstep(0.3, 0.85, edge);
-  vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb * vec3(0.8, 0.92, 0.95);
-  vec3 water = mix(vec3(0.5, 0.6, 0.62), vec3(0.17, 0.32, 0.4), depth); /* glacial meltwater: blue-grey with silt, the sky in it */ water = mix(bedC, water, 0.3 + 0.62 * depth);
-  float sp = 1.2 + 1.6 * depth; float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0)));
-  float streak = vlNoise(vec2(fl.x * 8.0, fl.y * 0.3 - uTime * sp)) * vlNoise(vec2(fl.x * 21.0 + 3.0, fl.y * 0.8 - uTime * sp * 1.3));
-  float foam = smoothstep(0.34 - 0.16 * rapid, 0.62, streak) * (0.3 + 0.7 * rapid) * (0.5 + 0.5 * depth);
-  diffuseColor.rgb = mix(water, vec3(0.84, 0.88, 0.87), foam * 0.6);
-  float glint = step(0.965, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(normalize(vlWorld - cameraPosition), normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
-  diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; /* the sun sparkling on the moving water */ }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
+{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); if (edge > 0.8 + 0.18 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7))) discard; float depth = 1.0 - smoothstep(0.3, 0.85, edge);
+  float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0))); float sp = 1.0 + 1.6 * depth + 1.2 * rapid;
+  vec2 q = vec2(fl.x * 5.0, fl.y * 0.45 - uTime * sp); float rip = (vlNoise(q) - 0.5) * 0.6 + (vlNoise(q * 2.7 + 4.0) - 0.5) * 0.4; /* ripples carried downstream */
+  vec3 V = normalize(cameraPosition - vlWorld); float fres = pow(1.0 - clamp(V.y + rip * 0.2, 0.0, 1.0), 4.0);
+  vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb; vec3 body = mix(bedC * vec3(0.55, 0.7, 0.68), vec3(0.07, 0.19, 0.21), depth); /* stones through the shallows, deep green-blue pools */
+  float pool = smoothstep(0.35, 0.65, vlFbm(vec2(fl.y * 0.03 + 9.0, fl.x * 0.7))) * (1.0 - rapid); /* slack water mirrors the dark far bank, running water the sky */
+  vec3 mirror = mix(uHaze * (0.85 + 0.9 * rip), vec3(0.1, 0.17, 0.1), pool * 0.7);
+  vec3 water = mix(body, mirror, clamp(0.2 + 0.8 * fres, 0.0, 1.0) * (0.45 + 0.55 * depth));
+  water *= 1.0 - 0.5 * smoothstep(0.55, 0.85, edge); /* the shade under the banks */
+  float streak = vlNoise(vec2(fl.x * 9.0, fl.y * 0.35 - uTime * sp)) * vlNoise(vec2(fl.x * 23.0 + 3.0, fl.y * 0.9 - uTime * sp * 1.3));
+  float foam = smoothstep(0.4 - 0.2 * rapid, 0.62, streak) * rapid * (0.4 + 0.6 * depth);
+  diffuseColor.rgb = mix(water, vec3(0.88, 0.91, 0.9), foam * 0.75);
+  float glint = step(0.97, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(-V, normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
+  diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
   // rounded, half buried, pale where dry and darker at the waterline
@@ -415,7 +425,8 @@ export async function startBlockout(canvas, overlay) {
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
         const fl = fbm(x / 40 + 3, z / 40, 3) + 0.3 * (pick - 0.5); const mix = Math.min(0.999, Math.max(0, (fbm(x / 90 + 11, z / 90, 2) - 0.3) / 0.4 + 0.25 * (hash(z, x * 1.7) - 0.5))); /* the pockets feather out at their edges */ const fl2 = fl * 0.5 + fbm(x / 13 + 7, z / 13, 2) * 0.5; const dry = microAt(x, z) > 0.1, damp = microAt(x, z) < -0.15 || dp > 0.3; const nearPath = polyDistance(FOOTPATH, x, z) < 6;
-        const kind = short || mw > 0.5 ? 0 : nearPath ? 0 : Math.min(4, Math.floor((fbm(x / 60 + 4, z / 60, 2) * 0.6 + hash(x * 0.37, z * 1.91) * 0.4) * 4.4 + (damp ? 0.6 : 0))); /* every card in flower, finely mixed: the mix drifts slowly across the field (more yellow where damp), no islands */
+        const rr = Math.hypot(x, z); const dr = fbm(x / 55 + 4, z / 55, 3), dk = fbm(x / 120 + 8, z / 120, 2);
+        const kind = short || mw > 0.5 || nearPath ? 0 : rr > 85 + 30 * hash(x * 0.37, z * 1.91) ? (dr < 0.5 ? 0 : dk < 0.42 ? 5 : dk < 0.56 ? 6 : 7) /* far off, the flowers are a soft wash of colour over the sward: pale daisy white, buttercup yellow, pink */ : hash(z * 0.53, x * 1.27) < 0.5 ? 0 : 1 + Math.floor(hash(x * 0.37, z * 1.91) * 3.99);
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
       meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone, path: (x, z) => polyDistance(FOOTPATH, x, z), moist: (x, z) => clamp(0.5 - microAt(x, z) * 1.1 + (zone(x, z) === 'wet' ? 0.3 : 0), 0, 1) }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);

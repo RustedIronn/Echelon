@@ -167,7 +167,7 @@ ${textured ? `
   hold = max(hold, gully * 0.7 * smoothstep(0.4, 0.62, vlFbm(vec2(p.x / 40.0, h / 300.0) + 5.0))) * (1.0 - 0.9 * spur * smoothstep(0.55, 0.3, up)); // snow in some of the runnels, broken, dark ribs between
   hold = max(hold, ledge * 0.85); // and broken lines of snow along the soft ledges
   float snow = smoothstep(line - 25.0, line + 25.0, h + 380.0 * couloir + 90.0 * (fine - 0.5)) * max(hold, couloir * 0.9);
-  float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.36, 0.52, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top, but no snow holds on faces steeper than about 60 degrees: the horns stand dark
+  float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.6, 0.72, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top, but no snow holds on faces steeper than about 60 degrees: the horns stand dark
   cap *= 1.0 - 0.92 * max(spur, rib * 0.7) * smoothstep(0.62, 0.32, up);        // the ribs and steep rock break through it
   snow = max(snow, cap);
   vec3 snowCol = vec3(0.8, 0.83, 0.88) * (0.82 + 0.3 * texture2D(tSnowS, p / 30.0).r) * (0.9 + 0.12 * vlFbm(p / 18.0)); // snow with its own grain
