@@ -472,7 +472,7 @@ export async function startBlockout(canvas, overlay) {
   const finish = LOOK_ON && FINISH_ON ? createFinish(renderer, { sunDir: night ? new THREE.Vector3(0, -1, 0) : dirOf(sunPose.az, sunPose.el) }) : null; if (finish) { canvas.style.filter = ''; document.body.classList.remove('graded'); } /* the finishing pipeline replaces the compositor grade */
   let frames = 0; renderer.setAnimationLoop(() => { const tNow = performance.now() / 1000 + Number(Q.get('t') ?? 0); WIND.uTime.value = tNow; if (lakeMesh?.material.uniforms?.uTime) lakeMesh.material.uniforms.uTime.value = tNow; birds?.update(tNow); smoke?.update(tNow); (finish ? finish.render(scene, camera) : renderer.render(scene, camera)); frames += 1; window.__blockout.frames = frames; });
   if (LOOK_ON && !night) sunDisc(scene, dirOf(sunPose.az, sunPose.el), mood[4]); /* the sun's own disc and halo, hidden by the peaks when it is behind them */
-  window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season }; window.__renderer = renderer;
+  window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season }; window.__renderer = renderer; window.__valley = { heightAt, MASSIF };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
 }
 

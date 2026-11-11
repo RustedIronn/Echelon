@@ -35,7 +35,9 @@ import Airborne, { airborneWanted } from './Airborne.jsx';
 import { planCopses, buildCopses, rasterTerrain, COPSES_WANTED } from './treeCopses.js';
 import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES } from './flowerBehaviour.js';
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
+import { addMassif } from './massifTransplant.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
+const RANGE_SCALE = typeof window === 'undefined' ? 1 : Number(new URLSearchParams(window.location.search).get('range') ?? 1);
 import { FOLIAGE_A2C, TAA } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
@@ -203,6 +205,11 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
         object.geometry.computeVertexNormals();
         ownedGeometry.push(object.geometry);
       }
+      if (!baseline && role === 'terrain' && inheritedMetadata(object, 'terrainZone') !== 'near' && RANGE_SCALE !== 1) { // the old range itself, grown: everything above the foothills rises (?range=1.9), the meadow hills stay as they are
+        object.geometry = object.geometry.clone(); ownedGeometry.push(object.geometry); const p = object.geometry.attributes.position;
+        for (let i = 0; i < p.count; i += 1) { const y = p.getY(i); const t = Math.min(1, Math.max(0, (y - 22) / 30)); p.setY(i, y + (y - 22) * (RANGE_SCALE - 1) * t * t * (3 - 2 * t)); }
+        p.needsUpdate = true; object.geometry.computeVertexNormals(); object.geometry.computeBoundingBox(); object.geometry.computeBoundingSphere();
+      }
       if (bank && role === 'terrain') {
         object.geometry = object.geometry.clone(); ownedGeometry.push(object.geometry); const p = object.geometry.attributes.position;
         const nrm = object.geometry.attributes.normal; const tilt = new THREE.Vector3(); const reliefValues = bank.relief ? new Float32Array(p.count) : null;
@@ -255,6 +262,7 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
     }
     if (FOAM_WANTED && water?.material.uniforms?.uStones) { const lines = findStoneWaterlines(stones, water); lines.forEach((s, i) => water.material.uniforms.uStones.value[i].set(s.x, s.z, s.r, s.level)); water.material.uniforms.uStoneCount.value = lines.length; water.material.userData.foamStones = lines; }
   }
+  if (!baseline) addMassif(group, { position: new THREE.Vector3(-3, 4.36, 10) /* the hero camera (manifest.json) */ }, (material) => { applyBlenderDisplay(material, resources); if (MOUNTAIN_DETAIL) applyMountainDetail(material); ownedMaterials.push(material); }); // the new valley's summit group behind the old range (massifTransplant.js)
   if (bank?.relief && reliefMeshes.length) bank.relief.bindMesh(reliefMeshes); // from here on, anything standing on the ground follows the displaced mesh exactly
   return { group, dispose: () => { ownedMaterials.forEach((m) => m.dispose()); ownedGeometry.forEach((g) => g.dispose()); normal.dispose(); wetness?.texture.dispose(); } };
 }
