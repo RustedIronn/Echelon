@@ -44,7 +44,7 @@ export function buildGrass(sites) {
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(8).fill([0, 1, 0]).flat(), 3)); // lit as the sward, not as upright cards
   const mat = applyValleyLook(new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.4, alphaToCoverage: true, side: THREE.DoubleSide }), { glow: 1.1 });
   const mesh = new THREE.InstancedMesh(geo, mat, n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
-  for (let i = 0; i < n; i += 1) { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, s * (0.8 + 0.5 * t), s)); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.setRGB(0.95 + 0.1 * t, 1.0, 0.85 + 0.2 * t)); }
+  for (let i = 0; i < n; i += 1) { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.25) * (0.8 + 0.5 * t), s)); /* cards widen with distance but the grass stays meadow height */ mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.setRGB(0.95 + 0.1 * t, 1.0, 0.85 + 0.2 * t)); }
   mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = `meadow grass (${n} clumps)`; return mesh;
 }
 

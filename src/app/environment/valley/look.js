@@ -70,14 +70,17 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.52, 0.34), open * (1.0 - smoothstep(48.0, 80.0, d)));
   // the distant slopes, per pixel: forest where the ground climbs, alpine pasture in the clearings and up the avalanche paths, the forest
   // thinning toward the treeline; canopy drawn as a fine grain of crowns, so far woods read as woods and no vertex grid shows
-  float far = smoothstep(1100.0, 1800.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);
+  float far = smoothstep(520.0, 900.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);
   if (far > 0.0) { vec3 n = normalize(vlNormal); float slope = 1.0 - n.y;
-    float wood = smoothstep(0.015, 0.08, slope + 0.05 * (vlFbm(p / 900.0) - 0.5)) * smoothstep(0.12, 0.3, vlFbm(p / 650.0 + 3.1));
+    float edgeN = vlFbm(p / 70.0 + 11.0) - 0.5; /* ragged edges: a wood ends tree by tree, not in an airbrushed fade */
+    float wood = smoothstep(0.03, 0.06, slope + 0.05 * (vlFbm(p / 900.0) - 0.5) + 0.03 * edgeN) * smoothstep(0.2, 0.24, vlFbm(p / 650.0 + 3.1) + 0.12 * edgeN);
+    wood = max(wood, step(0.82, vlNoise(p / 14.0)) * step(0.45, vlFbm(p / 300.0)) * 0.9); /* lone trees and clumps scattered in the pasture */
     wood *= 1.0 - 0.85 * smoothstep(0.86, 0.95, abs(sin(p.x / 230.0 + vlFbm(p / 480.0) * 7.0))); /* avalanche paths */
     wood *= 1.0 - smoothstep(uTreeline - 260.0, uTreeline + 40.0, vlWorld.y + 90.0 * (vlFbm(p / 300.0) - 0.5));
     float crowns = vlNoise(p / 9.0) * 0.6 + vlNoise(p / 23.0) * 0.4; vec3 canopy = mix(vec3(0.07, 0.12, 0.06), vec3(0.17, 0.24, 0.11), crowns) * (0.9 + 0.25 * vlFbm(p / 400.0));
-    vec3 pasture = mix(vec3(0.34, 0.43, 0.19), vec3(0.45, 0.47, 0.26), vlFbm(p / 260.0)) * (0.9 + 0.2 * vlNoise(p / 40.0));
-    diffuseColor.rgb = mix(diffuseColor.rgb, mix(pasture, canopy, wood), far * (1.0 - step(0.5, uSnowline < 0.0 ? 1.0 : 0.0))); }
+    vec3 pasture = mix(vec3(0.27, 0.34, 0.16), vec3(0.37, 0.39, 0.24), vlFbm(p / 260.0)) * (0.85 + 0.25 * vlNoise(p / 25.0)); /* alpine pasture: greyer and darker than valley hay */
+    if (uSnowline < 0.0) { pasture = vec3(0.88, 0.9, 0.94) * (0.94 + 0.08 * vlNoise(p / 30.0)); canopy = mix(canopy * 1.1, vec3(0.8, 0.83, 0.88), 0.22 + 0.18 * crowns); } /* winter: pastures under snow, the forest dark with snow on its crowns */
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(pasture, canopy, wood), far); }
 ${textured ? `
   vec3 meadow = mix(vlTwo(tGrassNear, p, 2.2), vlTwo(tGrassFar, p, 15.0), smoothstep(25.0, 90.0, d));
   meadow = mix(meadow, vlTwo(tGrassFar, p, 60.0), smoothstep(400.0, 1500.0, d));
@@ -96,8 +99,13 @@ ${textured ? `
   vec3 rock = mix(vec3(0.33, 0.31, 0.29), vec3(0.47, 0.44, 0.40), vlFbm(p / 700.0)); rock *= 0.78 + 0.32 * strata; rock *= 0.82 + 0.3 * smoothstep(0.35, 0.7, streak);${textured ? "\n  rock = vlTri(tRock, vlWorld, n, 55.0) * (0.72 + 0.4 * strata) * (0.86 + 0.24 * smoothstep(0.35, 0.7, streak));" : ""}
   rock = mix(rock, vec3(0.38, 0.40, 0.33), 0.35 * smoothstep(0.55, 0.85, up) * (1.0 - smoothstep(uSnowline - 300.0, uSnowline + 200.0, h))); // alpine turf on the gentler rock below the snow
   // snow: lies where the ground is gentle enough to hold it, above a snowline that wanders, and gathers in hollows; a crisp edge
-  float line = uSnowline + 260.0 * (vlFbm(p / 520.0) - 0.5); float hold = smoothstep(0.42, 0.62, up + 0.12 * (vlFbm(p / 160.0) - 0.5));
-  float snow = smoothstep(line - 30.0, line + 30.0, h) * hold; snow = max(snow, smoothstep(line + 600.0, line + 900.0, h) * smoothstep(0.25, 0.45, up));
+  // snow follows the mountain's form: a ragged line at two scales, reaching down the couloirs (the streaks) and holding on ledges and
+  // gentler ground, while steep rock bands stay bare and dark even high up
+  float line = uSnowline + 420.0 * (vlFbm(p / 620.0) - 0.5) + 160.0 * (vlFbm(p / 140.0) - 0.5);
+  float hold = smoothstep(0.38, 0.55, up + 0.16 * (vlFbm(p / 90.0) - 0.5));
+  float gully = smoothstep(0.55, 0.72, streak);
+  float snow = smoothstep(line - 25.0, line + 25.0, h + 420.0 * gully) * max(hold, gully * 0.85);
+  snow = max(snow, smoothstep(line + 500.0, line + 800.0, h) * smoothstep(0.22, 0.4, up + 0.1 * (vlFbm(p / 70.0) - 0.5)));
   vec3 alp = mix(rock, ${textured ? "min(vlTwo(tSnow, p, 80.0) * 1.45 + 0.08, vec3(1.0))" : "vec3(0.93, 0.95, 0.98)"}, snow);
   diffuseColor.rgb = mix(diffuseColor.rgb, alp, alpine); }`);
     // the air: transmittance through height-varying haze, and light scattered into the view (more toward the sun)
