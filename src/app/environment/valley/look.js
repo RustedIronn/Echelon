@@ -50,7 +50,7 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
 { vec2 p = vlWorld.xz; float d = length(vlWorld - cameraPosition);
   // fields, per pixel: plots about 110 m across, each mown, grazed or left long on its own rhythm; seams where a fence or ditch runs.
   // Only on the open valley floor (no gravel, track or forest, below the terrace line), fading out with distance.
-  float open = (1.0 - clamp(vlSurf.x + vlSurf.y + vlSurf.z, 0.0, 1.0)) * (1.0 - smoothstep(60.0, 140.0, vlWorld.y)) * (1.0 - smoothstep(1800.0, 3500.0, d));
+  float open = (uSnowline < 0.0 ? 0.0 : 1.0) * (1.0 - clamp(vlSurf.x + vlSurf.y + vlSurf.z, 0.0, 1.0)) * (1.0 - smoothstep(60.0, 140.0, vlWorld.y)) * (1.0 - smoothstep(1800.0, 3500.0, d));
   if (open > 0.0) { vec2 c = p / 110.0; vec2 ci = floor(c); float d1 = 9.0, d2 = 9.0, id = 0.0;
     for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec2 g = ci + vec2(float(i), float(j)); vec2 o = g + 0.15 + 0.7 * vec2(vlHash(g), vlHash(g + 17.3)); float dd = length(c - o); if (dd < d1) { d2 = d1; d1 = dd; id = vlHash(g * 3.1 + 7.7); } else if (dd < d2) d2 = dd; }
     vec3 f = diffuseColor.rgb; float lum0 = dot(f, vec3(0.333));
@@ -58,6 +58,16 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
     vec3 tone = id < 0.33 ? mown : id < 0.66 ? f : lush; tone *= 0.94 + 0.12 * vlFbm(p / 18.0); /* the sward is never even */
     float seam = 1.0 - smoothstep(0.012, 0.05, d2 - d1);
     diffuseColor.rgb = mix(f, tone * (1.0 - 0.12 * seam), open); }
+  // the distant slopes, per pixel: forest where the ground climbs, alpine pasture in the clearings and up the avalanche paths, the forest
+  // thinning toward the treeline; canopy drawn as a fine grain of crowns, so far woods read as woods and no vertex grid shows
+  float far = smoothstep(1100.0, 1800.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);
+  if (far > 0.0) { vec3 n = normalize(vlNormal); float slope = 1.0 - n.y;
+    float wood = smoothstep(0.015, 0.08, slope + 0.05 * (vlFbm(p / 900.0) - 0.5)) * smoothstep(0.12, 0.3, vlFbm(p / 650.0 + 3.1));
+    wood *= 1.0 - 0.85 * smoothstep(0.86, 0.95, abs(sin(p.x / 230.0 + vlFbm(p / 480.0) * 7.0))); /* avalanche paths */
+    wood *= 1.0 - smoothstep(uTreeline - 260.0, uTreeline + 40.0, vlWorld.y + 90.0 * (vlFbm(p / 300.0) - 0.5));
+    float crowns = vlNoise(p / 9.0) * 0.6 + vlNoise(p / 23.0) * 0.4; vec3 canopy = mix(vec3(0.07, 0.12, 0.06), vec3(0.17, 0.24, 0.11), crowns) * (0.9 + 0.25 * vlFbm(p / 400.0));
+    vec3 pasture = mix(vec3(0.34, 0.43, 0.19), vec3(0.45, 0.47, 0.26), vlFbm(p / 260.0)) * (0.9 + 0.2 * vlNoise(p / 40.0));
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(pasture, canopy, wood), far * (1.0 - step(0.5, uSnowline < 0.0 ? 1.0 : 0.0))); }
 ${textured ? `
   vec3 meadow = mix(vlTwo(tGrassNear, p, 2.2), vlTwo(tGrassFar, p, 15.0), smoothstep(25.0, 90.0, d));
   meadow = mix(meadow, vlTwo(tGrassFar, p, 60.0), smoothstep(400.0, 1500.0, d));
