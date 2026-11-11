@@ -146,7 +146,7 @@ const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
 const ZONE = { meadow: C('#5e6b3a'), hay: C('#6a6c3c'), pasture: C('#53643a'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#8a877f'), terrace: C('#5e6b3a'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
-const LAND_LIGHT = 1.65; // the land is lit to make up for the lower exposure
+const LAND_LIGHT = 1.45; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
 function zoneColour(x, h, z, slope) {
@@ -217,7 +217,7 @@ void main() {
   float shallow = smoothstep(1.0, 1.24, l + 0.05 * (lf(p * 0.15) - 0.5));
   vec3 bed = mix(vec3(0.16, 0.15, 0.1), vec3(0.24, 0.22, 0.16), lf(p * 0.6)) * (0.8 + 0.3 * lf(p * 2.3));
   vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow) * uDay; /* the lake bed is lit by the day, dark at night */
-  gl_FragColor = vec4(mix(body, refl * vec3(0.7, 0.76, 0.74) * (1.0 - 0.1 * paws), clamp(f * 1.05 + 0.08, 0.0, 1.0) * (1.0 - 0.6 * shallow)), 1.0); /* the reflection a little darker and greener than the sky it shows: the water sits in the land */
+  gl_FragColor = vec4(mix(body, refl * vec3(0.9, 0.94, 0.97) * (1.0 - 0.1 * paws), clamp(f * 1.05 + 0.08, 0.0, 1.0) * (1.0 - 0.6 * shallow)), 1.0); /* the reflection a little darker and greener than the sky it shows: the water sits in the land */
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,
@@ -244,7 +244,7 @@ function buildWater() {
       sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); if (edge > 0.8 + 0.18 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7))) discard; /* ragged banks, never a ruled edge */ float depth = 1.0 - smoothstep(0.3, 0.85, edge);
   vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb * vec3(0.8, 0.92, 0.95);
-  vec3 water = mix(vec3(0.5, 0.57, 0.53), vec3(0.19, 0.31, 0.31), depth); /* glacial meltwater: grey-green with silt, not cyan */ water = mix(bedC, water, 0.3 + 0.62 * depth);
+  vec3 water = mix(vec3(0.5, 0.6, 0.62), vec3(0.17, 0.32, 0.4), depth); /* glacial meltwater: blue-grey with silt, the sky in it */ water = mix(bedC, water, 0.3 + 0.62 * depth);
   float sp = 1.2 + 1.6 * depth; float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0)));
   float streak = vlNoise(vec2(fl.x * 8.0, fl.y * 0.3 - uTime * sp)) * vlNoise(vec2(fl.x * 21.0 + 3.0, fl.y * 0.8 - uTime * sp * 1.3));
   float foam = smoothstep(0.34 - 0.16 * rapid, 0.62, streak) * (0.3 + 0.7 * rapid) * (0.5 + 0.5 * depth);
@@ -313,14 +313,14 @@ function buildSettlements() {
     return house; };
   // the lower group by the river: the mill on the water, the farmhouse, the barn, a granary
   place(lived(alpineHouse(9, 7, { seed: 1, stoneFloor: true, lamps: LAMPS, pitch: 0.48 }), 1), LOWER.x - 10, LOWER.z + 12, 0.25); /* the mill */
-  place(lived(alpineHouse(13, 10, { seed: 2, lamps: LAMPS, pitch: 0.36, eaves: 1.8 }), 2), LOWER.x - 28, LOWER.z + 4, -0.15); /* the farmhouse, low and broad */
+  place(lived(alpineHouse(13, 10, { seed: 2, lamps: LAMPS, pitch: 0.36, eaves: 1.8, white: true, plaster: 'plastered_wall', slate: '#8c8c8c' }), 2), LOWER.x - 28, LOWER.z + 4, -0.15); /* the farmhouse, low and broad */
   place(alpineHouse(15, 11, { seed: 3, barn: true, low: 3.2, high: 4.4, pitch: 0.5 }), LOWER.x - 46, LOWER.z - 16, 0.55); /* the barn and hay loft */
   place(stadel(1), LOWER.x - 38, LOWER.z + 24, 0.3);
   // the upper group: the chapel at the front of the terrace, the focal point, its tower toward the valley, in its churchyard wall; tall
   // village houses and low farmhouses beside and behind it; two granaries in front
   const ch = chapel(); ch.add(wallAlong([[11, 3], [11, 16], [-8, 16], [-8, -14], [11, -14], [11, -1.5]], () => 0.4, { height: 1.0 })); place(ch, UPPER.x - 2, UPPER.z + 26, -Math.PI / 2 + 0.12); /* side-on: the long nave toward the valley, the tower at its end */
   const UP = [[-34, 14, 0.2, 9, 8, 2, 0.52], [-60, -2, -0.15, 13, 10, 1, 0.36], [28, 18, -0.25, 10, 9, 2, 0.46], [54, 2, 0.3, 12, 9, 1, 0.4], [-20, -24, 0.1, 9, 8, 2, 0.56], [12, -30, -0.2, 11, 9, 1, 0.38]];
-  UP.forEach(([dx, dz, t, w, d, storeys, pitch], i) => place(lived(alpineHouse(w, d, { seed: i + 4, storeys, pitch, stoneFloor: i % 3 === 1, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff', eaves: storeys > 1 ? 1.2 : 1.7 }), i + 4), UPPER.x + dx, UPPER.z + dz, t));
+  UP.forEach(([dx, dz, t, w, d, storeys, pitch], i) => place(lived(alpineHouse(w, d, { seed: i + 4, storeys, pitch, stoneFloor: i === 4, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff', eaves: storeys > 1 ? 1.2 : 1.7, white: i !== 1 && i !== 5, plaster: 'plastered_wall', slate: '#8c8c8c' }), i + 4), UPPER.x + dx, UPPER.z + dz, t));
   place(alpineHouse(9, 8, { seed: 11, barn: true, low: 2.6, high: 3.6 }), UPPER.x + 80, UPPER.z - 12, 0.5); /* the upper barn */
   place(stadel(2), UPPER.x + 44, UPPER.z + 32, -0.2); place(stadel(3), UPPER.x - 50, UPPER.z + 30, 0.25);
   HUTS.forEach(([x, z], i) => place(alpineHouse(5, 4, { seed: 20 + i, barn: true, low: 1.0, high: 2.4, pitch: 0.5 }), x, z, (hash(i, 3) - 0.5) * 1.2)); /* hay huts out in the meadows */
@@ -339,16 +339,20 @@ function buildSettlements() {
 // The sun follows the mountains (the user, 2026-11-11): it rises through the low pass on the left, climbs, and goes down behind the range.
 // In summer it sets late into the saddle on the right; in spring behind the right flank of the main peak; in winter, low and short, it
 // slips behind the main peak itself in early afternoon. The disc is depth-tested, so ridges hide it. f runs from sunrise to sunset.
-export const SUN_ARC = { winter: { rise: -24.5, set: 13, peak: 11.5 }, spring: { rise: -26.5, set: 22, peak: 14.5 }, summer: { rise: -28, set: 31, peak: 16.5 } };
-export function sunAt(f, season = 'summer') { const a = SUN_ARC[season] ?? SUN_ARC.summer; const az = lerp(a.rise, a.set, f); const el = a.peak * Math.sin(Math.PI * clamp(f, 0, 1)) ** 0.55 + (f < 0 || f > 1 ? -6 : 0); return { az, el }; }
+// A real sun's arc across the view (the user, 2026-11-12: it should look good, behave like a real sun and be in the frame most of the time):
+// it rises at the left, climbs to a modest height (just above the frame at midday in summer, so the valley is lit from in front and above),
+// and goes down behind the peaks and the saddle on the right; in frame through the morning and the afternoon; in winter low and in view
+// nearly all day, as a real winter sun is.
+export const SUN_ARC = { winter: { rise: -26, set: 15, peak: 14 }, spring: { rise: -34, set: 26, peak: 21 }, summer: { rise: -40, set: 33, peak: 26 } };
+export function sunAt(f, season = 'summer') { const a = SUN_ARC[season] ?? SUN_ARC.summer; const az = lerp(a.rise, a.set, f); const el = a.peak * Math.sin(Math.PI * clamp(f, 0, 1)) ** 0.7 + (f < 0 || f > 1 ? -6 : 0); return { az, el }; }
 const dirOf = (az, el) => new THREE.Vector3(Math.sin(az * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), -Math.cos(az * DEG) * Math.cos(el * DEG));
 
 // moods keyed by time: [sun f, sky turbidity, rayleigh, exposure, sun colour, sun intensity, ambient sky, ambient ground, fog colour, fog density]
 const MOODS = {
-  dawn: [0.035, 6, 2.6, 0.42, '#ffb27a', 1.4, '#9fb4d6', '#5a4a3c', '#d9b9a3', 1.05e-4],
-  morning: [0.22, 4, 1.4, 0.36, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
-  noon: [0.5, 1.6, 2.3, 0.32, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
-  evening: [0.82, 4, 1.6, 0.38, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
+  dawn: [0.06, 5, 2.4, 0.42, '#ffb27a', 1.4, '#9fb4d6', '#5a4a3c', '#d9b9a3', 1.05e-4],
+  morning: [0.15, 2.2, 2.4, 0.34, '#ffe6c8', 2.6, '#b8cbe6', '#5f5a42', '#c8d3de', 0.9e-4],
+  noon: [0.5, 1.2, 3.0, 0.32, '#ffe8c6', 3.4, '#adc6ee', '#6b6540', '#b0c2da', 0.85e-4], // warm sun, cool sky fill: the lit and the shaded sides part // a clear blue sky, warm sun
+  evening: [0.85, 2.6, 2.2, 0.36, '#ffd3a0', 2.4, '#b2c2de', '#5f5340', '#d2c9c2', 0.95e-4],
   dusk: [0.968, 7, 2.8, 0.45, '#ff9a5a', 1.2, '#93a3c8', '#4b3d33', '#d8a98f', 1.1e-4],
   night: [null, 0, 0, 0.9, '#a9bde6', 0.75, '#2a3858', '#11161e', '#1b2433', 0.9e-4], // moonlight strong enough to read the valley by
 };
@@ -409,14 +413,14 @@ export async function startBlockout(canvas, overlay) {
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
       meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone, path: (x, z) => polyDistance(FOOTPATH, x, z), moist: (x, z) => clamp(0.5 - microAt(x, z) * 1.1 + (zone(x, z) === 'wet' ? 0.3 : 0), 0, 1) }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
-  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0026; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.87; /* a tighter glow round the sun, so the sky does not wash over the frame */
+  const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); { const gain = night ? 1 : ['dawn', 'dusk'].includes(Q.get('tod')) ? 0.8 : 0.33; sky.material.fragmentShader = sky.material.fragmentShader.replace('gl_FragColor = vec4( texColor, 1.0 );', `gl_FragColor = vec4( texColor * ${gain.toFixed(2)}, 1.0 );`); sky.material.needsUpdate = true; } /* the sky's own exposure: deep blue overhead instead of a clipped white */ const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0019; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.9; /* a tighter glow round the sun, so the sky does not wash over the frame */
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };
   const light = new THREE.DirectionalLight(mood[4], mood[5] * (night ? 1 : LAND_LIGHT)); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.55 : LOOK_ON ? 1.7 * LAND_LIGHT : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
   const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#e6dfb8' : mood[6], night ? 0.08 : LOOK_ON ? 1.5 * LAND_LIGHT / 1.3 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
   if (LOOK_ON && Q.get('clouds') !== '0') { const cover = Number(Q.get('cover') ?? (night ? 0.58 : 0.5)); scene.add(buildClouds({ coverage: cover, night })); LOOK.uCover.value = cover; LOOK.uCloudOn.value = 1; } // ?clouds=0 for a clear sky, ?cover=0.3..0.7
-  if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 12500, /* the far range goes blue with distance, as in the references */ glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
+  if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 24000 : 1 / 32000, /* clean mountain air: the haze only tells on the far range */ /* the far range goes blue with distance, as in the references */ glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
     scene.background = new THREE.Color('#0b1220'); sky.visible = false;

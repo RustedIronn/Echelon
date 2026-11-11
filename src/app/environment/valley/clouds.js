@@ -23,8 +23,8 @@ void main(){
   float a = clamp(dens * 1.25, 0.0, 1.0) * fade; if (a < 0.003) discard;
   float sunUp = smoothstep(-0.08, 0.15, uSunDir.y);
   float thick = smoothstep(0.2, 1.0, dens);
-  vec3 lit = mix(uSunCol, vec3(1.0), 0.62) * (0.96 - 0.2 * thick);                          // the thin edges: bright, a little warm (seen against the sun, never paper white)
-  lit = mix(lit, vec3(0.6, 0.64, 0.72), thick * 0.6);                                        // the thick middle: shaded blue-grey, the body of a backlit cloud
+  vec3 lit = mix(uSunCol, vec3(1.0), 0.8) * (1.0 - 0.12 * thick);                          // the thin edges: bright, a little warm (seen against the sun, never paper white)
+  lit = mix(lit, vec3(0.78, 0.81, 0.87), thick * 0.5); /* clean white cloud, soft blue-grey only in its thickest part */                                        // the thick middle: shaded blue-grey, the body of a backlit cloud
   float fwd = pow(max(dot(v, normalize(uSunDir)), 0.0), 10.0); lit += uSunCol * fwd * (1.0 - thick) * 1.6; // the silver lining toward the sun
   vec3 col = mix(vec3(0.07, 0.08, 0.11), lit, sunUp); if (uNight > 0.5) col = vec3(0.08, 0.1, 0.15);
   col = mix(col, uHaze, smoothstep(0.25, 0.0, v.y) * 0.55);                                  // the far cloud fades into the horizon haze

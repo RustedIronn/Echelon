@@ -34,13 +34,13 @@ export function metricUV(geo, across = false) {
 
 // A house: w along the ridge (local x), d deep; its front (balconies, most windows, the geraniums) faces local +z. storeys: timber floors
 // over the stone or whitewashed ground floor (1 for a farmhouse, 2 for the tall village houses); a barn is boarded, with a hay door.
-export function alpineHouse(w, d, { low = 3.0, high = 3.2, pitch = 0.42, seed = 0, stoneFloor = false, barn = false, lamps = null, plaster = 'worn_mossy_plasterwall', wood = '#ffffff', slate = '#ffffff', storeys = 1, eaves = 1.4 } = {}) {
+export function alpineHouse(w, d, { low = 3.0, high = 3.2, pitch = 0.42, seed = 0, stoneFloor = false, barn = false, lamps = null, plaster = 'worn_mossy_plasterwall', wood = '#ffffff', slate = '#ffffff', storeys = 1, eaves = 1.4, white = false } = {}) {
   const g = new THREE.Group(); const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   const box = (sx, sy, sz, mat, x, y, z, across = false) => { const geo = metricUV(new THREE.BoxGeometry(sx, sy, sz), across); const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
   const stone = surface('rustic_stone_wall'), planks = surface('weathered_planks', wood), lower = stoneFloor || barn ? stone : surface(plaster);
   box(w + 0.3, 4.0, d + 0.3, stone, 0, -1.8, 0); // the plinth: down into the slope, so no house floats or sinks
   box(w, low, d, lower, 0, low / 2, 0);
-  const timber = high * storeys; box(w * 0.995, timber, d * 0.995, planks, 0, low + timber / 2, 0, !barn); // horizontal larch planks on a house, vertical boards on a barn
+  const timber = high * storeys; box(w * 0.995, timber, d * 0.995, white ? surface('plastered_wall', '#f6f3ec') : planks, 0, low + timber / 2, 0, !barn); /* whitewashed through every storey (the Engadin house) or larch above */ // horizontal larch planks on a house, vertical boards on a barn
   const eave = low + timber, rise = (d / 2 + eaves) * pitch; const shape = new THREE.Shape([new THREE.Vector2(-d / 2 - eaves, 0), new THREE.Vector2(d / 2 + eaves, 0), new THREE.Vector2(0, rise)]);
   const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); rg.computeVertexNormals(); metricUV(rg);
   const roof = new THREE.Mesh(rg, [surface('weathered_planks', wood), surface('roof_slates_02', slate)]); roof.castShadow = true; roof.receiveShadow = true; g.add(roof); // timber gables, slate roof
