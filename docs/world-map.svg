@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" font-family="Segoe UI, Arial, sans-serif" font-size="13">
+  <!-- Top-down plan of the valley (WORLD-SPEC.md). Up is the view direction (roughly south). 1 unit = 1.5 m; the camera is at (500, 950). -->
+  <rect width="1000" height="1000" fill="#eef1e6"/>
+  <!-- backdrop directions (peaks 5-15 km away, off the map) -->
+  <g stroke="#7a8796" stroke-dasharray="4 5" fill="none">
+    <line x1="500" y1="950" x2="40" y2="20"/>
+    <line x1="500" y1="950" x2="960" y2="20"/>
+  </g>
+  <text x="44" y="38" fill="#4d5866">view edge (about 36 degrees left)</text>
+  <text x="736" y="38" fill="#4d5866">view edge (about 36 degrees right)</text>
+  <g fill="#4d5866" font-weight="600">
+    <text x="135" y="70">SUNRISE PASS, about 25 degrees left, low notch</text>
+    <text x="520" y="70">MAIN PEAK and GLACIER, about 11 degrees right, 8 km</text>
+    <text x="745" y="100">SUNSET SADDLE, about 29 degrees right</text>
+  </g>
+  <!-- slopes and forest (1-5 km, beyond the map edge as belts) -->
+  <path d="M0 120 C160 180 300 150 420 120 L420 0 L0 0Z" fill="#5b7553" opacity=".55"/>
+  <path d="M600 110 C720 160 860 190 1000 150 L1000 0 L600 0Z" fill="#5b7553" opacity=".55"/>
+  <text x="40" y="112" fill="#24331f">spruce and larch forest, treeline, avalanche paths</text>
+  <text x="700" y="140" fill="#24331f">forest, high summer pasture (cows in July)</text>
+  <!-- upper terrace -->
+  <path d="M600 420 C650 380 760 380 820 430 C790 520 660 540 600 500Z" fill="#cdd7b0" stroke="#9aa77a"/>
+  <!-- meadows and pasture -->
+  <path d="M120 560 C200 470 330 430 470 470 C500 560 420 640 300 660 C220 670 150 640 120 560Z" fill="#d8e3a6" opacity=".8"/>
+  <text x="200" y="545" fill="#4a5a22">hay meadow, mown in July</text>
+  <path d="M560 600 C640 560 760 580 860 640 C850 720 720 760 600 720Z" fill="#b9cc8e" opacity=".8"/>
+  <text x="640" y="680" fill="#3d4d1c">grazed pasture, cows in spring and autumn</text>
+  <!-- glacial river: enters at the right, S-curves across the floor, pools into the lake -->
+  <path d="M990 480 C900 520 800 560 760 590 C700 640 600 600 520 640 C450 680 600 760 560 800 C530 830 480 850 450 862" fill="none" stroke="#9fd3cf" stroke-width="16" stroke-linecap="round"/>
+  <path d="M990 480 C900 520 800 560 760 590 C700 640 600 600 520 640 C450 680 600 760 560 800 C530 830 480 850 450 862" fill="none" stroke="#c9c6bb" stroke-width="3" stroke-dasharray="2 10"/>
+  <text x="820" y="508" fill="#2d6c69">glacial river (milky, stone bars)</text>
+  <!-- lake, left foreground -->
+  <ellipse cx="345" cy="885" rx="115" ry="42" fill="#7fb3c8" stroke="#5b8ea3"/>
+  <text x="262" y="890" fill="#163c4b" font-weight="600">STILL LAKE (calm zone)</text>
+  <path d="M238 872 l-12 -8 M240 882 l-14 -2 M246 894 l-12 6" stroke="#6d7d3d" stroke-width="2"/>
+  <text x="186" y="866" fill="#4a5a22">reeds</text>
+  <!-- lower hamlet: the working group -->
+  <g fill="#8b6f52" stroke="#4e3d2b">
+    <rect x="575" y="755" width="16" height="12"/><rect x="600" y="770" width="20" height="14"/><rect x="622" y="748" width="22" height="16"/>
+    <rect x="548" y="790" width="10" height="8" fill="#5e7fa0"/>
+  </g>
+  <line x1="552" y1="814" x2="575" y2="806" stroke="#6e5536" stroke-width="4"/>
+  <text x="650" y="768" fill="#3e2f20" font-weight="600">LOWER HAMLET: mill, farm, barn</text>
+  <text x="590" y="826" fill="#3e2f20">footbridge</text>
+  <line x1="430" y1="900" x2="452" y2="912" stroke="#6e5536" stroke-width="4"/>
+  <text x="456" y="926" fill="#3e2f20">jetty</text>
+  <!-- upper hamlet on the terrace -->
+  <g fill="#a08868" stroke="#4e3d2b">
+    <rect x="660" y="440" width="14" height="12"/><rect x="680" y="452" width="14" height="10"/><rect x="700" y="436" width="16" height="12"/><rect x="722" y="458" width="14" height="10"/><rect x="742" y="440" width="18" height="14"/>
+    <rect x="690" y="415" width="12" height="18" fill="#f2efe6"/>
+  </g>
+  <text x="640" y="402" fill="#3e2f20" font-weight="600">UPPER HAMLET: chapel, houses, inn (terrace)</text>
+  <!-- the track from the mill to the chapel -->
+  <path d="M612 748 C640 700 700 640 690 560 C685 520 700 480 700 462" fill="none" stroke="#a78a5c" stroke-width="3" stroke-dasharray="7 4"/>
+  <text x="700" y="560" fill="#6e5536">track</text>
+  <!-- hay huts and hero tree -->
+  <g fill="#6b5338"><rect x="300" y="520" width="9" height="7"/><rect x="420" y="600" width="9" height="7"/><rect x="840" y="600" width="9" height="7"/><rect x="560" y="540" width="9" height="7"/></g>
+  <text x="250" y="512" fill="#3e2f20">hay huts (2-3 prominent)</text>
+  <circle cx="380" cy="700" r="12" fill="#4f6e3b"/>
+  <text x="300" y="730" fill="#24331f">hero tree (old larch or sycamore)</text>
+  <!-- knoll and camera -->
+  <ellipse cx="520" cy="955" rx="90" ry="30" fill="#c7d39b" stroke="#9aa77a"/>
+  <polygon points="500,950 492,964 508,964" fill="#b23a3a"/>
+  <text x="560" y="975" fill="#5a1f1f" font-weight="600">CAMERA on the knoll, 8 m above the lake</text>
+  <!-- scale -->
+  <line x1="40" y1="975" x2="173" y2="975" stroke="#333" stroke-width="2"/><text x="40" y="992" fill="#333">200 m</text>
+</svg>
