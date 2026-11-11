@@ -14,12 +14,12 @@ function maps() {
 }
 
 // points: Vector2 (x, z) spaced along the path; at(x, z): ground height; wet(x, z): true where the river is (no ribbon there)
-export function buildPath(points, { width = 1.8, at, wet = () => false, tile = 2.6 } = {}) {
+export function buildPath(points, { width = 1.8, at, wet = () => false, tile = 2.6, strength = 1 } = {}) {
   const P = [], U = [], A = [], I = [], C = []; const wn = (a) => { const v = Math.sin(a * 0.37) * 0.5 + Math.sin(a * 0.13 + 1.7) * 0.3 + Math.sin(a * 1.1 + 0.4) * 0.2; return v; }; let along = 0; let open = false;
   for (let i = 0; i < points.length; i += 1) { const p = points[i], q = points[Math.min(i + 1, points.length - 1)], o = points[Math.max(i - 1, 0)]; const dx = q.x - o.x, dz = q.y - o.y, l = Math.hypot(dx, dz) || 1; const nx = -dz / l, nz = dx / l;
     if (i > 0) along += p.distanceTo(points[i - 1]); const w = width * (0.85 + 0.3 * Math.sin(i * 0.7) * Math.sin(i * 0.23)); /* a worn path is never one width */
     if (wet(p.x, p.y)) { open = false; continue; }
-    const base = P.length / 3; for (const s of [-1, 0, 1]) { const x = p.x + nx * s * w / 2, z = p.y + nz * s * w / 2; P.push(x, at(x, z) + 0.12, z); U.push(along / tile, (s + 1) / 2); A.push(along, (s + 1) / 2); C.push(1, 1, 1, Math.min(0.7, Math.max(0.15, 0.48 + 0.45 * wn(along + s * 3.1)))); } /* worn bare in places, grassed over in others */
+    const base = P.length / 3; for (const s of [-1, 0, 1]) { const x = p.x + nx * s * w / 2, z = p.y + nz * s * w / 2; P.push(x, at(x, z) + 0.12, z); U.push(along / tile, (s + 1) / 2); A.push(along, (s + 1) / 2); C.push(1, 1, 1, strength * Math.min(0.7, Math.max(0.15, 0.48 + 0.45 * wn(along + s * 3.1)))); } /* worn bare in places, grassed over in others */
     if (open) { const b = base - 3; I.push(b, base, b + 1, b + 1, base, base + 1, b + 1, base + 1, b + 2, b + 2, base + 1, base + 2); } open = true; }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); geo.setAttribute('color', new THREE.Float32BufferAttribute(C, 4)); geo.setIndex(I); geo.computeVertexNormals(); if (geo.attributes.normal.getY(1) < 0) { for (let k = 0; k < I.length; k += 3) [I[k + 1], I[k + 2]] = [I[k + 2], I[k + 1]]; geo.setIndex(I); geo.computeVertexNormals(); } /* face up */
   const { map, alphaMap } = maps(); const m = applyValleyLook(new THREE.MeshLambertMaterial({ map, alphaMap, vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), { ground: false });

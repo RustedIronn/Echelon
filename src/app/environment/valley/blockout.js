@@ -116,11 +116,13 @@ function demHeight(x, z) {
   return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
+// the valley floor's small rises (dry) and hollows (damp), in metres
+const microAt = (x, z) => 1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5);
 // the terrace's edge wanders: a glacial terrace is never a circle
 const terraceEdge = (a) => 58 + 16 * fbm(Math.cos(a) * 1.6 + 2, Math.sin(a) * 1.6 + 7, 3);
 export function heightAt(x, z, cheap = false, noPads = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
-  let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5) + (r > 60 ? (1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5)) * Math.min(1, (r - 60) / 60) : 0); // the floor, with its small rises and hollows
+  let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5) + (r > 60 ? microAt(x, z) * Math.min(1, (r - 60) / 60) : 0); // the floor, with its small rises and hollows
   const floorH = h;
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
   { const d = Math.hypot(x - UPPER.x, z - UPPER.z); if (d < 190) { const a = Math.atan2(x - UPPER.x, z - UPPER.z); const R = terraceEdge(a), W = 34 + 18 * fbm(Math.cos(a) * 2 + 5, Math.sin(a) * 2, 2);
@@ -356,7 +358,7 @@ export async function startBlockout(canvas, overlay) {
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   if (LOOK_ON && Q.get('stones') !== '0') { try { ROCKS = rockSites(); scene.add(await buildRocks(ROCKS)); } catch (e) { console.warn('rocks', e); } } // the scanned rocks
   // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
-  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet })); /* in winter the paths lie under the snow */
+  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }), buildPath(FOOTPATH, { width: 3.8, at, wet, strength: 0.28, tile: 3.4 })); /* the worn line, and round it the faint trampled margin */ /* in winter the paths lie under the snow */
     let a = null, b = null; for (let i = 1; i < FOOTPATH.length && !b; i += 1) { const w = wet(FOOTPATH[i].x, FOOTPATH[i].y); if (w && !a) a = FOOTPATH[i - 1]; if (!w && a) b = FOOTPATH[i]; }
     if (a && b) scene.add(footbridge(a, b, Math.max(heightAt(a.x, a.y), heightAt(b.x, b.y)))); }
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
@@ -396,9 +398,10 @@ export async function startBlockout(canvas, overlay) {
     if (Q.get('scanned') !== '0') { try { // the cards follow the land use: none on the mown plots, short plain grass where it is grazed or damp; in the hay, flowers in pockets
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
-        const fl = fbm(x / 40 + 3, z / 40, 3) + 0.3 * (pick - 0.5); const mix = Math.min(0.999, Math.max(0, (fbm(x / 90 + 11, z / 90, 2) - 0.3) / 0.4 + 0.25 * (hash(z, x * 1.7) - 0.5))); /* the pockets feather out at their edges */ const kind = short || mw > 0.5 ? 0 : fl < 0.5 ? 0 : mix < 0.42 ? 1 : mix < 0.68 ? 2 : mix < 0.9 ? 3 : 4; /* flowering pockets, each its own colour: daisies, yellow, violet-blue, pink */
+        const fl = fbm(x / 40 + 3, z / 40, 3) + 0.3 * (pick - 0.5); const mix = Math.min(0.999, Math.max(0, (fbm(x / 90 + 11, z / 90, 2) - 0.3) / 0.4 + 0.25 * (hash(z, x * 1.7) - 0.5))); /* the pockets feather out at their edges */ const fl2 = fl * 0.5 + fbm(x / 13 + 7, z / 13, 2) * 0.5; const dry = microAt(x, z) > 0.1, damp = microAt(x, z) < -0.15 || dp > 0.3; const nearPath = polyDistance(FOOTPATH, x, z) < 6;
+        const bloom = smooth(0.47, 0.66, fl2) * 0.85; /* the chance of flowering rises gently into a cluster: varied density, soft edges */ const kind = short || mw > 0.5 || nearPath || hash(x * 0.37, z * 1.91) > bloom ? 0 : damp ? 2 : dry ? (mix < 0.6 ? 1 : 4) : (mix < 0.45 ? 1 : mix < 0.8 ? 3 : 4); /* plant communities in small clusters by the ground: yellow and pink bistort in the damp, cranesbill and clover between, daisies and harebells on the dry */ /* flowering pockets, each its own colour: daisies, yellow, violet-blue, pink */
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
-      meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
+      meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone, path: (x, z) => polyDistance(FOOTPATH, x, z), moist: (x, z) => clamp(0.5 - microAt(x, z) * 1.1 + (zone(x, z) === 'wet' ? 0.3 : 0), 0, 1) }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0026; /* less milky glare round the sun */ u.mieDirectionalG.value = night ? 0.8 : 0.87; /* a tighter glow round the sun, so the sky does not wash over the frame */
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
