@@ -133,15 +133,43 @@ function buildTerrain() {
   const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true, glow: 0.55 })); mesh.name = 'blockout terrain'; TREE_LIST = trees; return mesh;
 }
 
+// The still lake: a true mirror where the air is calm, broken where a breath of wind crosses it (cat's-paws), and darker teal water seen
+// when looking down near the shore, more mirror toward the far side (Fresnel).
+const LAKE_SHADER = {
+  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null } },
+  vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vWorld;
+#include <common>
+void main() { vUv = textureMatrix * vec4(position, 1.0); vWorld = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; varying vec4 vUv; varying vec3 vWorld;
+float lh(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+float ln(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(lh(i),lh(i+vec2(1,0)),f.x),mix(lh(i+vec2(0,1)),lh(i+vec2(1,1)),f.x),f.y); }
+float lf(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*ln(p); p=p*2.1+3.7; a*=0.5; } return s; }
+void main() {
+  vec2 p = vWorld.xz; float paws = smoothstep(0.5, 0.72, lf(p * 0.025)); // where a breath of wind is crossing
+  vec2 ripple = vec2(lf(p * vec2(0.9, 2.6)), lf(p * vec2(0.9, 2.6) + 7.3)) - 0.5;
+  vec4 uv = vUv; uv.xy += ripple * (0.004 + 0.03 * paws) * uv.w;
+  vec3 refl = texture2DProj(tDiffuse, uv).rgb;
+  vec3 v = normalize(cameraPosition - vWorld); float f = 0.02 + 0.98 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
+  vec3 body = vec3(0.035, 0.07, 0.065);
+  gl_FragColor = vec4(mix(body, refl * (0.92 - 0.12 * paws), clamp(f * 1.15 + 0.12, 0.0, 1.0)), 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`,
+};
 function buildWater() {
   const group = new THREE.Group();
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
-  const lake = new Reflector(lakeGeo, { textureWidth: 1024, textureHeight: 512, color: 0x8a9aa4 }); lake.position.set(LAKE.x, 0, LAKE.z); lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
+  const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
   const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
     const y = heightAt(p.x, p.y, true) - 0.9 + 0.0; P.push(p.x - (tz / l) * w, Math.max(0.05, y), p.y + (tx / l) * w, p.x + (tz / l) * w, Math.max(0.05, y), p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
-  group.add(new THREE.Mesh(rg, lookMat(new THREE.MeshStandardMaterial({ color: 0x6fa9a6, roughness: 0.85, metalness: 0.0, side: THREE.DoubleSide }))));
+  const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x4f9c9c, roughness: 0.8, metalness: 0.0, side: THREE.DoubleSide }));
+  if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
+    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+{ vec2 p = vlWorld.xz; float riffle = smoothstep(0.58, 0.78, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))); float silt = vlFbm(p * 0.04);
+  diffuseColor.rgb = mix(diffuseColor.rgb * (0.85 + 0.3 * silt), vec3(0.8, 0.9, 0.9), riffle * 0.45); }`); }; riverMat.customProgramCacheKey = () => 'valley-river'; }
+  group.add(new THREE.Mesh(rg, riverMat));
   return group;
 }
 
@@ -193,7 +221,7 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0') { const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.15 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
+  if (LOOK_ON && Q.get('grass') !== '0') { const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 0.75 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };
