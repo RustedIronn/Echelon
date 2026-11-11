@@ -87,24 +87,27 @@ export function wallAlong(points, at, { height = 1.3 } = {}) { const g = new THR
     const m = new THREE.Mesh(metricUV(new THREE.BoxGeometry(0.7, height + 1.2, len + 0.3)), stone); m.position.set(x, Math.max(at(a[0], a[1]), at(b[0], b[1])) + height / 2 - 0.6, z); m.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); m.castShadow = true; m.receiveShadow = true; g.add(m); }
   g.name = 'dry-stone wall'; return g; }
 
-// The chapel: a white nave with a choir apse behind, a slate roof, its tower at the front toward the valley with stone quoins at the
-// corners, the belfry open, a clock, a slate spire
+// The church, seen from the side as Alpine churches are: a long white nave on a stone base course with arched windows in stone frames and a
+// porch over the side door, the choir apse at one end and the tower at the other, its lower storey of heavy stone with quoins above, the
+// belfry open under a slate spire, a clock. The long side (local +x) faces the valley.
 export function chapel() {
-  const g = new THREE.Group(); const white = surface('plastered_wall', '#fbfaf6'), stone = surface('rustic_stone_wall'), slate = surface('roof_slates_02', '#d8d6d2');
+  const g = new THREE.Group(); const white = surface('plastered_wall', '#fbfaf6'), stone = surface('rustic_stone_wall'), slate = surface('roof_slates_02', '#d8d6d2'), dark = flat('#221e1b');
   const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
-  add(metricUV(new THREE.BoxGeometry(9.6, 4, 17.6)), stone, 0, -1.8, 0);
+  add(metricUV(new THREE.BoxGeometry(9.8, 4, 18)), stone, 0, -1.6, 0); add(metricUV(new THREE.BoxGeometry(9.3, 1.3, 17.3)), stone, 0, 0.65, 0); // the plinth and the base course
   add(metricUV(new THREE.BoxGeometry(9, 8, 17)), white, 0, 4, 0);
-  const shape = new THREE.Shape([new THREE.Vector2(-5.2, 0), new THREE.Vector2(5.2, 0), new THREE.Vector2(0, 5.4)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: 18.2, bevelEnabled: false }); rg.translate(0, 7.9, -9.1); rg.computeVertexNormals(); metricUV(rg);
-  add(rg, [white, slate], 0, 0, 0);
-  const apse = add(metricUV(new THREE.CylinderGeometry(3.6, 3.6, 7, 16, 1, false, Math.PI / 2, Math.PI)), white, 0, 3.5, -8.5); // the choir
-  add(metricUV(new THREE.ConeGeometry(4.1, 2.6, 16, 1, false, Math.PI / 2, Math.PI)), slate, 0, 8.2, -8.5);
-  for (const sx of [-1, 1]) for (const z of [-4.5, 0, 4.5]) add(new THREE.BoxGeometry(0.08, 2.6, 1.1), flat('#2a2622'), sx * 4.52, 4.6, z); // tall windows along the nave
-  add(metricUV(new THREE.BoxGeometry(5.6, 4, 5.6)), stone, 0, -1.8, 10.6);
-  add(metricUV(new THREE.BoxGeometry(5.2, 29, 5.2)), white, 0, 14.5, 10.6);
-  for (const [x, z] of [[-2.55, 2.55], [2.55, 2.55], [-2.55, -2.55], [2.55, -2.55]]) for (let k = 0; k < 14; k += 1) add(new THREE.BoxGeometry(k % 2 ? 0.75 : 0.5, 0.95, k % 2 ? 0.5 : 0.75), stone, x, 0.6 + k * 1.9, 10.6 + z); // the quoins
-  for (const [x, z, sx, sz] of [[0, 2.62, 1.5, 0.06], [0, -2.62, 1.5, 0.06], [2.62, 0, 0.06, 1.5], [-2.62, 0, 0.06, 1.5]]) add(new THREE.BoxGeometry(sx, 3.0, sz), flat('#221e1b'), x, 25.2, 10.6 + z); // the belfry openings
-  const face = add(new THREE.CylinderGeometry(1.15, 1.15, 0.06, 28), flat('#26324a'), 0, 21.2, 13.24); face.rotation.x = Math.PI / 2; const ring = add(new THREE.TorusGeometry(1.15, 0.08, 6, 28), flat('#c9a24a'), 0, 21.2, 13.27); // the clock
-  const spire = add(metricUV(new THREE.ConeGeometry(3.9, 12, 4).toNonIndexed().rotateY(Math.PI / 4)), surface('roof_slates_02', '#bdbab5'), 0, 35, 10.6); spire.geometry.computeVertexNormals(); metricUV(spire.geometry);
-  add(new THREE.BoxGeometry(1.6, 3.0, 0.1), flat('#3a2a1e'), 0, 1.5, 13.25); // the door, under the tower
-  g.userData.foot = [10.4, 24]; return g;
+  const shape = new THREE.Shape([new THREE.Vector2(-5.3, 0), new THREE.Vector2(5.3, 0), new THREE.Vector2(0, 5.2)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: 18.4, bevelEnabled: false }); rg.translate(0, 7.9, -9.2); rg.computeVertexNormals(); metricUV(rg); add(rg, [white, slate], 0, 0, 0);
+  add(metricUV(new THREE.CylinderGeometry(3.6, 3.6, 7, 16, 1, false, Math.PI / 2, Math.PI)), white, 0, 3.5, -8.5); add(metricUV(new THREE.ConeGeometry(4.1, 2.6, 16, 1, false, Math.PI / 2, Math.PI)), slate, 0, 8.2, -8.5); // the choir
+  for (const sx of [-1, 1]) for (const z of [-5.2, -1.2, 2.8]) { add(new THREE.BoxGeometry(0.1, 3.0, 1.5), stone, sx * 4.53, 4.9, z); add(new THREE.BoxGeometry(0.12, 2.5, 1.0), dark, sx * 4.55, 4.75, z); const arch = add(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 12, 1, false, 0, Math.PI), dark, sx * 4.55, 6.0, z); arch.rotation.set(0, 0, Math.PI / 2); arch.rotation.order = 'ZYX'; } // arched windows in stone frames
+  // the porch over the side door, toward the valley
+  add(new THREE.BoxGeometry(0.12, 2.6, 1.5), flat('#3a2a1e'), 4.56, 1.3, 0.8); add(metricUV(new THREE.BoxGeometry(2.4, 0.5, 3.0)), stone, 5.7, 0.25, 0.8);
+  for (const z of [-0.5, 2.1]) add(new THREE.BoxGeometry(0.22, 2.9, 0.22), surface('weathered_planks'), 6.7, 1.45, z);
+  const ps = new THREE.Shape([new THREE.Vector2(-1.7, 0), new THREE.Vector2(1.7, 0), new THREE.Vector2(0, 1.3)]); const pg = new THREE.ExtrudeGeometry(ps, { depth: 2.6, bevelEnabled: false }); pg.rotateY(Math.PI / 2); pg.translate(4.5, 2.9, 0.8); pg.computeVertexNormals(); metricUV(pg); add(pg, [white, slate], 0, 0, 0);
+  // the tower at the far end of the nave from the choir
+  add(metricUV(new THREE.BoxGeometry(5.8, 4, 5.8)), stone, 0, -1.6, 10.8); add(metricUV(new THREE.BoxGeometry(5.5, 6, 5.5)), stone, 0, 3, 10.8); add(metricUV(new THREE.BoxGeometry(5.0, 16, 5.0)), white, 0, 14, 10.8);
+  for (const [x, z] of [[-2.45, 2.45], [2.45, 2.45], [-2.45, -2.45], [2.45, -2.45]]) for (let k = 0; k < 8; k += 1) add(new THREE.BoxGeometry(k % 2 ? 0.7 : 0.48, 0.95, k % 2 ? 0.48 : 0.7), stone, x, 6.6 + k * 1.9, 10.8 + z); // the quoins
+  for (const [x, z, sx, sz] of [[0, 2.52, 1.4, 0.06], [0, -2.52, 1.4, 0.06], [2.52, 0, 0.06, 1.4], [-2.52, 0, 0.06, 1.4]]) { add(new THREE.BoxGeometry(sx, 2.6, sz), dark, x, 19.2, 10.8 + z); } // the open belfry
+  for (const [x, z, rx, ry] of [[2.54, 0, 0, Math.PI / 2], [0, 2.54, Math.PI / 2, 0]]) { const face = add(new THREE.CylinderGeometry(1.0, 1.0, 0.06, 28), flat('#26324a'), x, 15.6, 10.8 + z); face.rotation.set(rx, 0, ry); const ring = add(new THREE.TorusGeometry(1.0, 0.08, 6, 28), flat('#c9a24a'), x + (x ? 0.03 : 0), 15.6, 10.8 + z + (z ? 0.03 : 0)); ring.rotation.set(0, x ? Math.PI / 2 : 0, 0); } // clocks
+  add(metricUV(new THREE.BoxGeometry(5.4, 0.5, 5.4)), stone, 0, 22.2, 10.8);
+  const spire = add(metricUV(new THREE.ConeGeometry(3.7, 10, 4).toNonIndexed().rotateY(Math.PI / 4)), surface('roof_slates_02', '#bdbab5'), 0, 27.4, 10.8); spire.geometry.computeVertexNormals(); metricUV(spire.geometry);
+  g.userData.foot = [11, 25]; return g;
 }

@@ -318,7 +318,7 @@ function buildSettlements() {
   place(stadel(1), LOWER.x - 38, LOWER.z + 24, 0.3);
   // the upper group: the chapel at the front of the terrace, the focal point, its tower toward the valley, in its churchyard wall; tall
   // village houses and low farmhouses beside and behind it; two granaries in front
-  const ch = chapel(); ch.add(wallAlong([[-8, 15], [-8, -14], [8, -14], [8, 15], [1.6, 15]], () => 0.6)); ch.add(wallAlong([[-1.6, 15], [-8, 15]], () => 0.6)); place(ch, UPPER.x - 2, UPPER.z + 26, 0.1);
+  const ch = chapel(); ch.add(wallAlong([[11, 3], [11, 16], [-8, 16], [-8, -14], [11, -14], [11, -1.5]], () => 0.4, { height: 1.0 })); place(ch, UPPER.x - 2, UPPER.z + 26, -Math.PI / 2 + 0.12); /* side-on: the long nave toward the valley, the tower at its end */
   const UP = [[-34, 14, 0.2, 9, 8, 2, 0.52], [-60, -2, -0.15, 13, 10, 1, 0.36], [28, 18, -0.25, 10, 9, 2, 0.46], [54, 2, 0.3, 12, 9, 1, 0.4], [-20, -24, 0.1, 9, 8, 2, 0.56], [12, -30, -0.2, 11, 9, 1, 0.38]];
   UP.forEach(([dx, dz, t, w, d, storeys, pitch], i) => place(lived(alpineHouse(w, d, { seed: i + 4, storeys, pitch, stoneFloor: i % 3 === 1, low: 3 + (i % 2) * 0.4, lamps: LAMPS, wood: i % 2 ? '#e8e2da' : '#ffffff', eaves: storeys > 1 ? 1.2 : 1.7 }), i + 4), UPPER.x + dx, UPPER.z + dz, t));
   place(alpineHouse(9, 8, { seed: 11, barn: true, low: 2.6, high: 3.6 }), UPPER.x + 80, UPPER.z - 12, 0.5); /* the upper barn */
