@@ -130,18 +130,28 @@ ${textured ? `
   vec3 cliff2 = (texture2D(tCliff, vlWorld.zy / 290.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 290.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 290.0).rgb * w.z);
   vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.95, 0.97, 1.02), 0.62); // gneiss grey, not brown
   rock *= 0.78 + 0.45 * rib - 0.35 * cav;                                           // lit ribs, shadowed gullies: the relief reads even in backlight
-  rock *= (1.0 - 0.34 * gully + 0.16 * spur); rock = mix(rock, rock * vec3(0.82, 0.8, 0.78), 0.5 * gully); // the runnels, water-stained
+  rock *= (1.0 - 0.2 * gully + 0.1 * spur); rock = mix(rock, rock * vec3(0.85, 0.83, 0.8), 0.35 * gully); // the runnels, water-stained, quietly
+  // geology: bedding planes dipping gently across the massif; harder beds stand as cliff bands of their own tone, softer ones weather back
+  // into dark ledges where snow and turf catch (the horizontal lines of snow on the reference faces)
+  float bed = dot(vlWorld, normalize(vec3(0.18, 1.0, -0.1))) + 70.0 * (vlFbm(p / 420.0) - 0.5) + 18.0 * (vlFbm(p / 90.0) - 0.5); float bw = 40.0 + 34.0 * vlFbm(vec2(bed / 300.0, 1.7)); /* beds of uneven thickness */
+  float layer = fract(bed / bw), bedId = floor(bed / bw); float soft = step(0.55, vlHash(vec2(bedId, 3.3))); /* only some beds are soft enough to make a ledge */
+  float ledge = smoothstep(0.0, 0.08, layer) * smoothstep(0.26, 0.14, layer) * steep * soft * smoothstep(0.35, 0.6, vlFbm(vec2(dot(p, vec2(0.7, 0.7)) / 70.0, bedId))); /* broken along its length */
+  rock *= mix(1.0, 0.86 + 0.28 * vlHash(vec2(bedId, 7.7)), steep) * (1.0 - 0.32 * ledge);
+  // scree: grey fans of broken rock on the gentler ground at the foot of the cliffs
+  float scree = smoothstep(0.48, 0.6, up) * smoothstep(0.86, 0.74, up) * (1.0 - smoothstep(uTreeline + 600.0, uTreeline + 1000.0, h)) * smoothstep(0.56, 0.72, vlFbm(p / 160.0 + 1.3)) * smoothstep(0.4, 0.7, cav + 0.5 * gully); /* fans in the hollows below the gullies */
+  rock = mix(rock, vec3(0.44, 0.44, 0.43) * (0.82 + 0.34 * vlNoise(p / 3.0)), scree * 0.7);
   // alpine grassland above the forest: continuous turf on the gentler ground, giving way to rock along the runnels, on the ribs and where it
   // is steep, so the boundary follows the erosion (vertical) instead of blotches; thinning out 350-650 m above the treeline
   float grassBand = 1.0 - smoothstep(uTreeline + 200.0, uTreeline + 520.0, h + 220.0 * (coarse - 0.5));
   float turf = grassBand * smoothstep(0.25, 0.85, up + 0.4 * (fine - 0.5) + 0.25 * (vlNoise(p / 9.0) - 0.5)) * (1.0 - 0.8 * gully) * (1.0 - 0.5 * rib); /* a fine-grained mix of turf and rock, never blotches */
   vec3 turfCol = mix(vec3(0.15, 0.2, 0.08), vec3(0.24, 0.27, 0.12), vlFbm(p / 180.0)) * (0.85 + 0.3 * vlNoise(p / 20.0));
-  rock = mix(rock, turfCol, turf);
+  turf = max(turf * (1.0 - 0.85 * scree), ledge * grassBand * 0.8); rock = mix(rock, turfCol, turf); // turf on the gentler ground and along the ledges, not over the scree
   float line = uSnowline + 380.0 * (vlFbm(p / 620.0) - 0.5) + 140.0 * (vlFbm(p / 140.0) - 0.5);
   float hold = smoothstep(0.42, 0.6, up + 0.14 * (vlFbm(p / 70.0) - 0.5)) * (1.0 - 0.8 * rib * smoothstep(0.85, 0.5, up)); // steep ribs shed it; gentle crests keep it
   float couloir = max(cav * smoothstep(0.15, 0.45, up + 0.25), gully);             // snow fills the gullies and couloirs far below the line
   hold *= smoothstep(0.42, 0.58, vlFbm(p / 110.0 + 4.0) + 0.25 * smoothstep(line, line + 330.0, h)); // below the cap, old snow lies in patches on the shelves, never one sheet
-  hold = max(hold, gully * 0.95) * (1.0 - 0.9 * spur * smoothstep(0.55, 0.3, up)); // white streaks down the runnels, dark ribs between
+  hold = max(hold, gully * 0.7 * smoothstep(0.4, 0.62, vlFbm(vec2(p.x / 40.0, h / 300.0) + 5.0))) * (1.0 - 0.9 * spur * smoothstep(0.55, 0.3, up)); // snow in some of the runnels, broken, dark ribs between
+  hold = max(hold, ledge * 0.85); // and broken lines of snow along the soft ledges
   float snow = smoothstep(line - 25.0, line + 25.0, h + 380.0 * couloir + 90.0 * (fine - 0.5)) * max(hold, couloir * 0.9);
   float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.36, 0.52, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top, but no snow holds on faces steeper than about 60 degrees: the horns stand dark
   cap *= 1.0 - 0.92 * max(spur, rib * 0.7) * smoothstep(0.62, 0.32, up);        // the ribs and steep rock break through it
@@ -161,7 +171,7 @@ ${textured ? `
   if (steepW > 0.0) { vec3 wW = pow(abs(nW), vec3(4.0)); float wxW = wW.x / max(wW.x + wW.z, 1e-3); vec3 e = vec3(4.0, 0.0, 0.0);
     float dx = 0.55 * (vlRunnels(vlWorld + e, wxW) - vlRunnels(vlWorld - e, wxW)) + 0.45 * (vlGullies(vlWorld + e * 3.0, wxW) - vlGullies(vlWorld - e * 3.0, wxW)) * 0.5;
     float dz = 0.55 * (vlRunnels(vlWorld + e.yyx, wxW) - vlRunnels(vlWorld - e.yyx, wxW)) + 0.45 * (vlGullies(vlWorld + e.yyx * 3.0, wxW) - vlGullies(vlWorld - e.yyx * 3.0, wxW)) * 0.5;
-    nW = normalize(nW - vec3(dx * (1.0 - wxW), 0.0, dz * wxW) * 5.0 * steepW); normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz); } }`);
+    nW = normalize(nW - vec3(dx * (1.0 - wxW), 0.0, dz * wxW) * 2.5 * steepW); normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz); } }`);
     // the air: transmittance through height-varying haze, and light scattered into the view (more toward the sun)
     shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', `
 { vec3 ray = vlWorld - cameraPosition; float d = length(ray); vec3 v = ray / max(d, 1e-3);
