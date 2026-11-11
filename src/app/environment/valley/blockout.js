@@ -126,7 +126,7 @@ function zoneColour(x, h, z, slope) {
 
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 401, R = 340, r0 = 3, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
+  const A = 561, R = 500, r0 = 3, r1 = 16000; /* finer: about 0.2 degrees and 1.7% in range, so slopes keep their small ridges and gullies */ const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.2 ? 320 * smooth(0.2, 0.4, demWeight(x, z)) : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
     const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2];
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
