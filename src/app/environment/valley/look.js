@@ -35,21 +35,25 @@ vec3 vlTex(sampler2D t, vec2 uv) { return texture2D(t, uv).rgb; }
 vec3 vlTwo(sampler2D t, vec2 p, float s) { float m = smoothstep(0.35, 0.65, vlFbm(p / (s * 6.0))); return mix(vlTex(t, p / s), vlTex(t, p / (s * 3.7) + 0.37), m * 0.6); }
 // rock on steep ground: projected along the face rather than from above, so cliffs are not stretched
 vec3 vlTri(sampler2D t, vec3 p, vec3 n, float s) { vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z); return vlTex(t, p.zy / s) * w.x + vlTex(t, p.xz / s) * w.y + vlTex(t, p.xy / s) * w.z; }`;
+// the scanned rock and snow for the mountains (Poly Haven CC0: cliff_side, snow_02), always on
+const PH = '/design-reference/world-redesign/textures/ph/';
+export const phTex = (id, srgb = true) => { const t = loader.load(PH + id); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return { value: t }; };
+export const MOUNTAIN_TEX = { tCliff: { value: (() => { const t = loader.load('/design-reference/world-redesign/textures/aerial_rocks_02.jpg'); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; })() }, tSnowS: phTex('snow_02/diff.jpg') }; // grey alpine rock seen from afar (aerial_rocks_02), clean snow
 export function applyValleyLook(material, { mountain = false, ground = false, glow = 0, surface = null } = {}) {
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    Object.assign(shader.uniforms, LOOK); if (ground && TEX_ON) Object.assign(shader.uniforms, TEX);
+    Object.assign(shader.uniforms, LOOK); if (ground && TEX_ON) Object.assign(shader.uniforms, TEX); if (mountain) Object.assign(shader.uniforms, MOUNTAIN_TEX);
     const textured = ground && TEX_ON;
-    shader.vertexShader = 'varying vec3 vlWorld; varying vec3 vlNormal;' + (ground ? ' attribute vec3 aSurf; varying vec3 vlSurf;' : '') + '\n' + shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-${ground ? 'vlSurf = aSurf;' : ''}
+    shader.vertexShader = 'varying vec3 vlWorld; varying vec3 vlNormal;' + (ground ? ' attribute vec3 aSurf; varying vec3 vlSurf;' : '') + (mountain ? ' attribute float aRelief; varying float vlRelief;' : '') + '\n' + shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+${ground ? 'vlSurf = aSurf;' : ''}${mountain ? ' vlRelief = aRelief;' : ''}
 { vec4 wpv = vec4(transformed, 1.0);
 #ifdef USE_INSTANCING
   wpv = instanceMatrix * wpv;
 #endif
   vlWorld = (modelMatrix * wpv).xyz; vlNormal = normalize(mat3(modelMatrix) * objectNormal); }`);
     shader.fragmentShader = `uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uHaze; uniform float uDensity; uniform float uScaleHeight; uniform float uGlow; uniform float uSnowline; uniform float uTreeline; uniform float uRockOn;
-varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
+varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${mountain ? ' varying float vlRelief; uniform sampler2D tCliff; uniform sampler2D tSnowS;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
     // the ground: scanned surfaces chosen by zone (gravel, track, forest floor in aSurf; meadow otherwise) and by distance (the close-up
     // sparse turf near the camera, the aerial grass-and-stone further out); the vertex colour only nudges the hue toward its zone
     // building surfaces, drawn in world space: whitewash with rain streaks and a darker splash zone, coursed stone with mortar, vertical larch
@@ -107,22 +111,29 @@ ${textured ? `
   diffuseColor.rgb = base * mix(vec3(1.0), detail, 0.85 * (1.0 - smoothstep(1500.0, 4000.0, d)));
   diffuseColor.rgb = mix(diffuseColor.rgb, base, clamp(vlSurf.z, 0.0, 1.0) * smoothstep(150.0, 400.0, d)); /* far forest reads as canopy, not forest floor */` : ''} }
 /*vl-ground*/`);
+    // Mountains with personality (the references: 11, 13, 28, 29, 31). The real terrain's local relief (aRelief: the height above or below its
+    // 200 m surroundings) drives everything: rock ribs and ridges stand out lighter, couloirs and gullies sink darker; snow fills the couloirs
+    // far below the snowline and lies on ledges and gentle ground, while the ribs and steep walls stay bare, dark rock. Rock colour and grain
+    // come from a scanned cliff (cliff_side, Poly Haven) at two scales, never a flat tint.
     if (mountain) shader.fragmentShader = shader.fragmentShader.replace(ground ? '/*vl-ground*/' : '#include <color_fragment>', `${ground ? '' : '#include <color_fragment>'}
 { float h = vlWorld.y; vec3 n = normalize(vlNormal); float up = clamp(n.y, 0.0, 1.0); vec2 p = vlWorld.xz;
   float alpine = smoothstep(uTreeline - 80.0, uTreeline + 160.0, h + 120.0 * (vlFbm(p / 400.0) - 0.5)) * uRockOn;
-  // rock: grey-brown limestone and gneiss, broken into strata along the height, streaked down the fall line by couloirs, patched warm and cool
-  float strata = vlNoise(vec2(h / 22.0 + vlFbm(p / 300.0) * 3.0, 0.5)); float streak = vlFbm(vec2(p.x / 90.0 + n.x * 6.0, p.y / 90.0 + n.z * 6.0) + h / 260.0);
-  vec3 rock = mix(vec3(0.33, 0.31, 0.29), vec3(0.47, 0.44, 0.40), vlFbm(p / 700.0)); rock *= 0.78 + 0.32 * strata; rock *= 0.82 + 0.3 * smoothstep(0.35, 0.7, streak);${textured ? "\n  rock = vlTri(tRock, vlWorld, n, 55.0) * (0.72 + 0.4 * strata) * (0.86 + 0.24 * smoothstep(0.35, 0.7, streak));" : ""}
-  rock = mix(rock, vec3(0.38, 0.40, 0.33), 0.35 * smoothstep(0.55, 0.85, up) * (1.0 - smoothstep(uSnowline - 300.0, uSnowline + 200.0, h))); // alpine turf on the gentler rock below the snow
-  // snow: lies where the ground is gentle enough to hold it, above a snowline that wanders, and gathers in hollows; a crisp edge
-  // snow follows the mountain's form: a ragged line at two scales, reaching down the couloirs (the streaks) and holding on ledges and
-  // gentler ground, while steep rock bands stay bare and dark even high up
-  float line = uSnowline + 420.0 * (vlFbm(p / 620.0) - 0.5) + 160.0 * (vlFbm(p / 140.0) - 0.5);
-  float hold = smoothstep(0.38, 0.55, up + 0.16 * (vlFbm(p / 90.0) - 0.5));
-  float gully = smoothstep(0.55, 0.72, streak);
-  float snow = smoothstep(line - 25.0, line + 25.0, h + 420.0 * gully) * max(hold, gully * 0.85);
-  snow = max(snow, smoothstep(line + 500.0, line + 800.0, h) * smoothstep(0.22, 0.4, up + 0.1 * (vlFbm(p / 70.0) - 0.5)));
-  vec3 alp = mix(rock, ${textured ? "min(vlTwo(tSnow, p, 80.0) * 1.45 + 0.08, vec3(1.0))" : "vec3(0.93, 0.95, 0.98)"}, snow);
+  float rib = smoothstep(1.5, 22.0, vlRelief), cav = smoothstep(1.5, 22.0, -vlRelief);
+  vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z);
+  vec3 cliff = (texture2D(tCliff, vlWorld.zy / 70.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 70.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 70.0).rgb * w.z);
+  vec3 cliff2 = (texture2D(tCliff, vlWorld.zy / 290.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 290.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 290.0).rgb * w.z);
+  vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.97, 0.98, 1.02), 0.45); // limestone and gneiss grey
+  rock *= 0.78 + 0.45 * rib - 0.35 * cav;                                           // lit ribs, shadowed gullies: the relief reads even in backlight
+  rock = mix(rock, vec3(0.3, 0.33, 0.24), 0.4 * smoothstep(0.6, 0.85, up) * (1.0 - smoothstep(uSnowline - 400.0, uSnowline, h)) * (1.0 - rib)); // turf on ledges below the snow
+  float line = uSnowline + 380.0 * (vlFbm(p / 620.0) - 0.5) + 140.0 * (vlFbm(p / 140.0) - 0.5);
+  float hold = smoothstep(0.42, 0.6, up + 0.14 * (vlFbm(p / 70.0) - 0.5)) * (1.0 - 0.8 * rib * smoothstep(0.85, 0.5, up)); // steep ribs shed it; gentle crests keep it
+  float couloir = cav * smoothstep(0.15, 0.45, up + 0.25);                          // snow fills the gullies far below the line
+  float snow = smoothstep(line - 70.0, line + 70.0, h + 330.0 * couloir + 60.0 * (vlFbm(p / 35.0) - 0.5)) * max(hold, couloir * 0.9);
+  snow = max(snow, smoothstep(line + 250.0, line + 550.0, h) * smoothstep(0.16, 0.34, up + 0.12 * (vlFbm(p / 50.0) - 0.5)) * (1.0 - 0.85 * rib * smoothstep(0.7, 0.35, up))); // the cap: white over the top, dark ribs only where the rock is steep
+  vec3 snowCol = vec3(0.8, 0.83, 0.88) * (0.82 + 0.3 * texture2D(tSnowS, p / 30.0).r) * (0.9 + 0.12 * vlFbm(p / 18.0)); // snow with its own grain
+  snowCol *= 0.86 + 0.22 * rib - 0.16 * cav; snowCol = mix(snowCol, snowCol * vec3(0.86, 0.9, 1.0), cav * 0.6);         // bright on the crests, blue-grey in the hollows
+  snow *= 1.0 - 0.55 * smoothstep(0.62, 0.8, vlFbm(p / 22.0 + 7.0)) * smoothstep(0.5, 0.3, up); // rocks poke through the steeper snow
+  vec3 alp = mix(rock, snowCol, snow);
   diffuseColor.rgb = mix(diffuseColor.rgb, alp, alpine); }`);
     // the air: transmittance through height-varying haze, and light scattered into the view (more toward the sun)
     shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', `

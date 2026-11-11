@@ -39,7 +39,7 @@ const ridged = (x, y, oct = 5) => { let a = 0, f = 1, w = 0.5, n = 0; for (let i
 const RANGE = [[-62, 6, 6000], [-45, 6.5, 6500], [-35, 7.8, 6800], [-29.5, 5.6, 7200], [-26.5, 4.3, 7400], [-23.5, 5.8, 7400], [-18, 8.2, 8000], [-8, 9.6, 9000], [0, 8.4, 9500],
   [6, 10.2, 8800], [10, 12.6, 8200], [12.4, 13.9, 8000], [15, 12.2, 8100], [19, 9.8, 8200], [24, 8.6, 8000], [27.8, 6.4, 7900], [30.4, 5.1, 7800], [33, 6.6, 7400], [38, 7.6, 7000], [48, 7.2, 6500], [62, 6.5, 6000]];
 // the forested foothills in front of the range (the slopes layer), kept below the pass and the saddle
-const FOOT = [[-62, 7, 2400], [-45, 6, 2600], [-36, 4.8, 2900], [-27, 2.6, 3200], [-18, 3.6, 3300], [-8, 2.6, 3600], [0, 1.9, 4000], [8, 2.6, 3800], [16, 3.4, 3400], [24, 3.8, 3100], [30.5, 3.0, 3000], [38, 5.2, 2700], [62, 7, 2300]];
+const FOOT = [[-62, 7, 2400], [-45, 6, 2600], [-36, 4.8, 2900], [-27, 2.6, 3200], [-18, 3.6, 3300], [-8, 2.6, 3600], [0, 1.4, 4000], [8, 1.3, 3800], [16, 1.6, 3400], [24, 3.2, 3100], [30.5, 3.0, 3000], [38, 5.2, 2700], [62, 7, 2300]];
 function profile(table, az) { if (az <= table[0][0]) return table[0]; for (let i = 1; i < table.length; i += 1) if (az <= table[i][0]) { const a = table[i - 1], b = table[i], t = (az - a[0]) / (b[0] - a[0]), s = t * t * (3 - 2 * t); return [az, lerp(a[1], b[1], s), lerp(a[2], b[2], s)]; } return table[table.length - 1]; }
 
 // water and settlements (metres)
@@ -77,12 +77,22 @@ let RESHAPE = null; // per-azimuth vertical stretch of the real heights, so the 
 export async function loadDem(url = '/design-reference/world-redesign/dem/dom') {
   if (Q.get('dem') === '0') return null;
   try { const [meta, buf] = await Promise.all([fetch(url + '.json').then((r) => r.json()), fetch(url + '.f32').then((r) => r.arrayBuffer())]);
-    const mLat = 111320, mLon = 111320 * Math.cos(meta.summit[0] * DEG); DEM = { meta, data: new Float32Array(buf), mLat, mLon, vLat: meta.summit[0] + MASSIF.distance / mLat, vLon: meta.summit[1], summit: toXZ(MASSIF.az, MASSIF.distance) }; return DEM; } catch { return null; }
+    const mLat = 111320, mLon = 111320 * Math.cos(meta.summit[0] * DEG); DEM = { meta, data: new Float32Array(buf), blur: null, mLat, mLon, vLat: meta.summit[0] + MASSIF.distance / mLat, vLon: meta.summit[1], summit: toXZ(MASSIF.az, MASSIF.distance) }; DEM.blur = blurGrid(DEM.data, meta.width, meta.height, 7); return DEM; } catch { return null; }
 }
+// the terrain's local relief: the real height minus its smoothed surroundings (about 200 m), exaggerated so ridges stand sharper and
+// couloirs cut deeper, the way the eye remembers mountains; the overall shape and the summit stay where the data puts them
+const RELIEF = Number(Q.get('relief3d') ?? 2.4);
+function blurGrid(src, w, h, r) { const tmp = new Float32Array(src.length), out = new Float32Array(src.length);
+  for (let pass = 0; pass < 2; pass += 1) { const a = pass ? out : src;
+    for (let y = 0; y < h; y += 1) { let acc = 0; for (let x = -r; x <= r; x += 1) acc += a[y * w + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x += 1) { tmp[y * w + x] = acc / (2 * r + 1); acc += a[y * w + Math.min(w - 1, x + r + 1)] - a[y * w + Math.max(0, x - r)]; } }
+    for (let x = 0; x < w; x += 1) { let acc = 0; for (let y = -r; y <= r; y += 1) acc += tmp[Math.min(h - 1, Math.max(0, y)) * w + x]; for (let y = 0; y < h; y += 1) { out[y * w + x] = acc / (2 * r + 1); acc += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; } } }
+  return out; }
+let DEM_RELIEF_OUT = 0;
 function demHeight(x, z) {
   if (!DEM) return NaN; const r = Math.hypot(x, z), b = (180 + Math.atan2(x, -z) / DEG - MASSIF.az) * DEG; const lat = DEM.vLat + (r * Math.cos(b)) / DEM.mLat, lon = DEM.vLon + (r * Math.sin(b)) / DEM.mLon;
   const m = DEM.meta, fx = (lon - m.west) / m.dLon, fy = (m.north - lat) / m.dLat, ix = Math.floor(fx), iy = Math.floor(fy); if (ix < 0 || iy < 0 || ix >= m.width - 1 || iy >= m.height - 1) return NaN;
-  const tx = fx - ix, ty = fy - iy, i = iy * m.width + ix, d = DEM.data; return (d[i] * (1 - tx) + d[i + 1] * tx) * (1 - ty) + (d[i + m.width] * (1 - tx) + d[i + m.width + 1] * tx) * ty - MASSIF.lakeAltitude;
+  const tx = fx - ix, ty = fy - iy, i = iy * m.width + ix; const bil = (d) => (d[i] * (1 - tx) + d[i + 1] * tx) * (1 - ty) + (d[i + m.width] * (1 - tx) + d[i + m.width + 1] * tx) * ty;
+  const raw = bil(DEM.data), smooth0 = bil(DEM.blur); DEM_RELIEF_OUT = (raw - smooth0) * RELIEF; return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
 export function heightAt(x, z, cheap = false) {
@@ -132,7 +142,7 @@ function buildTerrain() {
     const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2];
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setAttribute('aRelief', new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1)); g.setIndex(idx); g.computeVertexNormals();
   const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true, glow: 0.55 })); mesh.name = 'blockout terrain'; TREE_LIST = trees; return mesh;
 }
 
@@ -321,13 +331,14 @@ export function sunDisc(scene, dir, colour) {
 
 // The massif at the elevation data's own 60 m spacing (every second sample), so ridges, couloirs and glacier basins keep their shape.
 function buildMassif() {
-  const m = DEM.meta, step = 2, W = Math.floor(m.width / step), H = Math.floor(m.height / step); const pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), ok = new Uint8Array(W * H);
+  const m = DEM.meta, step = 1, W = Math.floor(m.width / step), H = Math.floor(m.height / step); const pos = new Float32Array(W * H * 3), col = new Float32Array(W * H * 3), rel = new Float32Array(W * H), ok = new Uint8Array(W * H); /* the full 30 m data */
   for (let j = 0; j < H; j += 1) for (let i = 0; i < W; i += 1) { const lat = m.north - j * step * m.dLat, lon = m.west + i * step * m.dLon; const dN = (lat - DEM.vLat) * DEM.mLat, dE = (lon - DEM.vLon) * DEM.mLon;
     const r = Math.hypot(dN, dE), a = ((Math.atan2(dE, dN) / DEG - 180 + MASSIF.az + 540) % 360) - 180; /* wrapped: due south must not jump from +180 to -180 */ const [x, z] = toXZ(a, r); const k = j * W + i; if (r < 5500 || Math.abs(a) > 62) continue;
-    const h = heightAt(x, z, true); const e = 60; const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e);
-    pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; const c = zoneColour(x, h, z, slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; ok[k] = 1; }
+    const h = heightAt(x, z, true); rel[k] = DEM_RELIEF_OUT * demWeight(x, z); pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; ok[k] = 1; }
+  for (let j = 1; j < H - 1; j += 1) for (let i = 1; i < W - 1; i += 1) { const k = j * W + i; if (!ok[k]) continue; const dx = Math.hypot(pos[(k + 1) * 3] - pos[(k - 1) * 3], pos[(k + 1) * 3 + 2] - pos[(k - 1) * 3 + 2]) || 1, dz = Math.hypot(pos[(k + W) * 3] - pos[(k - W) * 3], pos[(k + W) * 3 + 2] - pos[(k - W) * 3 + 2]) || 1;
+    const slope = Math.hypot((pos[(k + 1) * 3 + 1] - pos[(k - 1) * 3 + 1]) / dx, (pos[(k + W) * 3 + 1] - pos[(k - W) * 3 + 1]) / dz); const c = zoneColour(pos[k * 3], pos[k * 3 + 1], pos[k * 3 + 2], slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; }
   const idx = []; for (let j = 0; j < H - 1; j += 1) for (let i = 0; i < W - 1; i += 1) { const a = j * W + i, b = a + 1, c = a + W, d = c + 1; if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(new Float32Array(W * H * 3), 3)); g.setIndex(idx); g.computeVertexNormals();
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(new Float32Array(W * H * 3), 3)); g.setAttribute('aRelief', new THREE.BufferAttribute(rel, 1)); g.setIndex(idx); g.computeVertexNormals();
   const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), { mountain: true, ground: true })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
 }
 
