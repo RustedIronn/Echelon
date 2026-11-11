@@ -97,16 +97,18 @@ export function heightAt(x, z, cheap = false) {
 const C = (hex) => new THREE.Color(hex);
 const ZONE = { meadow: C('#93a85a'), hay: C('#a8b462'), pasture: C('#6f9447'), shore: C('#6b7d4a'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#8fa456'), track: C('#9a8e6c'), wet: C('#5d7a43'), dry: C('#a3a66a'), mown: C('#b4b878') };
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
+export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
 function zoneColour(x, h, z, slope) {
+  SURF[0] = 0; SURF[1] = 0; SURF[2] = 0;
   const r = Math.hypot(x, z); const n = fbm(x / 90, z / 90, 3);
   if (h > SNOWLINE + 260 * (n - 0.5) && slope < 1.25) return ZONE.snow;
   if (slope > 1.0 || h > 1100) return h > 1100 && slope < 0.7 ? ZONE.scree : ZONE.rock;
   if (h > 640 + 160 * (n - 0.5)) return ZONE.scree.clone().lerp(ZONE.larch, 0.35); // above the treeline
-  if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) return n > 0.6 ? ZONE.larch : ZONE.forest; // the wood behind the chapel terrace: a dark ground for the white tower
-  if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 22) return ZONE.gravel.clone().lerp(ZONE.shore, smooth(8, 22, d));
+  if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
+  if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 22) { SURF[0] = 1 - smooth(8, 22, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(8, 22, d)); }
   if (inLake(x, z) < 1.5) return ZONE.shore;
-  if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) return ZONE.track;
+  if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) { SURF[1] = 1; return ZONE.track; }
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (d < 70 || inLake(x, z) < 2.4) return ZONE.wet.clone().lerp(ZONE.meadow, 0.35 * n); // wet ground along the water: rushes, marsh marigold
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
@@ -116,13 +118,13 @@ function zoneColour(x, h, z, slope) {
 
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 401, R = 320, r0 = 12, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3);
+  const A = 401, R = 320, r0 = 12, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.001 ? 320 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
-    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b;
+    const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2];
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
 }
 
 function buildWater() {
@@ -218,8 +220,8 @@ function buildMassif() {
     const h = heightAt(x, z, true); const e = 60; const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e);
     pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z; const c = zoneColour(x, h, z, slope); col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; ok[k] = 1; }
   const idx = []; for (let j = 0; j < H - 1; j += 1) for (let i = 0; i < W - 1; i += 1) { const a = j * W + i, b = a + 1, c = a + W, d = c + 1; if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), { mountain: true })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(new Float32Array(W * H * 3), 3)); g.setIndex(idx); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), { mountain: true, ground: true })); mesh.name = 'massif (Copernicus GLO-30)'; return mesh;
 }
 
 // The hybrid mountain: measure the skyline of the real massif from the camera, then stretch its heights per azimuth so the outline matches the
