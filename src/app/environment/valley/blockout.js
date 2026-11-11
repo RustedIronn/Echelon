@@ -3,6 +3,7 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { applyValleyLook, setLook } from './look.js';
 import { buildForest } from './trees.js';
+import { planGrass, buildGrass } from './grass.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -85,7 +86,7 @@ const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.s
 export function heightAt(x, z, cheap = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5); // the floor
-  h = smax(h, 8 - (r / 34) ** 2 * 8, 3); // the knoll under the camera
+  h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
   { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5), 12); } // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
@@ -114,15 +115,16 @@ function zoneColour(x, h, z, slope) {
   if (inLake(x, z) < 1.5) return ZONE.shore;
   if (r < 1600 && polyDistance(TRACK, x, z) < 2.6) { SURF[1] = 1; return ZONE.track; }
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
-  if (d < 70 || inLake(x, z) < 2.4) return ZONE.wet.clone().lerp(ZONE.meadow, 0.35 * n); // wet ground along the water: rushes, marsh marigold
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
-  const f = fieldAt(x, z); const base = x > 40 ? ZONE.pasture : ZONE.hay; const tone = f.id < 0.33 ? ZONE.mown : f.id < 0.66 ? base : ZONE.meadow;
-  return base.clone().lerp(tone, 0.75).lerp(ZONE.meadow, 0.25 * n).multiplyScalar(1 - 0.12 * f.seam);
+  // the plots themselves are drawn per pixel by the ground shader (look.js); here only the broad use and the wet ground along the water,
+  // blended smoothly so no vertex grid shows
+  const base = ZONE.hay.clone().lerp(ZONE.pasture, smooth(0, 90, x)).lerp(ZONE.meadow, 0.25 * n);
+  const wet = Math.max(1 - smooth(18, 85, d), 1 - smooth(1.5, 3.4, inLake(x, z))); return base.lerp(ZONE.wet, 0.75 * wet); // rushes, marsh marigold
 }
 
 // a polar grid round the camera: fine near, coarse far, within the view and a margin
 function buildTerrain() {
-  const A = 401, R = 320, r0 = 12, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
+  const A = 401, R = 340, r0 = 3, r1 = 16000; const trees = []; const pos = new Float32Array(A * R * 3), col = new Float32Array(A * R * 3), surf = new Float32Array(A * R * 3);
   for (let j = 0; j < R; j += 1) { const r = r0 * (r1 / r0) ** (j / (R - 1)); for (let i = 0; i < A; i += 1) { const az = -58 + (116 * i) / (A - 1); const [x, z] = toXZ(az, r); const h = heightAt(x, z) - (r > 5600 && demWeight(x, z) > 0.001 ? 320 : 0); /* under the massif mesh */ const e = Math.max(2, r * 0.004);
     const slope = Math.hypot(heightAt(x + e, z, true) - heightAt(x - e, z, true), heightAt(x, z + e, true) - heightAt(x, z - e, true)) / (2 * e); const k = (j * A + i) * 3; pos[k] = x; pos[k + 1] = h; pos[k + 2] = z; const c = zoneColour(x, h, z, slope); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; surf[k] = SURF[0]; surf[k + 1] = SURF[1]; surf[k + 2] = SURF[2];
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
@@ -189,7 +191,9 @@ export async function startBlockout(canvas, overlay) {
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list); } catch (e) { console.warn('forest', e); } }
-  scene.add(forest ?? buildTrees(TREE_LIST)); const buildMs = Math.round(performance.now() - t0);
+  scene.add(forest ?? buildTrees(TREE_LIST));
+  // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
+  if (LOOK_ON && Q.get('grass') !== '0') { const nearBuilding = (x, z) => Math.hypot(x - LOWER.x, z - LOWER.z) < 55 || Math.hypot(x - UPPER.x, z - UPPER.z) < 80; scene.add(buildGrass(planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.15 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }))); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 0.75 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
 #include <tonemapping_fragment>`); };

@@ -35,19 +35,30 @@ export function applyValleyLook(material, { mountain = false, ground = false, gl
     previous?.call(material, shader, renderer);
     Object.assign(shader.uniforms, LOOK); if (ground && TEX_ON) Object.assign(shader.uniforms, TEX);
     const textured = ground && TEX_ON;
-    shader.vertexShader = 'varying vec3 vlWorld; varying vec3 vlNormal;' + (textured ? ' attribute vec3 aSurf; varying vec3 vlSurf;' : '') + '\n' + shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-${textured ? 'vlSurf = aSurf;' : ''}
+    shader.vertexShader = 'varying vec3 vlWorld; varying vec3 vlNormal;' + (ground ? ' attribute vec3 aSurf; varying vec3 vlSurf;' : '') + '\n' + shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+${ground ? 'vlSurf = aSurf;' : ''}
 { vec4 wpv = vec4(transformed, 1.0);
 #ifdef USE_INSTANCING
   wpv = instanceMatrix * wpv;
 #endif
   vlWorld = (modelMatrix * wpv).xyz; vlNormal = normalize(mat3(modelMatrix) * objectNormal); }`);
     shader.fragmentShader = `uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uHaze; uniform float uDensity; uniform float uScaleHeight; uniform float uGlow; uniform float uSnowline; uniform float uTreeline; uniform float uRockOn;
-varying vec3 vlWorld; varying vec3 vlNormal;${textured ? ' varying vec3 vlSurf; uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
+varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
     // the ground: scanned surfaces chosen by zone (gravel, track, forest floor in aSurf; meadow otherwise) and by distance (the close-up
     // sparse turf near the camera, the aerial grass-and-stone further out); the vertex colour only nudges the hue toward its zone
-    if (textured) shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+    if (ground) shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec2 p = vlWorld.xz; float d = length(vlWorld - cameraPosition);
+  // fields, per pixel: plots about 110 m across, each mown, grazed or left long on its own rhythm; seams where a fence or ditch runs.
+  // Only on the open valley floor (no gravel, track or forest, below the terrace line), fading out with distance.
+  float open = (1.0 - clamp(vlSurf.x + vlSurf.y + vlSurf.z, 0.0, 1.0)) * (1.0 - smoothstep(60.0, 140.0, vlWorld.y)) * (1.0 - smoothstep(1800.0, 3500.0, d));
+  if (open > 0.0) { vec2 c = p / 110.0; vec2 ci = floor(c); float d1 = 9.0, d2 = 9.0, id = 0.0;
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec2 g = ci + vec2(float(i), float(j)); vec2 o = g + 0.15 + 0.7 * vec2(vlHash(g), vlHash(g + 17.3)); float dd = length(c - o); if (dd < d1) { d2 = d1; d1 = dd; id = vlHash(g * 3.1 + 7.7); } else if (dd < d2) d2 = dd; }
+    vec3 f = diffuseColor.rgb; float lum0 = dot(f, vec3(0.333));
+    vec3 mown = mix(f, vec3(0.62, 0.66, 0.36) * lum0 / 0.45, 0.55) * 1.1, lush = f * vec3(0.86, 0.95, 0.82);
+    vec3 tone = id < 0.33 ? mown : id < 0.66 ? f : lush; tone *= 0.94 + 0.12 * vlFbm(p / 18.0); /* the sward is never even */
+    float seam = 1.0 - smoothstep(0.012, 0.05, d2 - d1);
+    diffuseColor.rgb = mix(f, tone * (1.0 - 0.12 * seam), open); }
+${textured ? `
   vec3 meadow = mix(vlTwo(tGrassNear, p, 2.2), vlTwo(tGrassFar, p, 15.0), smoothstep(25.0, 90.0, d));
   meadow = mix(meadow, vlTwo(tGrassFar, p, 60.0), smoothstep(400.0, 1500.0, d));
   vec3 g = mix(meadow, vlTwo(tForest, p, 3.2), clamp(vlSurf.z, 0.0, 1.0));
@@ -55,9 +66,9 @@ varying vec3 vlWorld; varying vec3 vlNormal;${textured ? ' varying vec3 vlSurf; 
   vec3 base = diffuseColor.rgb; vec3 tint = base / (dot(base, vec3(0.3333)) + 1e-3);
   float lum = dot(g, vec3(0.299, 0.587, 0.114)); vec3 detail = clamp(vec3(lum / 0.32), 0.45, 1.7) * mix(vec3(1.0), g / max(lum, 1e-3), 0.18); /* the scans as detail: their light and dark (soil, stones, tufts) and a touch of their hue over the designed colour */
   diffuseColor.rgb = base * mix(vec3(1.0), detail, 0.85 * (1.0 - smoothstep(1500.0, 4000.0, d)));
-  diffuseColor.rgb = mix(diffuseColor.rgb, base, clamp(vlSurf.z, 0.0, 1.0) * smoothstep(150.0, 400.0, d)); /* far forest reads as canopy, not forest floor */ }
+  diffuseColor.rgb = mix(diffuseColor.rgb, base, clamp(vlSurf.z, 0.0, 1.0) * smoothstep(150.0, 400.0, d)); /* far forest reads as canopy, not forest floor */` : ''} }
 /*vl-ground*/`);
-    if (mountain) shader.fragmentShader = shader.fragmentShader.replace(textured ? '/*vl-ground*/' : '#include <color_fragment>', `${textured ? '' : '#include <color_fragment>'}
+    if (mountain) shader.fragmentShader = shader.fragmentShader.replace(ground ? '/*vl-ground*/' : '#include <color_fragment>', `${ground ? '' : '#include <color_fragment>'}
 { float h = vlWorld.y; vec3 n = normalize(vlNormal); float up = clamp(n.y, 0.0, 1.0); vec2 p = vlWorld.xz;
   float alpine = smoothstep(uTreeline - 80.0, uTreeline + 160.0, h + 120.0 * (vlFbm(p / 400.0) - 0.5)) * uRockOn;
   // rock: grey-brown limestone and gneiss, broken into strata along the height, streaked down the fall line by couloirs, patched warm and cool
