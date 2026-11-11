@@ -30,8 +30,8 @@ function grassTexture() {
 export function planGrass(ground, { from = 56, to = 680, camera = [0, 0] } = {}) {
   const out = []; const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   for (let r = from; r < to; ) { const size = 0.9 * (r / 40) ** 0.85; const step = size * 0.55; const da = (step / r) * (180 / Math.PI);
-    for (let az = -41; az <= 41; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
-      if (ground.skip(x, z)) continue; const fade = 1 - Math.min(1, Math.max(0, (jr - 0.55 * to) / (0.45 * to))); if (fade <= 0.02) continue; out.push(x, ground.at(x, z), z, size * (0.8 + 0.45 * hash(x, z)) * (0.35 + 0.65 * fade), hash(z, x)); /* shorter toward the far edge, so the sward melts into the ground colour */ }
+    for (let az = -41; az <= 41; az += da) { const ja = az + (hash(az, r) - 0.5) * da * 1.4, jr = r + (hash(r, az) - 0.5) * step * 2.4; /* well off the ring, so no rows line up */ const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;
+      if (ground.skip(x, z)) continue; const fade = 1 - Math.min(1, Math.max(0, (jr - 0.75 * to) / (0.25 * to))); if (hash(x * 1.9, z * 2.7) > fade) continue; out.push(x, ground.at(x, z), z, size * (0.8 + 0.45 * hash(x, z)), hash(z, x)); /* thinning out by number toward the far edge, never shrinking to slivers */ /* shorter toward the far edge, so the sward melts into the ground colour */ }
     r += step; }
   return out;
 }

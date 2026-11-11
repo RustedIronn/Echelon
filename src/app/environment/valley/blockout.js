@@ -125,7 +125,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
 const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
-const ZONE = { meadow: C('#646c3d'), hay: C('#6f6f41'), pasture: C('#56673a'), shore: C('#525e38'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#646c3d'), track: C('#9a8e6c'), wet: C('#4c5f35'), dry: C('#76744a'), mown: C('#7e7c4c') };
+const ZONE = { meadow: C('#5c6446'), hay: C('#666644'), pasture: C('#525e40'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#5c6446'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
 const LAND_LIGHT = 1.65; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
@@ -162,22 +162,27 @@ function buildTerrain() {
 // The still lake: a true mirror where the air is calm, broken where a breath of wind crosses it (cat's-paws), and darker teal water seen
 // when looking down near the shore, more mirror toward the far side (Fresnel).
 const LAKE_SHADER = {
-  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 } },
+  name: 'ValleyLake', uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 }, uLake: { value: new THREE.Vector4(LAKE.x, LAKE.z, LAKE.rx, LAKE.rz) }, uRot: { value: LAKE.rot } },
   vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vWorld;
 #include <common>
 void main() { vUv = textureMatrix * vec4(position, 1.0); vWorld = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uTime; varying vec4 vUv; varying vec3 vWorld;
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float uTime; uniform vec4 uLake; uniform float uRot; varying vec4 vUv; varying vec3 vWorld;
 float lh(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float ln(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(lh(i),lh(i+vec2(1,0)),f.x),mix(lh(i+vec2(0,1)),lh(i+vec2(1,1)),f.x),f.y); }
 float lf(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*ln(p); p=p*2.1+3.7; a*=0.5; } return s; }
 void main() {
   vec2 p = vWorld.xz; float paws = smoothstep(0.5, 0.72, lf(p * 0.025)); // where a breath of wind is crossing
   vec2 rp = p * vec2(0.9, 2.6) + vec2(uTime * 0.35, uTime * 0.12); vec2 ripple = vec2(lf(rp), lf(rp + 7.3)) - 0.5; /* the ripples move */
-  vec4 uv = vUv; uv.xy += ripple * (0.004 + 0.03 * paws) * uv.w;
+  float fw = length(fwidth(rp)); /* ripples finer than a pixel would only shake the reflection row by row: let them fade with distance */
+  vec4 uv = vUv; uv.xy += ripple * (0.004 + 0.03 * paws) / (1.0 + 2.5 * fw) * uv.w;
   vec3 refl = texture2DProj(tDiffuse, uv).rgb;
   vec3 v = normalize(cameraPosition - vWorld); float f = 0.02 + 0.98 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
-  vec3 body = vec3(0.035, 0.07, 0.065);
-  gl_FragColor = vec4(mix(body, refl * (0.92 - 0.12 * paws), clamp(f * 1.15 + 0.12, 0.0, 1.0)), 1.0);
+  // the shallows: near the shore the lake bed shows through (stones and silt, brown-green), the reflection weaker
+  vec2 q = vWorld.xz - uLake.xy; float cr = cos(uRot), sr = sin(uRot); vec2 e = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr) / uLake.zw; float l = length(e);
+  float shallow = smoothstep(0.88, 1.08, l + 0.05 * (lf(p * 0.15) - 0.5));
+  vec3 bed = mix(vec3(0.16, 0.15, 0.1), vec3(0.24, 0.22, 0.16), lf(p * 0.6)) * (0.8 + 0.3 * lf(p * 2.3));
+  vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow);
+  gl_FragColor = vec4(mix(body, refl * (0.84 - 0.1 * paws), clamp(f * 1.1 + 0.08, 0.0, 1.0) * (1.0 - 0.55 * shallow)), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,
@@ -299,18 +304,18 @@ export async function startBlockout(canvas, overlay) {
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
   if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
-    if (Q.get('blades') !== '0') {
+    let reeds = []; if (Q.get('blades') !== '0') {
       const blades = Q.get('blades') === '1' ? planBlades({ at: (x, z) => heightAt(x, z), skip, zone }) : []; /* the scanned meadow covers the near ground now */
       // reeds and sedge round the lake: tall, slender clumps in a ragged band at the water's edge, thicker in the bays
       const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot);
-      for (let i = 0; i < 900; i += 1) { const a = (i / 900) * 6.283 + hash(i, 91) * 0.01; const k = 1.08 + 0.16 * hash(i, 92) + 0.06 * Math.sin(a * 7.0); if (hash(i, 93) < 0.25 + 0.3 * Math.sin(a * 3.0 + 1.0)) continue;
+      reeds = []; for (let i = 0; i < 900; i += 1) { const a = (i / 900) * 6.283 + hash(i, 91) * 0.01; const k = 1.06 + 0.12 * hash(i, 92) + 0.05 * Math.sin(a * 7.0); if (hash(Math.floor(a * 9), 93) < 0.55 || hash(i, 94) < 0.35) continue; /* stands, not a wall */
         const uu = Math.cos(a) * LAKE.rx * k, vv = Math.sin(a) * LAKE.rz * k; const x = LAKE.x + uu * c + vv * sn, z = LAKE.z - uu * sn + vv * c; if (Math.hypot(x, z) > 330) continue;
-        blades.push(x, Math.max(heightAt(x, z), 0.05), z, 1.9 + 0.9 * hash(i, 94), hash(i, 95), -1); }
-      scene.add(buildBlades(blades)); /* procedural blades from 38 m, cards beyond */
+        if (z < LAKE.z - 30) continue; /* only the near and side shores: on the far shore a reed line reads as a row of dashes */ reeds.push({ x, y: Math.max(heightAt(x, z), 0.05), z }); }
+      if (blades.length) scene.add(buildBlades(blades)); /* procedural blades only with ?blades=1 */
       /* the scanned meadow below */
     }
-    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.34 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 430 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
-    if (Q.get('scanned') !== '0') { try { meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
+    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.16 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 430 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
+    if (Q.get('scanned') !== '0') { try { meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = night ? 0.005 : 0.0032; /* less milky glare round the sun */ u.mieDirectionalG.value = 0.8;
   const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 1.25 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};

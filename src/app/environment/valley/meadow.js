@@ -78,13 +78,13 @@ function buildCards(sites, textures) {
   const group = new THREE.Group(); const n = sites.length / 5; const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
   textures.forEach((tex, v) => { const mine = []; for (let i = 0; i < n; i += 1) { const w = hash(Math.floor(sites[i * 5] / 16), Math.floor(sites[i * 5 + 2] / 16)) * 0.75 + hash(sites[i * 5], sites[i * 5 + 2]) * 0.25; if ((w < 0.5 ? 0 : w < 0.72 ? 1 : w < 0.88 ? 2 : 3) === v) mine.push(i); } if (!mine.length) return; /* the flower mixes in drifts */
     const mesh = new THREE.InstancedMesh(geo, plantMaterial({ map: tex, glow: 1.1, sway: 0.03, up: 1.0, alphaTest: 0.45 }), mine.length);
-    mine.forEach((i, k) => { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.85 + 0.4 * t), s)); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.88 + 0.12 * t, 1.0 + 0.06 * t, 1.0 + 0.12 * t) /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
+    mine.forEach((i, k) => { const [x, y, z, s, t] = sites.slice(i * 5, i * 5 + 5); q.setFromAxisAngle(up, t * Math.PI); m.compose(new THREE.Vector3(x, y - 0.05 * s, z), q, new THREE.Vector3(s, Math.min(s, 1.4) * (0.6 + 0.75 * hash(z * 1.3, x * 0.7)), s) /* heights vary, so the tops never make a line */); mesh.setMatrixAt(k, m); mesh.setColorAt(k, c.setRGB(0.88 + 0.12 * t, 1.0 + 0.06 * t, 1.0 + 0.12 * t) /* seen from above, a sward shows its lit tips more than the side-on strip does */); });
     mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.name = 'meadow cards (baked scans)'; group.add(mesh); });
   return group;
 }
 
 // ground: { at(x,z), skip(x,z), zone(x,z) }; cardSites from planGrass
-export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera = [0, 0], cardSites = null } = {}) {
+export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera = [0, 0], cardSites = null, reeds = [] } = {}) {
   const loader = new GLTFLoader(); const tl = new THREE.TextureLoader(); const group = new THREE.Group(); group.name = 'scanned meadow';
   const alphaOf = async (id) => { const t = await tl.loadAsync(`${ROOT}${id}/textures/${id}_alpha_2k.jpg`); t.flipY = false; return t; }; // the scans keep their cut-out in a separate map
   const paddedOf = async (id) => { const t = await tl.loadAsync(`${ROOT}${id}/textures/${id}_diff_padded_2k.jpg`); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }; // the colour bled out under the cut-out (push-pull), so the mip levels keep the blades' own colour instead of the black behind them
@@ -105,6 +105,9 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
       if (hash(x * 3.1, z * 1.3) < 0.22 * drift) { const fk = zone === 'wet' ? (drift > 0.6 ? 1 : 3) : zone === 'dry' ? (drift > 0.5 ? 2 : 0) : [2, 2, 1, 3, 0][Math.floor(drift * 5)];
         flowers.push({ x: x + (hash(x, 9) - 0.5) * step, y, z: z + (hash(z, 9) - 0.5) * step, kind: fk % flowerKinds.length, scale: 1.0 + 0.5 * hash(x, z * 2), stretch: 1, yaw: hash(z, x * 2) * 6.28, tint: [1, 1, 1] }); } }
     r += step; }
+  // sedge at the lake's edge: the tall scanned clumps drawn up into stands, darker and bluer green than the meadow
+  const tallK = grassKinds.map((k, i) => [i, k]).filter(([, k]) => k.height > 0.22 && k.fresh).map(([i]) => i);
+  reeds.forEach((s, i) => { const kind = tallK[i % tallK.length]; const k = grassKinds[kind]; for (let j = 0; j < 3; j += 1) grass.push({ x: s.x + (hash(i, j) - 0.5) * 1.4, y: s.y, z: s.z + (hash(j, i) - 0.5) * 1.4, kind, scale: (0.7 + 0.3 * hash(i, j + 5)) / k.height * 0.9, stretch: 1.7 + 0.5 * hash(i, j + 7), yaw: hash(i, j + 9) * 6.28, tint: [0.82, 0.98, 1.08] }); });
   instance(group, grassKinds, grass, 'meadow scanned grass'); instance(group, flowerKinds, flowers, 'meadow flowers');
   // the far meadow: four strips, plain grass and three flower mixes
   if (cardSites) { const strips = [[], [2], [2, 1], [0, 3, 2]].map((set, i) => bakeStrip(renderer, grassKinds, flowerKinds, set, 11 + i * 17)); group.add(buildCards(cardSites, strips)); group.userData.cards = cardSites.length / 5; window.__meadowStrips = strips; }
