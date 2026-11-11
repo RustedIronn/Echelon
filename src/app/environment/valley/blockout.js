@@ -130,7 +130,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
 const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
-const ZONE = { meadow: C('#5c6446'), hay: C('#666644'), pasture: C('#525e40'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#a8a49a'), terrace: C('#5c6446'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
+const ZONE = { meadow: C('#5c6446'), hay: C('#666644'), pasture: C('#525e40'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#8a877f'), terrace: C('#5c6446'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
 const LAND_LIGHT = 1.65; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
@@ -144,7 +144,7 @@ function zoneColour(x, h, z, slope) {
   if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
   const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 13) { SURF[0] = 1 - smooth(5, 13, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(5, 13, d)); }
-  if (inLake(x, z) < 1.5) return ZONE.shore;
+  { const lk = inLake(x, z); if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.65 * (1 - smooth(1.1, 1.3, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
   // the plots themselves are drawn per pixel by the ground shader (look.js); here only the broad use and the wet ground along the water,
@@ -211,14 +211,14 @@ function buildWater() {
   const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
   const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.name = 'lake'; lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
-  let riverY = Infinity; const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length);
+  let riverY = Infinity; const P = [], I = []; for (let i = 0; i < riverPts.length; i += 1) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)], o = riverPts[Math.max(i - 1, 0)]; const tx = q.x - o.x, tz = q.y - o.y, l = Math.hypot(tx, tz) || 1; const w = lerp(3.2, 5.5, i / riverPts.length) * (0.72 + 0.56 * fbm(p.x / 28, p.y / 28, 2)); /* pools and narrows */
     const y = inLake(p.x, p.y) < 1.15 ? -0.4 : Math.min(riverY, heightAt(p.x, p.y, true, 'river') + 1.3); riverY = y; /* the water only ever runs downhill; where it enters the lake it sinks under the still water */ const yy = y < -0.1 ? y : Math.max(0.05, y); P.push(p.x - (tz / l) * w, yy, p.y + (tx / l) * w, p.x + (tz / l) * w, yy, p.y - (tx / l) * w); if (i) { const a = (i - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
   const riverMat = lookMat(new THREE.MeshStandardMaterial({ color: 0x3f8486, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide }) /* matte milky glacial water; the lake carries the reflections */);
   if (LOOK_ON) { const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); // glacial water: milky turquoise, broken by white water where it runs over stones
     sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-{ vec2 p = vlWorld.xz; float riffle = smoothstep(0.58, 0.78, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))); float silt = vlFbm(p * 0.04);
-  diffuseColor.rgb = mix(diffuseColor.rgb * (0.85 + 0.3 * silt), vec3(0.8, 0.9, 0.9), riffle * 0.45); }`); }; riverMat.customProgramCacheKey = () => 'valley-river'; }
+{ vec2 p = vlWorld.xz; float riffle = smoothstep(0.54, 0.7, vlFbm(p * 0.22 + vec2(0.0, vlFbm(p * 0.05) * 4.0))) * (0.6 + 0.4 * vlNoise(p * 1.3)); float silt = vlFbm(p * 0.04);
+  diffuseColor.rgb = mix(diffuseColor.rgb * (0.85 + 0.3 * silt), vec3(0.86, 0.93, 0.94), riffle * 0.75); } /* white water where it runs over the stones */`); }; riverMat.customProgramCacheKey = () => 'valley-river'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
   // rounded, half buried, pale where dry and darker at the waterline
@@ -251,6 +251,11 @@ function rockSites() {
   const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot); const onLake = (a, k) => { const u = Math.cos(a) * LAKE.rx * k, v = Math.sin(a) * LAKE.rz * k; return [LAKE.x + u * c + v * sn, LAKE.z - u * sn + v * c]; };
   let best = null; for (let a = 0; a < 6.283; a += 0.05) { const [x, z] = onLake(a, 0.9); if (z < -70 && x > -45 && (!best || Math.hypot(x, z) < Math.hypot(best[0], best[1]))) best = [x, z]; }
   if (best) { add(best[0], best[1], 3.4, 'boulder', 0.42, 0); add(best[0] + 3.2, best[1] - 1.5, 1.2, 'moss', 0.5, 0); }
+  // stones standing in the stream, breaking its surface into riffles
+  for (let i = 10; i < riverPts.length - 6; i += 9) { const p = riverPts[i]; if (Math.hypot(p.x, p.y) > 900 || hash(i, 51) < 0.45) continue; const w = lerp(3.2, 5.5, i / riverPts.length);
+    const off = (hash(i, 52) - 0.5) * w; add(p.x + off, p.y + (hash(i, 53) - 0.5) * 3, 0.9 + 0.8 * hash(i, 54), 'moss', 0.5, heightAt(p.x, p.y, true, 'river') + 1.3); }
+  // pebbles and small stones along the near shore of the lake, at the waterline, in little groups
+  for (let gi = 0; gi < 7; gi += 1) { const a0 = 0.5 + gi * 0.42; for (let k = 0; k < 6; k += 1) { const [x, z] = onLake(a0 + (hash(gi, k) - 0.5) * 0.08, 0.99 + 0.05 * hash(k, gi)); if (z < LAKE.z) continue; add(x, z, 0.3 + 0.55 * hash(gi * 3, k), 'moss', 0.45, Math.max(heightAt(x, z), -0.05)); } }
   for (const a of [2.2, 3.4, 4.6]) for (let k = 0; k < 4; k += 1) { const [x, z] = onLake(a + (hash(a, k) - 0.5) * 0.12, 1.03 + 0.06 * hash(k, a)); add(x, z, 0.6 + 1.0 * hash(a * 3, k), 'moss', 0.35, Math.max(heightAt(x, z), 0)); }
   // erratics in the meadow; one beside the footpath; the foreground group
   add(85, -150, 3.6, 'boulder', 0.28); add(-140, -320, 4.2, 'boulder', 0.28); add(165, -255, 3.0, 'moss', 0.28); add(-95, -40, 2.4, 'moss', 0.3);
