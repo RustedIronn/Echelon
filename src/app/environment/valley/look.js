@@ -35,7 +35,7 @@ vec3 vlTex(sampler2D t, vec2 uv) { return texture2D(t, uv).rgb; }
 vec3 vlTwo(sampler2D t, vec2 p, float s) { float m = smoothstep(0.35, 0.65, vlFbm(p / (s * 6.0))); return mix(vlTex(t, p / s), vlTex(t, p / (s * 3.7) + 0.37), m * 0.6); }
 // rock on steep ground: projected along the face rather than from above, so cliffs are not stretched
 vec3 vlTri(sampler2D t, vec3 p, vec3 n, float s) { vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z); return vlTex(t, p.zy / s) * w.x + vlTex(t, p.xz / s) * w.y + vlTex(t, p.xy / s) * w.z; }`;
-export function applyValleyLook(material, { mountain = false, ground = false, glow = 0 } = {}) {
+export function applyValleyLook(material, { mountain = false, ground = false, glow = 0, surface = null } = {}) {
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
@@ -52,6 +52,15 @@ ${ground ? 'vlSurf = aSurf;' : ''}
 varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
     // the ground: scanned surfaces chosen by zone (gravel, track, forest floor in aSurf; meadow otherwise) and by distance (the close-up
     // sparse turf near the camera, the aerial grass-and-stone further out); the vertex colour only nudges the hue toward its zone
+    // building surfaces, drawn in world space: whitewash with rain streaks and a darker splash zone, coursed stone with mortar, vertical larch
+    // planks with grain weathered silver-brown, and roofs in rows of stone slabs or shingles, each tile its own tone
+    if (surface) shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+{ vec3 n = normalize(vlNormal); float u = abs(n.x) > abs(n.z) ? vlWorld.z : vlWorld.x; float y = vlWorld.y; vec3 c = diffuseColor.rgb;
+  ${surface === 'plaster' ? 'c *= 0.9 + 0.12 * vlFbm(vec2(u, y) * 1.7); c *= 1.0 - 0.16 * smoothstep(0.55, 0.8, vlFbm(vec2(u * 2.6, y * 0.25)));' : ''}
+  ${surface === 'stone' ? 'float row = floor(y / 0.34); float uu = u + row * 0.21; float colI = floor(uu / 0.52); vec2 f = vec2(fract(uu / 0.52), fract(y / 0.34)); float mortar = 1.0 - smoothstep(0.0, 0.07, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y))); c *= 0.78 + 0.34 * vlHash(vec2(row, colI)); c = mix(c, c * 1.25, mortar * 0.6);' : ''}
+  ${surface === 'timber' ? 'float pk = fract(u / 0.24); float seam = 1.0 - smoothstep(0.0, 0.05, min(pk, 1.0 - pk)); float plank = vlHash(vec2(floor(u / 0.24), 7.0)); c *= 0.8 + 0.3 * plank; c *= 0.85 + 0.25 * vlFbm(vec2(u * 30.0, y * 0.8)); c = mix(c, c * 0.45, seam); c = mix(c, vec3(0.42, 0.38, 0.34), 0.25 * smoothstep(0.5, 0.8, vlFbm(vec2(u, y) * 0.6)));' : ''}
+  ${surface === 'roof' ? 'float rr = fract(y / 0.26); float rowI = floor(y / 0.26); float tile = vlHash(vec2(floor((u + rowI * 0.17) / 0.38), rowI)); c *= 0.75 + 0.4 * tile; c = mix(c, c * 0.5, 1.0 - smoothstep(0.0, 0.15, rr)); c = mix(c, c * vec3(0.85, 0.95, 0.75), 0.3 * smoothstep(0.6, 0.85, vlFbm(vec2(u, y) * 0.5)));' : ''}
+  diffuseColor.rgb = c; }`);
     if (ground) shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec2 p = vlWorld.xz; float d = length(vlWorld - cameraPosition);
   // fields, per pixel: plots about 110 m across, each mown, grazed or left long on its own rhythm; seams where a fence or ditch runs.
@@ -138,7 +147,7 @@ ${textured ? `
     float lowG = 1.0 - smoothstep(0.05, 0.3, uSunDir.y); irradiance += directLight.color * fwdG * (0.35 + 0.65 * edgeG) * ${glow.toFixed(3)} * (1.0 + 1.6 * lowG) * 1.1; }` : ''}
   irradiance *= vlCloudShade(vlWorld);`));
   };
-  material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}-${ground ? 'g' : ''}${glow}`;
+  material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}-${ground ? 'g' : ''}${glow}-${surface ?? ''}`;
   return material;
 }
 

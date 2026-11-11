@@ -189,18 +189,18 @@ function buildWater() {
 
 // a block building: walls with a gabled roof; stone below, timber above is only a colour split at block-out stage
 function house(w, d, wall, roof, eave, ridge, colour = '#cfc6b6') {
-  const g = new THREE.Group(); const walls = new THREE.Mesh(new THREE.BoxGeometry(w, eave, d), lookMat(new THREE.MeshLambertMaterial({ color: colour }))); walls.position.y = eave / 2; g.add(walls);
+  const g = new THREE.Group(); const walls = new THREE.Mesh(new THREE.BoxGeometry(w, eave, d), lookMat(new THREE.MeshLambertMaterial({ color: colour }), { surface: colour === '#eeebe3' ? 'plaster' : 'timber' })); walls.position.y = eave / 2; g.add(walls);
   const shape = new THREE.Shape([new THREE.Vector2(-w / 2 - 0.6, 0), new THREE.Vector2(w / 2 + 0.6, 0), new THREE.Vector2(0, ridge - eave)]); const rg = new THREE.ExtrudeGeometry(shape, { depth: d + 1.2, bevelEnabled: false }); rg.translate(0, eave, -(d + 1.2) / 2);
-  g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof })))); return g;
+  g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }), { surface: 'roof' }))); return g;
 }
 // An Alpine house (docs/WORLD-SPEC.md section 6): a whitewashed or stone ground floor, a dark larch-timber upper floor with a balcony along
 // the sunny front, a shallow roof of stone slabs or shingles with deep eaves, small windows with shutters, a chimney. w along the ridge.
 const LAMPS = ["dusk", "night"].includes(Q.get("tod")) ? Q.get("tod") : null; // the windows light when it gets dark, house by house
 function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5a55', low = 3.0, high = 3.2, pitch = 0.42, seed = 0 } = {}) {
-  const g = new THREE.Group(); const box = (sx, sy, sz, col, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), lookMat(new THREE.MeshLambertMaterial({ color: col }))); m.position.set(x, y, z); g.add(m); return m; };
-  box(w, low, d, stone, 0, low / 2, 0); box(w * 0.995, high, d * 0.995, timber, 0, low + high / 2, 0);
+  const g = new THREE.Group(); const box = (sx, sy, sz, col, x, y, z, surface = null) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), lookMat(new THREE.MeshLambertMaterial({ color: col }), { surface })); m.position.set(x, y, z); g.add(m); return m; };
+  box(w, low, d, stone, 0, low / 2, 0, seed % 3 === 1 ? "stone" : "plaster"); box(w * 0.995, high, d * 0.995, timber, 0, low + high / 2, 0, "timber");
   const eave = low + high, rise = (d / 2 + 1.4) * pitch; const shape = new THREE.Shape([new THREE.Vector2(-d / 2 - 1.4, 0), new THREE.Vector2(d / 2 + 1.4, 0), new THREE.Vector2(0, rise)]);
-  const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }))));
+  const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }), { surface: 'roof' })));
   box(w * 0.55, 0.1, 1.3, '#4a3221', 0, low + 0.3, d / 2 + 0.65); box(w * 0.55, 1.0, 0.08, '#4a3221', 0, low + 0.85, d / 2 + 1.28); // the balcony
   const win = '#1d1916', shut = seed % 2 ? '#3d5a3a' : '#6a4a2c'; const n = Math.max(2, Math.floor(w / 3.2));
   for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { const pane = box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); if (LAMPS && hash(seed * 7.3 + k, y) > 0.38) { pane.material.emissive.set("#ffae55"); pane.material.emissiveIntensity = LAMPS === "night" ? 2.6 : 1.4; } /* lamplight: most windows lit when it gets dark, not all */ box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
