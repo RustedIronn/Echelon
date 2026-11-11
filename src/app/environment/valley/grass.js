@@ -27,7 +27,7 @@ function grassTexture() {
 }
 
 // sites: [x, y, z, size, tone] per card; ground: { at(x,z), skip(x,z) }
-export function planGrass(ground, { from = 56, to = 420, camera = [0, 0] } = {}) {
+export function planGrass(ground, { from = 56, to = 680, camera = [0, 0] } = {}) {
   const out = []; const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   for (let r = from; r < to; ) { const size = 0.9 * (r / 40) ** 0.85; const step = size * 0.55; const da = (step / r) * (180 / Math.PI);
     for (let az = -41; az <= 41; az += da) { const ja = az + (hash(az, r) - 0.5) * da, jr = r + (hash(r, az) - 0.5) * step; const a = ja * Math.PI / 180; const x = camera[0] + Math.sin(a) * jr, z = camera[1] - Math.cos(a) * jr;

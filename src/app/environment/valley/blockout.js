@@ -246,6 +246,13 @@ export async function startBlockout(canvas, overlay) {
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
+  // trees of the valley floor: alders and spruce along the river banks, and lone trees and small groups on the field boundaries, so the
+  // middle distance has the scattered life of a lived-in valley instead of an empty lawn
+  for (let i = 0; i < riverPts.length; i += 3) { const p = riverPts[i], q = riverPts[Math.min(i + 1, riverPts.length - 1)]; const r = Math.hypot(p.x, p.y); if (r < 420 || r > 1500 || hash(i, 71) < 0.62) continue;
+    const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; const side = hash(i, 72) < 0.5 ? -1 : 1, off = side * (9 + 14 * hash(i, 73)); TREE_LIST.push(p.x + (-tz / l) * off, p.y + (tx / l) * off, hash(i, 74) < 0.3 ? 1 : 0, hash(i, 75) * 0.3); }
+  for (let i = 0; i < 70; i += 1) { const az = (-38 + 76 * hash(i, 81)) * DEG, r = 650 + 1000 * hash(i, 82) ** 0.8; const x = Math.sin(az) * r, z = -Math.cos(az) * r; const h = heightAt(x, z, true);
+    if (h > 70 || inLake(x, z) < 2 || riverDistance(x, z)[0] < 12 || Math.hypot(x - UPPER.x, z - UPPER.z) < 90 || Math.hypot(x - LOWER.x, z - LOWER.z) < 60) continue;
+    const n = hash(i, 83) < 0.35 ? 3 : 1; for (let k = 0; k < n; k += 1) TREE_LIST.push(x + (hash(i, k + 84) - 0.5) * 18, z + (hash(k, i + 85) - 0.5) * 18, hash(i, 86) < 0.25 ? 1 : 0, 0.35 * hash(i, k + 87)); }
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], 16 + 14 * v, v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward

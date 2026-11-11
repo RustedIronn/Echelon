@@ -64,6 +64,13 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
     vec3 tone = id < 0.33 ? mown : id < 0.66 ? f : lush; tone *= 0.94 + 0.12 * vlFbm(p / 18.0); /* the sward is never even */
     float seam = 1.0 - smoothstep(0.012, 0.05, d2 - d1);
     diffuseColor.rgb = mix(f, tone * (1.0 - 0.12 * seam), open); }
+  // the sward's grain wherever it is grass: clumps, darker damp patches, the odd bush and stone, at scales from 3 to 40 m, on the valley floor
+  // and up the near valley walls alike, so nothing reads as a smooth lawn
+  { float grassy = (1.0 - clamp(vlSurf.x + vlSurf.y + vlSurf.z, 0.0, 1.0)) * (1.0 - smoothstep(uTreeline - 120.0, uTreeline, vlWorld.y)) * (1.0 - smoothstep(900.0, 1600.0, d)) * (uSnowline < 0.0 ? 0.25 : 1.0);
+    float grain = 0.8 + 0.4 * vlFbm(p / 6.0) * (0.7 + 0.6 * vlNoise(p / 40.0)); float bush = step(0.86, vlNoise(p / 3.2)) * step(0.55, vlNoise(p / 60.0));
+    vec3 g2 = diffuseColor.rgb * grain; g2 = mix(g2, vec3(0.09, 0.14, 0.06), bush * 0.8);
+    float slopeN = 1.0 - normalize(vlNormal).y; g2 = mix(g2, g2 * vec3(0.78, 0.82, 0.7), smoothstep(0.15, 0.4, slopeN) * smoothstep(0.55, 0.7, vlFbm(p / 25.0 + 4.0))); /* rougher, darker turf on the steeper banks */
+    diffuseColor.rgb = mix(diffuseColor.rgb, g2, grassy); }
   // wet ground: darker, glossier soil and gravel at the water's edge (the gravel weight marks the river banks)
   diffuseColor.rgb *= 1.0 - 0.35 * clamp(vlSurf.x * 1.4, 0.0, 1.0) * (1.0 - smoothstep(-0.3, 1.2, vlWorld.y - 0.2));
   // under the near blades the ground is the shaded base of the sward: deep green-brown, never the pale top colour
