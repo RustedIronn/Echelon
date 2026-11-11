@@ -29,7 +29,7 @@ vec3 vlTex(sampler2D t, vec2 uv) { return texture2D(t, uv).rgb; }
 vec3 vlTwo(sampler2D t, vec2 p, float s) { float m = smoothstep(0.35, 0.65, vlFbm(p / (s * 6.0))); return mix(vlTex(t, p / s), vlTex(t, p / (s * 3.7) + 0.37), m * 0.6); }
 // rock on steep ground: projected along the face rather than from above, so cliffs are not stretched
 vec3 vlTri(sampler2D t, vec3 p, vec3 n, float s) { vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z); return vlTex(t, p.zy / s) * w.x + vlTex(t, p.xz / s) * w.y + vlTex(t, p.xy / s) * w.z; }`;
-export function applyValleyLook(material, { mountain = false, ground = false } = {}) {
+export function applyValleyLook(material, { mountain = false, ground = false, glow = 0 } = {}) {
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
@@ -78,8 +78,14 @@ varying vec3 vlWorld; varying vec3 vlNormal;${textured ? ' varying vec3 vlSurf; 
   vec3 inscatter = uHaze + uSunCol * min(hg, 2.0) * uGlow * 0.32 * smoothstep(-0.1, 0.25, uSunDir.y + 0.2);
   gl_FragColor.rgb = gl_FragColor.rgb * T + inscatter * (1.0 - T); }
 #include <fog_fragment>`);
+    // into the light: sunlight passing through grass blades and needles lights their edges; strongest where the view faces the sun and the
+    // surface is seen edge-on (the glowing meadows and crowns of the references); nothing when the sun is down
+    if (glow > 0) shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', `{ vec3 vv = normalize(cameraPosition - vlWorld); vec3 nn = normalize(vlNormal); float fwd = pow(max(dot(-vv, normalize(uSunDir)), 0.0), 3.0);
+  float edge = pow(1.0 - abs(dot(nn, vv)), 1.5); float day = smoothstep(-0.02, 0.12, uSunDir.y);
+  outgoingLight += diffuseColor.rgb * uSunCol * fwd * (0.35 + 0.65 * edge) * ${glow.toFixed(3)} * day; }
+#include <opaque_fragment>`);
   };
-  material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}`;
+  material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}-${ground ? 'g' : ''}${glow}`;
   return material;
 }
 

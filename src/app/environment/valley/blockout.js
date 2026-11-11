@@ -4,6 +4,8 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { applyValleyLook, setLook } from './look.js';
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
+// the land is exposed for its shadowed faces (the camera looks into the light); the sky keeps its own brightness
+const LAND_EXPOSURE = 1.75;
 const lookMat = (m, o) => (LOOK_ON ? applyValleyLook(m, o) : m);
 
 // The valley block-out (docs/WORLD-SPEC.md, build step 1): grey-box land at true scale, colour masses for the zones, water shapes, hamlet
@@ -124,7 +126,7 @@ function buildTerrain() {
     if ((c === ZONE.forest || c === ZONE.larch) && r > 120 && r < 2600 && trees.length < 160000) { const cell = (r * 116 * DEG / (A - 1)) * (r * Math.log(r1 / r0) / (R - 1)); let count = cell / 75; while (count > 0) { if (count >= 1 || hash(i * 7.1 + count, j * 3.3) < count) trees.push(x + (hash(i, j + count) - 0.5) * r * 0.005, z + (hash(j, i + count) - 0.5) * r * 0.02, c === ZONE.larch ? 1 : 0, hash(i + count, j)); count -= 1; } } } }
   const idx = []; for (let j = 0; j < R - 1; j += 1) for (let i = 0; i < A - 1; i += 1) { const a = j * A + i, b = a + 1, c = a + A, d = c + 1; idx.push(a, b, c, b, d, c); /* counter-clockwise seen from above */ }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 3)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
+  const mesh = new THREE.Mesh(g, lookMat(new THREE.MeshLambertMaterial({ vertexColors: true }), { mountain: true, ground: true, glow: 0.55 })); mesh.name = 'blockout terrain'; if (trees.length) mesh.add(buildTrees(trees)); return mesh;
 }
 
 function buildWater() {
@@ -184,10 +186,11 @@ export async function startBlockout(canvas, overlay) {
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements()); const buildMs = Math.round(performance.now() - t0);
   const sky = new Sky(); sky.scale.setScalar(25000); scene.add(sky); const u = sky.material.uniforms; u.turbidity.value = mood[1]; u.rayleigh.value = mood[2]; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8;
-  const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3];
-  const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : 1.3); scene.add(light, hemi);
+  const sunPose = night ? sunAt(-0.3, season) : sunAt(Number(Q.get('f') ?? mood[0]), season); u.sunPosition.value.copy(dirOf(sunPose.az, sunPose.el)); renderer.toneMappingExposure = mood[3] * (LOOK_ON ? (night ? 0.75 : LAND_EXPOSURE) : 1); /* night stays night: a moonlit valley, not a dim day */ if (LOOK_ON) sky.material.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `gl_FragColor.rgb *= ${(1 / LAND_EXPOSURE).toFixed(3)};
+#include <tonemapping_fragment>`); };
+  const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : LOOK_ON ? 1.7 : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
-  const bounce = new THREE.DirectionalLight(mood[6], night ? 0.08 : 0.85); bounce.position.set(0, 400, 1000); scene.add(bounce);
+  const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#d9dcb4' : mood[6], night ? 0.08 : LOOK_ON ? 1.15 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
   if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 30000, glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
@@ -243,7 +246,7 @@ export function fitSkyline(passes = 2) {
 // right scale. The final forest replaces these with real trees near and impostors far.
 function buildTrees(list) {
   const n = list.length / 4; const geo = new THREE.ConeGeometry(1, 1, 7); geo.translate(0, 0.5, 0);
-  const mesh = new THREE.InstancedMesh(geo, lookMat(new THREE.MeshLambertMaterial()), n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+  const mesh = new THREE.InstancedMesh(geo, lookMat(new THREE.MeshLambertMaterial(), { glow: 0.9 }), n); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
   for (let i = 0; i < n; i += 1) { const x = list[i * 4], z = list[i * 4 + 1], larch = list[i * 4 + 2], v = list[i * 4 + 3]; const h = 16 + 14 * v; const y = heightAt(x, z, true) - 0.5;
     m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(h * (larch ? 0.26 : 0.21), h, h * (larch ? 0.26 : 0.21))); mesh.setMatrixAt(i, m); mesh.setColorAt(i, c.set(larch ? '#56703a' : '#26391f').multiplyScalar(0.85 + 0.3 * v)); }
   mesh.instanceMatrix.needsUpdate = true; mesh.name = `block-out trees (${n})`; mesh.frustumCulled = false; return mesh;
