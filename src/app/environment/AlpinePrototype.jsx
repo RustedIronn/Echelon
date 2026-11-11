@@ -37,7 +37,7 @@ import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES }
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 import { addMassif } from './massifTransplant.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
-const RANGE_SCALE = typeof window === 'undefined' ? 1 : Number(new URLSearchParams(window.location.search).get('range') ?? 1);
+const RANGE_SCALE = typeof window === 'undefined' ? 1 : Number(new URLSearchParams(window.location.search).get('range') ?? 1.6); // the old range grown in place (chosen 2026-11-12); ?range=1 for the original
 import { FOLIAGE_A2C, TAA } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';

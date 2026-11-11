@@ -29,7 +29,7 @@ const SUN_IN_VIEW_PATH = SUN_PATH === 'front';
 // mountains (5-9 degrees) from 244 to 292 (measured with perf/skyline.mjs; SKYLINE in tests/day-cycle.test.mjs). So the sun rises over the low hills
 // at 238 degrees, near the left edge of a 16:9 frame, and climbs quickly at first (risePower < 1 makes the arc steep near the horizon, then a long flat
 // top): it clears the hills within half an hour of sunrise and stays above the mountains until it sets behind the right-hand peaks.
-const FRONT_SUN_ARC = Object.freeze({riseAzimuth:238,setAzimuth:290,peakElevation:14.5,seasonalElevation:1.5,risePower:.55});
+const FRONT_SUN_ARC = Object.freeze({riseAzimuth:238,setAzimuth:290,peakElevation:16.3,seasonalElevation:1.5,risePower:.55});
 export function sunPose(date) {
   const solar = solarDay(date); const h = hourOf(date); const into = (((h - solar.sunrise) % 24) + 24) % 24; let elevation, azimuth;
   // ?sunpath=side (experiment): the same sunrise and sunset points, but the sun crosses the sky in FRONT of the camera (to the left at noon) instead of behind it,

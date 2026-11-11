@@ -6,7 +6,7 @@ import { invalidate } from '@react-three/fiber';
 // mountain material (the display transform and the mountain surface pass), so it wears the same skin. The old range stays as it is and
 // becomes the middle range in front of it. ?massif=0 removes it; ?massifd= distance, ?massifh= height factor, ?massifaz= degrees right.
 const Q = typeof window === 'undefined' ? new URLSearchParams('') : new URLSearchParams(window.location.search);
-export const MASSIF_WANTED = Q.get('massif') !== '0';
+export const MASSIF_WANTED = Q.get('massif') === '1'; // off: the user chose the old range grown in place; ?massif=1 to see this option
 const ROOT = '/assets/environment/alpine-prototype';
 const VALLEY_DISTANCE = 12000; // the summit's distance from the valley's camera, metres
 
