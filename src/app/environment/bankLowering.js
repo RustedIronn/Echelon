@@ -3,7 +3,9 @@ import { widenFarWater } from './waterWiden.js';
 // The distant stream sits in a shallow channel with higher banks, so it shows as a ribbon a few pixels tall. This lowers the terrain along it (and
 // everything standing on that terrain) so the water surface is exposed, and the water's outer edge is widened to match. One shared function gives every
 // consumer (terrain vertices, grass, flowers, hamlet ground) the same vertical offset, so nothing floats or sinks.
-export const BANK = { camera: [-3, 10], lowerFrom: 14, lowerTo: 48, reach: 6.5, flat: 1.6, cell: 4 };
+// ?lake=<metres>: the stream widened into a lake (waterWiden.js); the banks are then lowered over that width too, and the ground under the new water sinks below it
+export const LAKE = typeof window === 'undefined' ? 0 : Number(new URLSearchParams(window.location.search).get('lake') ?? 0);
+export const BANK = { camera: [-3, 10], lowerFrom: 14, lowerTo: 48, reach: 6.5 + LAKE * 1.3, flat: 1.6 + LAKE, cell: 4, lake: LAKE };
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export const bankLowering = { current: null };
 
@@ -24,7 +26,7 @@ export function createBankLowering(positions, options = BANK) {
       const list = cells.get(key(cx + dx, cz + dz)); if (!list) continue;
       for (let i = 0; i < list.length; i += 3) { const d2 = (list[i] - x) ** 2 + (list[i + 2] - z) ** 2; if (d2 < best) { best = d2; waterY = list[i + 1]; found = true; } }
     }
-    if (!found) return 0; const strength = (1 - smooth(options.flat, reach, Math.sqrt(best))) * away; const target = waterY + 0.05; // banks come down to just above the waterline (the water keeps its authored width)
+    if (!found) return 0; const dist = Math.sqrt(best); const strength = (1 - smooth(options.flat, reach, dist)) * away; const target = waterY + 0.05 - (options.lake ? 0.5 * (1 - smooth(options.flat * 0.75, options.flat, dist)) * away : 0); /* under the widened water the bed lies half a metre down */ // banks come down to just above the waterline (the water keeps its authored width)
     return y > target ? -(y - target) * strength : 0;
   }
   // True when a water vertex of the far stream lies within r metres of (x, z).

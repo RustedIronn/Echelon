@@ -1,6 +1,7 @@
 // Widens the water's outer edge with distance from the fixed camera (nothing at 45 m, the full amount by 150 m), so the distant stream reads as the same
 // kind of water as the foreground. Boundary vertices move straight outward from the interior; nothing is added, so per-vertex attributes still match.
-export const WIDEN = { camera: [-3, 10], from: 45, to: 150, maxMetres: 0 }; // 0 keeps the authored width; raise it to widen the distant water
+const LAKE_W = typeof window === 'undefined' ? 0 : Number(new URLSearchParams(window.location.search).get('lake') ?? 0);
+export const WIDEN = { camera: [-3, 10], from: LAKE_W ? 20 : 45, to: LAKE_W ? 60 : 150, maxMetres: LAKE_W }; // 0 keeps the authored width; raise it to widen the distant water
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 export function widenFarWater(geometry, options = WIDEN) {
