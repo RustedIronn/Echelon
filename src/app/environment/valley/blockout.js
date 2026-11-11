@@ -132,7 +132,7 @@ export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-fl
 function zoneColour(x, h, z, slope) {
   SURF[0] = 0; SURF[1] = 0; SURF[2] = 0;
   const r = Math.hypot(x, z); const n = fbm(x / 90, z / 90, 3);
-  if (h > SNOWLINE + 260 * (n - 0.5) && slope < 1.25) return ZONE.snow;
+  if (h > SNOWLINE + 260 * (n - 0.5) && slope < 1.25 && !(SNOWLINE < 600 && h < 600 && h > 48 && slope > 0.22)) return ZONE.snow; // in winter the woods stay: dark against the snow
   if (slope > 1.0 || h > 1100) return h > 1100 && slope < 0.7 ? ZONE.scree : ZONE.rock;
   if (h > 640 + 160 * (n - 0.5)) return ZONE.scree.clone().lerp(ZONE.pasture, 0.55); // above the treeline: alpine pasture over scree
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
@@ -283,7 +283,7 @@ export async function startBlockout(canvas, overlay) {
   const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
   if (LOOK_ON && Q.get('stones') !== '0') { try { ROCKS = rockSites(); scene.add(await buildRocks(ROCKS)); } catch (e) { console.warn('rocks', e); } } // the scanned rocks
   // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
-  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet }));
+  { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') scene.add(buildPath(TRACK, { width: 2.6, at, wet }), buildPath(FOOTPATH, { width: 1.5, at, wet })); /* in winter the paths lie under the snow */
     let a = null, b = null; for (let i = 1; i < FOOTPATH.length && !b; i += 1) { const w = wet(FOOTPATH[i].x, FOOTPATH[i].y); if (w && !a) a = FOOTPATH[i - 1]; if (!w && a) b = FOOTPATH[i]; }
     if (a && b) scene.add(footbridge(a, b, Math.max(heightAt(a.x, a.y), heightAt(b.x, b.y)))); }
   // the forests: impostors baked from the real spruce and larch, or the block-out cones (?trees=cones, or if the models cannot load)
