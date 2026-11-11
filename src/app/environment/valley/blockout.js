@@ -116,12 +116,16 @@ function demHeight(x, z) {
   return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
+// the terrace's edge wanders: a glacial terrace is never a circle
+const terraceEdge = (a) => 58 + 16 * fbm(Math.cos(a) * 1.6 + 2, Math.sin(a) * 1.6 + 7, 3);
 export function heightAt(x, z, cheap = false, noPads = false) {
   const r = Math.hypot(x, z), az = Math.atan2(x, -z) / DEG;
   let h = 1.2 + 0.012 * Math.max(0, -z) + 3 * (fbm(x / 140, z / 140, 3) - 0.5) + (r > 60 ? (1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5)) * Math.min(1, (r - 60) / 60) : 0); // the floor, with its small rises and hollows
   const floorH = h;
   h = smax(h, 8 * (1 - smooth(0, 44, r)), 3); // the knoll under the camera, its foot blending into the meadow without a crease
-  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); h = smax(h, UPPER.y * (1 - smooth(62, 140, d)) + 6 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(55, 95, d) /* a level top to build on */, 12); } // the terrace
+  { const d = Math.hypot(x - UPPER.x, z - UPPER.z); if (d < 190) { const a = Math.atan2(x - UPPER.x, z - UPPER.z); const R = terraceEdge(a), W = 34 + 18 * fbm(Math.cos(a) * 2 + 5, Math.sin(a) * 2, 2);
+      const t = clamp((d - R) / W, 0, 1); const gully = 1.6 * Math.max(0, fbm(a * 7 + 3, 1.3, 2) - 0.52) * Math.sin(Math.PI * t) * 4; /* small gullies down the bank */
+      h = smax(h, UPPER.y * (1 - t * t * (3 - 2 * t)) - gully + 2 * (fbm(x / 60, z / 60, 2) - 0.5) * smooth(R - 10, R + 20, d), 8); } } // the terrace: a level top, a steeper bank // the terrace
   const f = profile(FOOT, az); const fh = Math.tan(f[1] * DEG) * f[2] + FRAME.eye - 8;
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
@@ -275,6 +279,8 @@ function rockSites() {
   const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot); const onLake = (a, k) => { const u = Math.cos(a) * LAKE.rx * k, v = Math.sin(a) * LAKE.rz * k; return [LAKE.x + u * c + v * sn, LAKE.z - u * sn + v * c]; };
   let best = null; for (let a = 0; a < 6.283; a += 0.05) { const [x, z] = onLake(a, 0.9); if (z < -70 && x > -45 && (!best || Math.hypot(x, z) < Math.hypot(best[0], best[1]))) best = [x, z]; }
   if (best) { add(best[0], best[1], 3.4, 'boulder', 0.42, 0); add(best[0] + 3.2, best[1] - 1.5, 1.2, 'moss', 0.5, 0); }
+  // the terrace bank: rock showing through in outcrops, some half buried, none straight in front of the chapel
+  { const dir = Math.atan2(-UPPER.x, -UPPER.z); for (let i = 0; i < 14; i += 1) { const a = dir + (hash(i, 61) - 0.5) * 2.4; if (Math.abs(a - dir) < 0.16) continue; const R = terraceEdge(a) + 8 + 30 * hash(i, 62); const x = UPPER.x + Math.sin(a) * R, z = UPPER.z + Math.cos(a) * R; if (polyDistance(TRACK, x, z) < 6) continue; add(x, z, 2.0 + 3.0 * hash(i, 63) ** 1.5, hash(i, 64) < 0.5 ? 'boulder' : 'moss', 0.45); } }
   // stones standing in the stream, breaking its surface into riffles
   for (let i = 10; i < riverPts.length - 6; i += 9) { const p = riverPts[i]; if (Math.hypot(p.x, p.y) > 900 || hash(i, 51) < 0.45) continue; const w = lerp(3.2, 5.5, i / riverPts.length);
     const off = (hash(i, 52) - 0.5) * w; add(p.x + off, p.y + (hash(i, 53) - 0.5) * 3, 0.9 + 0.8 * hash(i, 54), 'moss', 0.5, heightAt(p.x, p.y, true, 'river') + 1.3); }
@@ -315,7 +321,7 @@ function buildSettlements() {
   HUTS.forEach(([x, z], i) => place(alpineHouse(5, 4, { seed: 20 + i, barn: true, low: 1.0, high: 2.4, pitch: 0.5 }), x, z, (hash(i, 3) - 0.5) * 1.2)); /* hay huts out in the meadows */
   // a dry-stone wall along the front of the terrace, broken where the track comes up; a rail fence beside the track
   { const at = (x, z) => heightAt(x, z, true); const dir = Math.atan2(-UPPER.x, -UPPER.z); let run = [];
-    for (let k = -14; k <= 14; k += 1) { const a = dir + k * 0.06; const x = UPPER.x + Math.sin(a) * 64, z = UPPER.z + Math.cos(a) * 64; if (polyDistance(TRACK, x, z) < 7) { if (run.length > 1) group.add(wallAlong(run, at)); run = []; continue; } run.push([x, z]); }
+    for (let k = -14; k <= 14; k += 1) { const a = dir + k * 0.06; const R = terraceEdge(a) + 2; const x = UPPER.x + Math.sin(a) * R, z = UPPER.z + Math.cos(a) * R; if (polyDistance(TRACK, x, z) < 7) { if (run.length > 1) group.add(wallAlong(run, at)); run = []; continue; } run.push([x, z]); }
     if (run.length > 1) group.add(wallAlong(run, at));
     const rail = []; for (let i = 6; i < TRACK.length - 8; i += 6) { const p = TRACK[i], q = TRACK[i + 1]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; rail.push([p.x - tz / l * 2.6, p.y + tx / l * 2.6]); }
     group.add(fenceAlong(rail, at)); }
@@ -366,6 +372,9 @@ export async function startBlockout(canvas, overlay) {
     const n = hash(i, 83) < 0.3 ? 1 : 3 + Math.floor(hash(i, 84) * 8); const spread = 5 + n * 1.6; const larch = hash(i, 86) < 0.3 ? 1 : 0;
     for (let k = 0; k < n; k += 1) { const ang = hash(i, k + 85) * 6.283, rr = k === 0 ? 0 : spread * Math.sqrt(hash(k, i + 85)) * (0.7 + 0.6 * Math.abs(Math.cos(ang - i))); /* lopsided, never a circle */
       TREE_LIST.push(x + Math.cos(ang) * rr, z + Math.sin(ang) * rr, larch, k === 0 ? 0.85 + 0.15 * hash(i, 87) : 0.1 + 0.45 * hash(i, k + 87)); } }
+  // shrubby groups of trees on the flanks of the terrace bank, leaving the chapel's front open
+  { const dir = Math.atan2(-UPPER.x, -UPPER.z); for (let g = 0; g < 7; g += 1) { const side = g % 2 ? 1 : -1; const a = dir + side * (0.45 + 0.9 * hash(g, 95)); const R = terraceEdge(a) + 14 + 24 * hash(g, 96); const cx = UPPER.x + Math.sin(a) * R, cz = UPPER.z + Math.cos(a) * R;
+    if (polyDistance(TRACK, cx, cz) < 10) continue; const n = 3 + Math.floor(hash(g, 97) * 5); for (let k = 0; k < n; k += 1) TREE_LIST.push(cx + (hash(g, k + 98) - 0.5) * 16, cz + (hash(k, g + 98) - 0.5) * 12, hash(g, 99) < 0.4 ? 1 : 0, 0.05 + 0.35 * hash(g, k + 99)); } }
   // a line of trees beside the track up to the terrace
   for (let i = 4; i < TRACK.length * 0.4; i += 7) { if (hash(i, 91) < 0.3) continue; const p = TRACK[i], q = TRACK[i + 1]; if (Math.hypot(p.x - UPPER.x, p.y - UPPER.z) < 150) continue; /* never in front of the chapel */ const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; TREE_LIST.push(p.x + tz / l * 6, p.y - tx / l * 6, 0, 0.3 + 0.4 * hash(i, 92)); }
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], (16 + 14 * v) * (1 + 0.25 * smooth(2600, 7000, Math.hypot(x, z))), v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }

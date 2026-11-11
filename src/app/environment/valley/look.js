@@ -94,6 +94,7 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; va
     float grain = 0.8 + 0.4 * vlFbm(p / 6.0) * (0.7 + 0.6 * vlNoise(p / 40.0)); float bush = step(0.9, vlNoise(p / 3.2)) * step(0.55, vlNoise(p / 60.0)) * smoothstep(120.0, 220.0, d);
     vec3 g2 = diffuseColor.rgb * grain; g2 = mix(g2, g2 * 0.72, bush * 0.6); /* a bush is a darker tuft of the same sward, not a black stain */
     float slopeN = 1.0 - normalize(vlNormal).y; g2 = mix(g2, g2 * vec3(0.78, 0.82, 0.7), smoothstep(0.15, 0.4, slopeN) * smoothstep(0.55, 0.7, vlFbm(p / 25.0 + 4.0))); /* rougher, darker turf on the steeper banks */
+    g2 = mix(g2, vec3(0.3, 0.26, 0.19) * (0.8 + 0.4 * vlNoise(p / 2.5)), smoothstep(0.42, 0.6, slopeN) * smoothstep(0.58, 0.7, vlFbm(p / 9.0 + 9.0)) * 0.6); /* bare earth and rock where the bank is steepest */
     diffuseColor.rgb = mix(diffuseColor.rgb, g2, grassy); }
   // wet ground: darker, glossier soil and gravel at the water's edge (the gravel weight marks the river banks)
   // the gravel banks and bars of the stream in a scanned pebble texture (river_small_rocks), wet and darker at the waterline
