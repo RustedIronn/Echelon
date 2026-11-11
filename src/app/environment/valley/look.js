@@ -29,6 +29,11 @@ const TEXTURES = { tGrassFar: 'aerial_grass_rock', tGrassNear: 'sparse_grass', t
 export const TEX_ON = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('textures') === '1'; // under review: ?textures=1
 const loader = new THREE.TextureLoader(); const TEX = {};
 for (const [k, id] of Object.entries(TEXTURES)) { const t = loader.load(TEX_ROOT + id + '.jpg'); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; TEX[k] = { value: t }; }
+const EROSION = `
+// erosion: fine runnels (14 m apart) joining into wider gullies (55 m), cut down the fall line of every steep face; x-facing faces use z
+// as their across-slope coordinate and z-facing faces use x, blended as a triplanar would, so the streaks never swirl
+float vlRunnels(vec3 q, float wx) { return mix(vlFbm(vec2(q.x / 14.0, q.y / 210.0)), vlFbm(vec2(q.z / 14.0, q.y / 210.0) + 5.0), wx); }
+float vlGullies(vec3 q, float wx) { return mix(vlFbm(vec2(q.x / 55.0, q.y / 600.0) + 2.0), vlFbm(vec2(q.z / 55.0, q.y / 600.0) + 9.0), wx); }`;
 const GROUND = `
 vec3 vlTex(sampler2D t, vec2 uv) { return texture2D(t, uv).rgb; }
 // two scales of the same texture, blended by a slow noise, so its tiling never lines up
@@ -53,7 +58,7 @@ ${ground ? 'vlSurf = aSurf;' : ''}${mountain ? ' vlRelief = aRelief;' : ''}
 #endif
   vlWorld = (modelMatrix * wpv).xyz; vlNormal = normalize(mat3(modelMatrix) * objectNormal); }`);
     shader.fragmentShader = `uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uHaze; uniform float uDensity; uniform float uScaleHeight; uniform float uGlow; uniform float uSnowline; uniform float uTreeline; uniform float uRockOn;
-varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${mountain ? ' varying float vlRelief; uniform sampler2D tCliff; uniform sampler2D tSnowS;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
+varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' : ''}${mountain ? ' varying float vlRelief; uniform sampler2D tCliff; uniform sampler2D tSnowS;' : ''}${textured ? ' uniform sampler2D tGrassFar, tGrassNear, tGravel, tRock, tSnow, tTrack, tForest;' : ''}\n${NOISE}\n${mountain ? EROSION : ''}\n${textured ? GROUND : ''}\n` + shader.fragmentShader;
     // the ground: scanned surfaces chosen by zone (gravel, track, forest floor in aSurf; meadow otherwise) and by distance (the close-up
     // sparse turf near the camera, the aerial grass-and-stone further out); the vertex colour only nudges the hue toward its zone
     // building surfaces, drawn in world space: whitewash with rain streaks and a darker splash zone, coursed stone with mortar, vertical larch
@@ -93,12 +98,11 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf;' :
   float far = smoothstep(520.0, 900.0, d) * (1.0 - smoothstep(uTreeline - 40.0, uTreeline + 120.0, vlWorld.y)) * smoothstep(30.0, 70.0, vlWorld.y);
   if (far > 0.0) { vec3 n = normalize(vlNormal); float slope = 1.0 - n.y;
     float edgeN = vlFbm(p / 70.0 + 11.0) - 0.5; /* ragged edges: a wood ends tree by tree, not in an airbrushed fade */
-    float wood = smoothstep(0.03, 0.06, slope + 0.05 * (vlFbm(p / 900.0) - 0.5) + 0.03 * edgeN) * smoothstep(0.2, 0.24, vlFbm(p / 650.0 + 3.1) + 0.12 * edgeN);
-    wood = max(wood, step(0.82, vlNoise(p / 14.0)) * step(0.45, vlFbm(p / 300.0)) * 0.9); /* lone trees and clumps scattered in the pasture */
-    wood *= 1.0 - 0.85 * smoothstep(0.86, 0.95, abs(sin(p.x / 230.0 + vlFbm(p / 480.0) * 7.0))); /* avalanche paths */
-    wood *= 1.0 - smoothstep(uTreeline - 260.0, uTreeline + 40.0, vlWorld.y + 90.0 * (vlFbm(p / 300.0) - 0.5));
-    float crowns = vlNoise(p / 9.0) * 0.6 + vlNoise(p / 23.0) * 0.4; vec3 canopy = mix(vec3(0.07, 0.12, 0.06), vec3(0.17, 0.24, 0.11), crowns) * (0.9 + 0.25 * vlFbm(p / 400.0));
-    vec3 pasture = mix(vec3(0.27, 0.34, 0.16), vec3(0.37, 0.39, 0.24), vlFbm(p / 260.0)) * (0.85 + 0.25 * vlNoise(p / 25.0)); /* alpine pasture: greyer and darker than valley hay */
+    float topF = uTreeline - 50.0 + 160.0 * (vlFbm(p / 520.0) - 0.5) + 70.0 * edgeN; /* a ragged treeline, higher on the spurs */
+    float wood = smoothstep(0.25, 0.65, vlSurf.z + 0.35 * edgeN); /* the forest where the trees stand (the same zones that plant them), its edge ragged */
+    wood = max(wood, step(0.84, vlNoise(p / 12.0)) * smoothstep(topF + 120.0, topF - 40.0, vlWorld.y) * 0.9); /* lone trees above the forest edge and in the clearings */
+    float crowns = vlNoise(p / 9.0) * 0.6 + vlNoise(p / 23.0) * 0.4; vec3 canopy = mix(vec3(0.045, 0.075, 0.04), vec3(0.12, 0.16, 0.075), crowns) * (0.9 + 0.25 * vlFbm(p / 400.0));
+    vec3 pasture = mix(vec3(0.24, 0.27, 0.14), vec3(0.33, 0.33, 0.2), vlFbm(p / 260.0)) * (0.85 + 0.25 * vlNoise(p / 25.0)); /* alpine pasture: greyer and darker than valley hay */
     if (uSnowline < 0.0) { pasture = vec3(0.88, 0.9, 0.94) * (0.94 + 0.08 * vlNoise(p / 30.0)); canopy = mix(canopy * 1.1, vec3(0.8, 0.83, 0.88), 0.22 + 0.18 * crowns); } /* winter: pastures under snow, the forest dark with snow on its crowns */
     diffuseColor.rgb = mix(diffuseColor.rgb, mix(pasture, canopy, wood), far); }
 ${textured ? `
@@ -119,22 +123,42 @@ ${textured ? `
 { float h = vlWorld.y; vec3 n = normalize(vlNormal); float up = clamp(n.y, 0.0, 1.0); vec2 p = vlWorld.xz;
   float alpine = smoothstep(uTreeline - 80.0, uTreeline + 160.0, h + 120.0 * (vlFbm(p / 400.0) - 0.5)) * uRockOn;
   float rib = smoothstep(1.5, 22.0, vlRelief), cav = smoothstep(1.5, 22.0, -vlRelief);
-  vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z);
+  vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z); float wx = w.x / max(w.x + w.z, 1e-3);
+  float fine = vlRunnels(vlWorld, wx), coarse = vlGullies(vlWorld, wx); float steep = smoothstep(0.2, 0.6, 1.0 - up);
+  float cut = 0.55 * fine + 0.45 * coarse; float gully = smoothstep(0.52, 0.7, cut) * steep, spur = smoothstep(0.46, 0.3, cut) * steep;
   vec3 cliff = (texture2D(tCliff, vlWorld.zy / 70.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 70.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 70.0).rgb * w.z);
   vec3 cliff2 = (texture2D(tCliff, vlWorld.zy / 290.0).rgb * w.x + texture2D(tCliff, vlWorld.xz / 290.0).rgb * w.y + texture2D(tCliff, vlWorld.xy / 290.0).rgb * w.z);
   vec3 rock = mix(cliff, cliff2, 0.45); rock = mix(rock, vec3(dot(rock, vec3(0.333))) * vec3(0.97, 0.98, 1.02), 0.45); // limestone and gneiss grey
   rock *= 0.78 + 0.45 * rib - 0.35 * cav;                                           // lit ribs, shadowed gullies: the relief reads even in backlight
-  rock = mix(rock, vec3(0.3, 0.33, 0.24), 0.4 * smoothstep(0.6, 0.85, up) * (1.0 - smoothstep(uSnowline - 400.0, uSnowline, h)) * (1.0 - rib)); // turf on ledges below the snow
+  rock *= (1.0 - 0.34 * gully + 0.16 * spur) * (0.9 + 0.2 * fine); rock = mix(rock, rock * vec3(0.82, 0.8, 0.78), 0.5 * gully); // the runnels, water-stained
+  // alpine grassland above the forest: continuous turf on the gentler ground, giving way to rock along the runnels, on the ribs and where it
+  // is steep, so the boundary follows the erosion (vertical) instead of blotches; thinning out 350-650 m above the treeline
+  float grassBand = 1.0 - smoothstep(uTreeline + 200.0, uTreeline + 520.0, h + 220.0 * (coarse - 0.5));
+  float turf = grassBand * smoothstep(0.25, 0.85, up + 0.4 * (fine - 0.5) + 0.25 * (vlNoise(p / 9.0) - 0.5)) * (1.0 - 0.8 * gully) * (1.0 - 0.5 * rib); /* a fine-grained mix of turf and rock, never blotches */
+  vec3 turfCol = mix(vec3(0.15, 0.2, 0.08), vec3(0.24, 0.27, 0.12), vlFbm(p / 180.0)) * (0.85 + 0.3 * vlNoise(p / 20.0));
+  rock = mix(rock, turfCol, turf);
   float line = uSnowline + 380.0 * (vlFbm(p / 620.0) - 0.5) + 140.0 * (vlFbm(p / 140.0) - 0.5);
   float hold = smoothstep(0.42, 0.6, up + 0.14 * (vlFbm(p / 70.0) - 0.5)) * (1.0 - 0.8 * rib * smoothstep(0.85, 0.5, up)); // steep ribs shed it; gentle crests keep it
-  float couloir = cav * smoothstep(0.15, 0.45, up + 0.25);                          // snow fills the gullies far below the line
-  float snow = smoothstep(line - 70.0, line + 70.0, h + 330.0 * couloir + 60.0 * (vlFbm(p / 35.0) - 0.5)) * max(hold, couloir * 0.9);
-  snow = max(snow, smoothstep(line + 250.0, line + 550.0, h) * smoothstep(0.16, 0.34, up + 0.12 * (vlFbm(p / 50.0) - 0.5)) * (1.0 - 0.85 * rib * smoothstep(0.7, 0.35, up))); // the cap: white over the top, dark ribs only where the rock is steep
+  float couloir = max(cav * smoothstep(0.15, 0.45, up + 0.25), gully);             // snow fills the gullies and couloirs far below the line
+  hold *= smoothstep(0.42, 0.58, vlFbm(p / 110.0 + 4.0) + 0.25 * smoothstep(line, line + 330.0, h)); // below the cap, old snow lies in patches on the shelves, never one sheet
+  hold = max(hold, gully * 0.95) * (1.0 - 0.9 * spur * smoothstep(0.55, 0.3, up)); // white streaks down the runnels, dark ribs between
+  float snow = smoothstep(line - 25.0, line + 25.0, h + 380.0 * couloir + 90.0 * (fine - 0.5)) * max(hold, couloir * 0.9);
+  float cap = smoothstep(line + 330.0, line + 520.0, h + 220.0 * (coarse - 0.5)) * smoothstep(0.12, 0.26, up + 0.12 * (vlFbm(p / 50.0) - 0.5)); // the cap: white over the top
+  cap *= 1.0 - 0.92 * max(spur, rib * 0.7) * smoothstep(0.62, 0.32, up);        // the ribs and steep rock break through it
+  snow = max(snow, cap);
   vec3 snowCol = vec3(0.8, 0.83, 0.88) * (0.82 + 0.3 * texture2D(tSnowS, p / 30.0).r) * (0.9 + 0.12 * vlFbm(p / 18.0)); // snow with its own grain
   snowCol *= 0.86 + 0.22 * rib - 0.16 * cav; snowCol = mix(snowCol, snowCol * vec3(0.86, 0.9, 1.0), cav * 0.6);         // bright on the crests, blue-grey in the hollows
   snow *= 1.0 - 0.55 * smoothstep(0.62, 0.8, vlFbm(p / 22.0 + 7.0)) * smoothstep(0.5, 0.3, up); // rocks poke through the steeper snow
+  float flat_ = smoothstep(0.75, 0.92, up); float crev = smoothstep(0.62, 0.8, vlNoise(vec2(dot(p, normalize(n.xz + 1e-4)) / 9.0, dot(p, vec2(-n.z, n.x)) / 70.0))) * flat_;
+  snowCol *= 1.0 - 0.35 * crev; snowCol = mix(snowCol, snowCol * vec3(0.86, 0.85, 0.83), flat_ * smoothstep(line + 500.0, line + 150.0, h) * (0.5 + 0.5 * vlFbm(p / 60.0))); // crevasses, and old grey snow toward the foot
   vec3 alp = mix(rock, snowCol, snow);
   diffuseColor.rgb = mix(diffuseColor.rgb, alp, alpine); }`);
+    if (mountain) shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+{ vec3 nW = normalize(vlNormal); float steepW = smoothstep(0.2, 0.6, 1.0 - clamp(nW.y, 0.0, 1.0)) * smoothstep(9000.0, 4000.0, length(vlWorld - cameraPosition) - 9000.0);
+  if (steepW > 0.0) { vec3 wW = pow(abs(nW), vec3(4.0)); float wxW = wW.x / max(wW.x + wW.z, 1e-3); vec3 e = vec3(4.0, 0.0, 0.0);
+    float dx = 0.55 * (vlRunnels(vlWorld + e, wxW) - vlRunnels(vlWorld - e, wxW)) + 0.45 * (vlGullies(vlWorld + e * 3.0, wxW) - vlGullies(vlWorld - e * 3.0, wxW)) * 0.5;
+    float dz = 0.55 * (vlRunnels(vlWorld + e.yyx, wxW) - vlRunnels(vlWorld - e.yyx, wxW)) + 0.45 * (vlGullies(vlWorld + e.yyx * 3.0, wxW) - vlGullies(vlWorld - e.yyx * 3.0, wxW)) * 0.5;
+    nW = normalize(nW - vec3(dx * (1.0 - wxW), 0.0, dz * wxW) * 5.0 * steepW); normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz); } }`);
     // the air: transmittance through height-varying haze, and light scattered into the view (more toward the sun)
     shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', `
 { vec3 ray = vlWorld - cameraPosition; float d = length(ray); vec3 v = ray / max(d, 1e-3);
