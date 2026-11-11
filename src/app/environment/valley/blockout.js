@@ -108,9 +108,9 @@ function buildSettlements() {
   // lower group: mill on the water, farmhouse, barn
   place(house(9, 7, 0, '#5a4b3f', 4.5, 8, '#b7aa94'), LOWER.x - 10, LOWER.z + 12, 0.4); place(house(12, 9, 0, '#4f4136', 5, 9.5, '#cfc3ad'), LOWER.x + 14, LOWER.z - 4, -0.2); place(house(16, 11, 0, '#4a3b2f', 5.5, 10.5, '#8a6a4c'), LOWER.x + 34, LOWER.z - 22, 0.1);
   // upper group: chapel with its tower, houses, the inn
-  const chapel = house(8, 15, 0, '#5a5550', 7, 12, '#f1eee6'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4, 22, 4), new THREE.MeshLambertMaterial({ color: '#f1eee6' })); tower.position.set(0, 11, 8.5); chapel.add(tower);
-  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.1, 7, 4), new THREE.MeshLambertMaterial({ color: '#4c4a48' })); spire.position.set(0, 25.5, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x, UPPER.z, 0.3);
-  [[-34, 18], [-22, -26], [26, 16], [40, -20], [12, 38], [-48, -6]].forEach(([dx, dz], i) => place(house(10 + (i % 3) * 2, 8 + (i % 2) * 2, 0, '#4f4640', 5 + (i % 2), 9.5 + (i % 2), i % 2 ? '#c9bea9' : '#a58566'), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
+  const chapel = house(8, 15, 0, '#5a5550', 7, 12, '#f1eee6'); const tower = new THREE.Mesh(new THREE.BoxGeometry(4.6, 27, 4.6), new THREE.MeshLambertMaterial({ color: '#f1eee6' })); tower.position.set(0, 13.5, 8.5); chapel.add(tower);
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 4), new THREE.MeshLambertMaterial({ color: '#4c4a48' })); spire.position.set(0, 32, 8.5); spire.rotation.y = Math.PI / 4; chapel.add(spire); place(chapel, UPPER.x - 4, UPPER.z + 30, 0.25); /* the chapel stands at the front of the terrace, the focal point; the houses sit behind and beside it, lower */
+  [[-38, -2], [-20, -30], [30, -6], [44, -28], [8, -44], [-46, -32]].forEach(([dx, dz], i) => place(house(10 + (i % 3) * 2, 8 + (i % 2) * 2, 0, '#4f4640', 5 + (i % 2), 9.5 + (i % 2), i % 2 ? '#c9bea9' : '#a58566'), UPPER.x + dx, UPPER.z + dz, 0.3 + i * 0.4));
   HUTS.forEach(([x, z], i) => place(house(5, 4, 0, '#3e3329', 2.6, 4.6, '#6e5640'), x, z, i * 1.1));
   // the hero tree: a dark mass on a trunk
   const tree = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 8), new THREE.MeshLambertMaterial({ color: '#4a3c2e' })); trunk.position.y = 4; tree.add(trunk);
@@ -118,9 +118,10 @@ function buildSettlements() {
   return group;
 }
 
-// The composed sun (docs/WORLD-SPEC.md section 3): it rises through the pass, arcs above the main peak and sets into the saddle. The arc is
-// higher and longer in summer, lower in winter, and always inside the frame. f is the fraction of the day between sunrise and sunset.
-export const SUN_ARC = { winter: { rise: -26.0, set: 29.8, peak: 15.0 }, spring: { rise: -26.8, set: 30.6, peak: 15.8 }, summer: { rise: -27.6, set: 31.4, peak: 16.4 } };
+// The sun follows the mountains (the user, 2026-11-11): it rises through the low pass on the left, climbs, and goes down behind the range.
+// In summer it sets late into the saddle on the right; in spring behind the right flank of the main peak; in winter, low and short, it
+// slips behind the main peak itself in early afternoon. The disc is depth-tested, so ridges hide it. f runs from sunrise to sunset.
+export const SUN_ARC = { winter: { rise: -24.5, set: 13, peak: 11.5 }, spring: { rise: -26.5, set: 22, peak: 14.5 }, summer: { rise: -28, set: 31, peak: 16.5 } };
 export function sunAt(f, season = 'summer') { const a = SUN_ARC[season] ?? SUN_ARC.summer; const az = lerp(a.rise, a.set, f); const el = a.peak * Math.sin(Math.PI * clamp(f, 0, 1)) ** 0.55 + (f < 0 || f > 1 ? -6 : 0); return { az, el }; }
 const dirOf = (az, el) => new THREE.Vector3(Math.sin(az * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), -Math.cos(az * DEG) * Math.cos(el * DEG));
 
