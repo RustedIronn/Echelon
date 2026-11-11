@@ -154,7 +154,12 @@ ${textured ? `
   float grassBand = 1.0 - smoothstep(uTreeline + 200.0, uTreeline + 520.0, h + 220.0 * (coarse - 0.5));
   float turf = grassBand * smoothstep(0.25, 0.85, up + 0.4 * (fine - 0.5) + 0.25 * (vlNoise(p / 9.0) - 0.5)) * (1.0 - 0.8 * gully) * (1.0 - 0.5 * rib); /* a fine-grained mix of turf and rock, never blotches */
   vec3 turfCol = mix(vec3(0.15, 0.2, 0.08), vec3(0.24, 0.27, 0.12), vlFbm(p / 180.0)) * (0.85 + 0.3 * vlNoise(p / 20.0));
-  turf = max(turf * (1.0 - 0.85 * scree), ledge * grassBand * 0.8); rock = mix(rock, turfCol, turf); // turf on the gentler ground and along the ledges, not over the scree
+  // the alpine slope given structure: rock ribs running down the fall line break the turf; dwarf pine and green alder darken the gullies
+  // between them; the turf itself in richer and thinner patches
+  float ribRock = smoothstep(0.54, 0.64, vlFbm(vec2(p.x / 70.0, h / 600.0) + 4.1) + 0.15 * (fine - 0.5)) * smoothstep(0.05, 0.25, 1.0 - up);
+  float shrub = smoothstep(0.52, 0.64, vlFbm(vec2(p.x / 50.0 + 3.0, h / 420.0) + 8.3) + 0.2 * (vlNoise(p / 18.0) - 0.5)) * (1.0 - smoothstep(uTreeline + 200.0, uTreeline + 520.0, h));
+  turfCol *= 0.72 + 0.45 * vlFbm(p / 70.0 + 2.0); turfCol = mix(turfCol, vec3(0.06, 0.1, 0.05) * (0.85 + 0.3 * vlNoise(p / 8.0)), shrub * 0.85);
+  turf = max(turf * (1.0 - 0.85 * scree) * (1.0 - 0.85 * ribRock), ledge * grassBand * 0.8); rock = mix(rock, turfCol, turf); // turf on the gentler ground and along the ledges, not over the scree
   float line = uSnowline + 380.0 * (vlFbm(p / 620.0) - 0.5) + 140.0 * (vlFbm(p / 140.0) - 0.5);
   float hold = smoothstep(0.42, 0.6, up + 0.14 * (vlFbm(p / 70.0) - 0.5)) * (1.0 - 0.8 * rib * smoothstep(0.85, 0.5, up)); // steep ribs shed it; gentle crests keep it
   float couloir = max(cav * smoothstep(0.15, 0.45, up + 0.25), gully);             // snow fills the gullies and couloirs far below the line
