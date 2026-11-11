@@ -102,8 +102,9 @@ ${textured ? `
     // into the light: sunlight passing through grass blades and needles lights their edges; strongest where the view faces the sun and the
     // surface is seen edge-on (the glowing meadows and crowns of the references); nothing when the sun is down
     if (glow > 0) shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', `{ vec3 vv = normalize(cameraPosition - vlWorld); vec3 nn = normalize(vlNormal); float fwd = pow(max(dot(-vv, normalize(uSunDir)), 0.0), 3.0);
-  float edge = pow(1.0 - abs(dot(nn, vv)), 1.5); float day = smoothstep(-0.02, 0.12, uSunDir.y);
-  outgoingLight += diffuseColor.rgb * uSunCol * fwd * (0.35 + 0.65 * edge) * ${glow.toFixed(3)} * day; }
+  float edge = pow(1.0 - abs(dot(nn, vv)), 1.5); float day = smoothstep(-0.06, 0.04, uSunDir.y); float low = 1.0 - smoothstep(0.05, 0.3, uSunDir.y); /* a low sun shines through grass the most */
+  outgoingLight += diffuseColor.rgb * uSunCol * fwd * (0.35 + 0.65 * edge) * ${glow.toFixed(3)} * day * (1.0 + 1.6 * low);
+  outgoingLight += diffuseColor.rgb * uHaze * 0.22 * ${glow.toFixed(3)} * day; /* the bright sky and haze around the low sun light the blades from every side */ }
 #include <opaque_fragment>`);
   };
   material.customProgramCacheKey = () => `valley-look-${mountain ? 'mountain' : 'plain'}-${ground ? 'g' : ''}${glow}`;

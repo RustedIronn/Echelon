@@ -4,6 +4,7 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { applyValleyLook, setLook } from './look.js';
 import { buildForest } from './trees.js';
 import { planGrass, buildGrass } from './grass.js';
+import { buildClouds } from './clouds.js';
 let TREE_LIST = [];
 const LOOK_ON = Q_LOOK();
 function Q_LOOK() { return typeof window === 'undefined' || new URLSearchParams(window.location.search).get('look') !== 'blockout'; } // ?look=blockout for the flat block-out
@@ -182,6 +183,7 @@ function house(w, d, wall, roof, eave, ridge, colour = '#cfc6b6') {
 }
 // An Alpine house (docs/WORLD-SPEC.md section 6): a whitewashed or stone ground floor, a dark larch-timber upper floor with a balcony along
 // the sunny front, a shallow roof of stone slabs or shingles with deep eaves, small windows with shutters, a chimney. w along the ridge.
+const LAMPS = ["dusk", "night"].includes(Q.get("tod")) ? Q.get("tod") : null; // the windows light when it gets dark, house by house
 function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5a55', low = 3.0, high = 3.2, pitch = 0.42, seed = 0 } = {}) {
   const g = new THREE.Group(); const box = (sx, sy, sz, col, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), lookMat(new THREE.MeshLambertMaterial({ color: col }))); m.position.set(x, y, z); g.add(m); return m; };
   box(w, low, d, stone, 0, low / 2, 0); box(w * 0.995, high, d * 0.995, timber, 0, low + high / 2, 0);
@@ -189,7 +191,7 @@ function alpineHouse(w, d, { stone = '#d9d2c3', timber = '#5c3f28', roof = '#5d5
   const rg = new THREE.ExtrudeGeometry(shape, { depth: w + 1.8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.8) / 2, eave - 0.1, 0); g.add(new THREE.Mesh(rg, lookMat(new THREE.MeshLambertMaterial({ color: roof }))));
   box(w * 0.55, 0.1, 1.3, '#4a3221', 0, low + 0.3, d / 2 + 0.65); box(w * 0.55, 1.0, 0.08, '#4a3221', 0, low + 0.85, d / 2 + 1.28); // the balcony
   const win = '#1d1916', shut = seed % 2 ? '#3d5a3a' : '#6a4a2c'; const n = Math.max(2, Math.floor(w / 3.2));
-  for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
+  for (let k = 0; k < n; k += 1) { const x = -w / 2 + (k + 0.5) * (w / n); for (const [y, s] of [[low * 0.55, 1.0], [low + high * 0.5, 0.9]]) { const pane = box(0.9 * s, 1.1 * s, 0.08, win, x, y, d / 2 + 0.03); if (LAMPS && hash(seed * 7.3 + k, y) > 0.38) { pane.material.emissive.set("#ffae55"); pane.material.emissiveIntensity = LAMPS === "night" ? 2.6 : 1.4; } /* lamplight: most windows lit when it gets dark, not all */ box(0.35 * s, 1.1 * s, 0.06, shut, x - 0.65 * s, y, d / 2 + 0.05); box(0.35 * s, 1.1 * s, 0.06, shut, x + 0.65 * s, y, d / 2 + 0.05); box(0.9 * s, 1.1 * s, 0.08, win, x, y, -d / 2 - 0.03); } }
   box(0.8, 1.8, 0.8, '#8a8378', w * 0.25, eave + rise * 0.6, -d * 0.15); // chimney
   return g;
 }
@@ -242,6 +244,7 @@ export async function startBlockout(canvas, overlay) {
   const light = new THREE.DirectionalLight(mood[4], mood[5]); const hemi = new THREE.HemisphereLight(mood[6], mood[7], night ? 0.35 : LOOK_ON ? 1.7 : 1.3); /* the open sky is the main light on faces turned from the sun */ scene.add(light, hemi);
   // bounce: the open sky and the sunlit valley behind the camera light the faces turned toward us; without it every slope in front is black
   const bounce = new THREE.DirectionalLight(LOOK_ON && !night ? '#d9dcb4' : mood[6], night ? 0.08 : LOOK_ON ? 1.15 : 0.85); /* warm: light thrown back by the sunlit meadows behind the camera */ bounce.position.set(0, 400, 1000); scene.add(bounce);
+  if (LOOK_ON && Q.get('clouds') !== '0') scene.add(buildClouds({ coverage: Number(Q.get('cover') ?? (night ? 0.58 : 0.5)), night })); // ?clouds=0 for a clear sky, ?cover=0.3..0.7
   if (LOOK_ON) { const dawnish = Q.get('tod') === 'dawn' || Q.get('tod') === 'dusk'; setLook({ sunDir: night ? dirOf(sunAt(Number(Q.get('mf') ?? 0.3), season).az, sunAt(Number(Q.get('mf') ?? 0.3), season).el) : dirOf(sunPose.az, sunPose.el), sunCol: mood[4], haze: mood[8], density: night ? 1 / 40000 : dawnish ? 1 / 19000 : 1 / 30000, glow: night ? 0.15 : dawnish ? 1.6 : 1.1, snowline: season === 'winter' ? -200 : season === 'spring' ? 1000 : 1450 }); } else scene.fog = new THREE.FogExp2(mood[8], mood[9]);
   let moon = null; if (night) { // the moon rides the same arc; stars are a simple field for now
     const mp = sunAt(Number(Q.get('mf') ?? 0.3), season); const d = dirOf(mp.az, mp.el); light.position.copy(d).multiplyScalar(1000);
