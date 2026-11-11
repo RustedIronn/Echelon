@@ -94,7 +94,8 @@ export async function loadDem(url = '/design-reference/world-redesign/dem/dom') 
 // the terrain's local relief: the real height minus its smoothed surroundings (about 200 m), exaggerated so ridges stand sharper and
 // couloirs cut deeper, the way the eye remembers mountains; the overall shape and the summit stay where the data puts them
 const RELIEF = Number(Q.get('relief3d') ?? 2.4);
-const NEEDLES = Number(Q.get('needles') ?? 1); // ?needles=0 for the plain crown
+const NEEDLES = Number(Q.get('needles') ?? 1);
+const CREST = [[12.6, 1.0, 3.2], [9.6, 0.6, 1.7], [7.2, 0.36, 1.8], [5.0, 0.2, 2.0], [15.2, 0.55, 1.5], [17.6, 0.78, 2.3], [20.2, 0.34, 1.8], [22.4, 0.24, 1.6]]; // [azimuth, height, half-width] // ?needles=0 for the plain crown
 function blurGrid(src, w, h, r) { const tmp = new Float32Array(src.length), out = new Float32Array(src.length);
   for (let pass = 0; pass < 2; pass += 1) { const a = pass ? out : src;
     for (let y = 0; y < h; y += 1) { let acc = 0; for (let x = -r; x <= r; x += 1) acc += a[y * w + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x += 1) { tmp[y * w + x] = acc / (2 * r + 1); acc += a[y * w + Math.min(w - 1, x + r + 1)] - a[y * w + Math.max(0, x - r)]; } }
@@ -111,9 +112,13 @@ function demHeight(x, z) {
   const rel = mid - smooth0; const form = rel > 0 ? rel * Math.min(1.7, 1 + 0.01 * rel) : rel; DEM_RELIEF_OUT = form * RELIEF + 1.1 * (raw - mid);
   // the granite needles (reference: the Chamonix Aiguilles): on the upper crown, sharp spires where two ridged fields cross, notched cols
   // between them; so steep that no snow holds on their faces, only in the couloirs between
-  const crown = smooth(1700, 2500, smooth0 - MASSIF.lakeAltitude) * NEEDLES; if (crown > 0) { const u = x / 340, v = z / 340;
-    const rn = ridged(u, v, 2) * ridged(u * 1.55 + 7.3, v * 1.55 - 2.1, 2); const spire = Math.pow(rn, 3.4); const notch = Math.pow(1 - ridged(u * 0.8 + 3.1, v * 0.8, 2), 2);
-    DEM_RELIEF_OUT += crown * (spire * 560 - notch * 180); }
+  // the serrated crest (reference: the Chamonix Aiguilles), designed along the skyline as the camera sees it: one dominant summit, a second
+  // lower one to its right, and teeth of uneven height and spacing falling away on both sides - a ridge, never a row of equal fingers. Each
+  // peak is a sharp triangle in azimuth; small notches break their flanks; the whole fades down the face into buttresses.
+  const crown = smooth(1500, 2500, smooth0 - MASSIF.lakeAltitude) * NEEDLES; if (crown > 0) { const azp = Math.atan2(x, -z) / DEG; let ridge = 0;
+    for (const [pa, ph, pw] of CREST) { const d = Math.abs(azp - pa) / pw; if (d < 1) ridge = Math.max(ridge, ph * (1 - d) ** 0.9); }
+    const teeth = 0.1 * (ridged(azp * 2.3, 1.7, 2) - 0.5) + 0.05 * (ridged(azp * 7.1, 4.2, 2) - 0.5); const rr = Math.hypot(x, z);
+    DEM_RELIEF_OUT += crown * (ridge + teeth * (0.4 + ridge)) * 240 * (0.75 + 0.25 * ridged(x / 300, z / 300, 2)) - crown * 90 * (1 - ridge) * smooth(0.15, 0.6, ridged(azp * 1.3 + 3, rr / 900, 2)); }
   return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
@@ -135,7 +140,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
   const side = Math.abs(x - 60 - 0.08 * -z) - 560; if (side > 0) h = smax(h, Math.min(side * 0.42, Math.tan(f[1] * DEG) * r * 0.92) * (0.8 + 0.4 * fbm(x / 400, z / 400, 3)), 30); /* valley sides, never above the designed foothill skyline */
   h = smax(h, fh * smooth(f[2] - 2600, f[2], r) * (1 - 0.6 * smooth(f[2] + 600, f[2] + 2600, r)) * (0.82 + 0.36 * fbm(x / 700, z / 700, cheap ? 2 : 4)), 60);
   const m = profile(RANGE, az); const mh = Math.tan(m[1] * DEG) * m[2] + FRAME.eye; const crest = smooth(m[2] - 5200, m[2], r) * (1 - smooth(m[2], m[2] + 3500, r));
-  let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * reshapeAt(az), wd); }
+  let mountain = mh * crest * (0.74 + 0.3 * ridged(x / 1500, z / 1500, cheap ? 2 : 5)); const wd = demWeight(x, z); if (wd > 0) { const dh = demHeight(x, z); if (Number.isFinite(dh)) mountain = lerp(mountain, dh * 0.88 * reshapeAt(az), wd) /* the whole massif a little lower, so sky stands over the summit */; }
   h = smax(h, mountain, 120);
   if (!noPads) for (const site of SITES) { const d = Math.hypot(x - site[0], z - site[1]); if (d < site[2] + 16) { if (site[3] === undefined) site[3] = heightAt(site[0], site[1], true, true); h = lerp(site[3], h, smooth(site[2] + 1, site[2] + 16, d)); } } // the building pads
   if (!cheap || noPads === 'river') { const [d] = riverDistance(x, z); h = lerp(Math.min(h, floorH + 0.6), h, smooth(7, 24, d)) - 2.2 * (1 - smooth(5, 16, d)); } // the channel cuts through whatever rises across it, down to the valley floor
@@ -410,7 +415,7 @@ export async function startBlockout(canvas, overlay) {
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
         const fl = fbm(x / 40 + 3, z / 40, 3) + 0.3 * (pick - 0.5); const mix = Math.min(0.999, Math.max(0, (fbm(x / 90 + 11, z / 90, 2) - 0.3) / 0.4 + 0.25 * (hash(z, x * 1.7) - 0.5))); /* the pockets feather out at their edges */ const fl2 = fl * 0.5 + fbm(x / 13 + 7, z / 13, 2) * 0.5; const dry = microAt(x, z) > 0.1, damp = microAt(x, z) < -0.15 || dp > 0.3; const nearPath = polyDistance(FOOTPATH, x, z) < 6;
-        const bloom = smooth(0.47, 0.66, fl2) * 0.85; /* the chance of flowering rises gently into a cluster: varied density, soft edges */ const kind = short || mw > 0.5 || nearPath || hash(x * 0.37, z * 1.91) > bloom ? 0 : damp ? 2 : dry ? (mix < 0.6 ? 1 : 4) : (mix < 0.45 ? 1 : mix < 0.8 ? 3 : 4); /* plant communities in small clusters by the ground: yellow and pink bistort in the damp, cranesbill and clover between, daisies and harebells on the dry */ /* flowering pockets, each its own colour: daisies, yellow, violet-blue, pink */
+        const kind = short || mw > 0.5 ? 0 : nearPath ? 0 : Math.min(4, Math.floor((fbm(x / 60 + 4, z / 60, 2) * 0.6 + hash(x * 0.37, z * 1.91) * 0.4) * 4.4 + (damp ? 0.6 : 0))); /* every card in flower, finely mixed: the mix drifts slowly across the field (more yellow where damp), no islands */
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
       meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone, path: (x, z) => polyDistance(FOOTPATH, x, z), moist: (x, z) => clamp(0.5 - microAt(x, z) * 1.1 + (zone(x, z) === 'wet' ? 0.3 : 0), 0, 1) }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
