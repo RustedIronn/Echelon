@@ -116,6 +116,8 @@ function demHeight(x, z) {
   return smooth0 + DEM_RELIEF_OUT - MASSIF.lakeAltitude;
 }
 const demWeight = (x, z) => { if (!DEM) return 0; const s = Math.hypot(x - DEM.summit[0], z - DEM.summit[1]); return (1 - smooth(4000, 6500, s)) * smooth(5000, 7000, Math.hypot(x, z)); }; /* the summit block only: the real ridges north of it would stand in front */
+// the lake's outline with its wandering shore: bays and little points instead of an ellipse
+const lakeL = (x, z) => { const l = inLake(x, z); return l > 2.2 ? l : l + 0.2 * (fbm(x / 40, z / 40, 2) - 0.5) + 0.05 * (fbm(x / 9, z / 9, 2) - 0.5); };
 // the valley floor's small rises (dry) and hollows (damp), in metres
 const microAt = (x, z) => 1.1 * (fbm(x / 34, z / 34, 2) - 0.5) + 0.35 * (fbm(x / 9, z / 9, 2) - 0.5);
 // the terrace's edge wanders: a glacial terrace is never a circle
@@ -136,7 +138,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
   h = smax(h, mountain, 120);
   if (!noPads) for (const site of SITES) { const d = Math.hypot(x - site[0], z - site[1]); if (d < site[2] + 16) { if (site[3] === undefined) site[3] = heightAt(site[0], site[1], true, true); h = lerp(site[3], h, smooth(site[2] + 1, site[2] + 16, d)); } } // the building pads
   if (!cheap || noPads === 'river') { const [d] = riverDistance(x, z); h = lerp(Math.min(h, floorH + 0.6), h, smooth(7, 24, d)) - 2.2 * (1 - smooth(5, 16, d)); } // the channel cuts through whatever rises across it, down to the valley floor
-  const l = inLake(x, z); if (l < 1.26) h = Math.min(lerp(-2.5, -0.3, smooth(0.9, 1.26, l)), h); else if (l < 1.9) h = lerp(0.05, Math.max(h, 0.25), smooth(1.26, 1.5, l)); /* under the water inside its outline, a low bank rising just outside */ /* the bed stays under the water to the very edge of the lake, then a low shore */
+  const l = lakeL(x, z); if (l < 1.26) h = Math.min(lerp(-2.5, -0.3, smooth(0.9, 1.26, l)), h); else if (l < 1.9) h = lerp(0.05, Math.max(h, 0.25), smooth(1.26, 1.5, l)); /* under the water inside its outline, a low bank rising just outside */ /* the bed stays under the water to the very edge of the lake, then a low shore */
   return h;
 }
 
@@ -157,7 +159,7 @@ function zoneColour(x, h, z, slope) {
   if (slope > 0.22 && h > 48) { /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.12; if (avalanche) return ZONE.meadow.clone().lerp(ZONE.scree, 0.3); SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
   const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 9) { SURF[0] = 1 - smooth(4.5, 8, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(4.5, 8, d)); } // a narrow stony margin, not a beach
-  { const lk = inLake(x, z); if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.65 * (1 - smooth(1.1, 1.3, lk))); } // a muddy wet margin at the waterline
+  { const lk = lakeL(x, z); if (lk < 1.5) { SURF[0] = 0.75 * (1 - smooth(1.24, 1.36, lk)) * (0.5 + 0.5 * fbm(x / 14, z / 14, 2)); /* stony patches in the mud at the waterline */ } if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.75 * (1 - smooth(1.24, 1.44, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
   // the plots themselves are drawn per pixel by the ground shader (look.js); here only the broad use and the wet ground along the water,
@@ -212,17 +214,17 @@ void main() {
   vec3 v = normalize(cameraPosition - vWorld); float f = 0.02 + 0.98 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
   // the shallows: near the shore the lake bed shows through (stones and silt, brown-green), the reflection weaker
   vec2 q = vWorld.xz - uLake.xy; float cr = cos(uRot), sr = sin(uRot); vec2 e = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr) / uLake.zw; float l = length(e);
-  float shallow = smoothstep(0.88, 1.08, l + 0.05 * (lf(p * 0.15) - 0.5));
+  float shallow = smoothstep(1.0, 1.24, l + 0.05 * (lf(p * 0.15) - 0.5));
   vec3 bed = mix(vec3(0.16, 0.15, 0.1), vec3(0.24, 0.22, 0.16), lf(p * 0.6)) * (0.8 + 0.3 * lf(p * 2.3));
   vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow) * uDay; /* the lake bed is lit by the day, dark at night */
-  gl_FragColor = vec4(mix(body, refl * (0.84 - 0.1 * paws), clamp(f * 1.1 + 0.08, 0.0, 1.0) * (1.0 - 0.55 * shallow)), 1.0);
+  gl_FragColor = vec4(mix(body, refl * vec3(0.7, 0.76, 0.74) * (1.0 - 0.1 * paws), clamp(f * 1.05 + 0.08, 0.0, 1.0) * (1.0 - 0.6 * shallow)), 1.0); /* the reflection a little darker and greener than the sky it shows: the water sits in the land */
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,
 };
 function buildWater() {
   const group = new THREE.Group();
-  const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.12, LAKE.rz * 1.12, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
+  const lakeGeo = new THREE.CircleGeometry(1, 96); lakeGeo.scale(LAKE.rx * 1.42, LAKE.rz * 1.42, 1); /* the Reflector takes its plane from the mesh: geometry stays in XY, the mesh is laid flat */
   const lake = new Reflector(lakeGeo, { textureWidth: 2048, textureHeight: 1024, color: 0x8a9aa4, shader: LOOK_ON ? LAKE_SHADER : undefined }); lake.position.set(LAKE.x, 0, LAKE.z); lake.name = 'lake'; lake.rotation.set(-Math.PI / 2, 0, LAKE.rot); group.add(lake);
   // the river as a ribbon following the course, wider toward the lake
   // the stream: five strips across, so the water is deep in the middle and shallow at the edges; aFlow carries (across, along in metres)
@@ -279,16 +281,17 @@ function rockSites() {
     else if (hash(i, 9) < 0.25) add(p.x + nx * (w + 0.5) * (hash(i, 10) < 0.5 ? -1 : 1), p.y + nz * (w + 0.5), 0.6 + 0.6 * hash(i, 11), 'moss', 0.35); } // the odd stone on a straight reach
   // the lake: one boulder in the shallows on the near side, groups of stones on the shore
   const c = Math.cos(LAKE.rot), sn = Math.sin(LAKE.rot); const onLake = (a, k) => { const u = Math.cos(a) * LAKE.rx * k, v = Math.sin(a) * LAKE.rz * k; return [LAKE.x + u * c + v * sn, LAKE.z - u * sn + v * c]; };
-  let best = null; for (let a = 0; a < 6.283; a += 0.05) { const [x, z] = onLake(a, 0.9); if (z < -70 && x > -45 && (!best || Math.hypot(x, z) < Math.hypot(best[0], best[1]))) best = [x, z]; }
-  if (best) { add(best[0], best[1], 3.4, 'boulder', 0.42, 0); add(best[0] + 3.2, best[1] - 1.5, 1.2, 'moss', 0.5, 0); }
+  const shoreK = (a, at = 1.26) => { let lo = 0.95, hi = 1.6; for (let it = 0; it < 18; it += 1) { const mid = (lo + hi) / 2; const [x, z] = onLake(a, mid); if (lakeL(x, z) < at) lo = mid; else hi = mid; } return lo; }; /* where the wandering shore really is */
+  let best = null; for (let a = 0; a < 6.283; a += 0.05) { const [x, z] = onLake(a, shoreK(a, 1.16)); if (z < -70 && x > -45 && (!best || Math.hypot(x, z) < Math.hypot(best[0], best[1]))) best = [x, z]; }
+  if (best) { add(best[0], best[1], 3.0, 'boulder', 0.35, 0); for (let k = 0; k < 5; k += 1) add(best[0] + (hash(k, 3) - 0.5) * 7, best[1] + (hash(k, 4) - 0.5) * 5, 0.35 + 0.4 * hash(k, 5), 'moss', 0.5, 0); /* the boulder in the shallows near the shore, small stones round its foot */ add(best[0] + 3.2, best[1] - 1.5, 1.2, 'moss', 0.5, 0); }
   // the terrace bank: rock showing through in outcrops, some half buried, none straight in front of the chapel
   { const dir = Math.atan2(-UPPER.x, -UPPER.z); for (let i = 0; i < 14; i += 1) { const a = dir + (hash(i, 61) - 0.5) * 2.4; if (Math.abs(a - dir) < 0.16) continue; const R = terraceEdge(a) + 8 + 30 * hash(i, 62); const x = UPPER.x + Math.sin(a) * R, z = UPPER.z + Math.cos(a) * R; if (polyDistance(TRACK, x, z) < 6) continue; add(x, z, 2.0 + 3.0 * hash(i, 63) ** 1.5, hash(i, 64) < 0.5 ? 'boulder' : 'moss', 0.45); } }
   // stones standing in the stream, breaking its surface into riffles
   for (let i = 10; i < riverPts.length - 6; i += 9) { const p = riverPts[i]; if (Math.hypot(p.x, p.y) > 900 || hash(i, 51) < 0.45) continue; const w = lerp(3.2, 5.5, i / riverPts.length);
     const off = (hash(i, 52) - 0.5) * w; add(p.x + off, p.y + (hash(i, 53) - 0.5) * 3, 0.9 + 0.8 * hash(i, 54), 'moss', 0.5, heightAt(p.x, p.y, true, 'river') + 1.3); }
   // pebbles and small stones along the near shore of the lake, at the waterline, in little groups
-  for (let gi = 0; gi < 7; gi += 1) { const a0 = 0.5 + gi * 0.42; for (let k = 0; k < 6; k += 1) { const [x, z] = onLake(a0 + (hash(gi, k) - 0.5) * 0.08, 0.99 + 0.05 * hash(k, gi)); if (z < LAKE.z) continue; add(x, z, 0.3 + 0.55 * hash(gi * 3, k), 'moss', 0.45, Math.max(heightAt(x, z), -0.05)); } }
-  for (const a of [2.2, 3.4, 4.6]) for (let k = 0; k < 4; k += 1) { const [x, z] = onLake(a + (hash(a, k) - 0.5) * 0.12, 1.03 + 0.06 * hash(k, a)); add(x, z, 0.6 + 1.0 * hash(a * 3, k), 'moss', 0.35, Math.max(heightAt(x, z), 0)); }
+  for (let gi = 0; gi < 7; gi += 1) { const a0 = 0.5 + gi * 0.42; for (let k = 0; k < 6; k += 1) { const aa = a0 + (hash(gi, k) - 0.5) * 0.08; const [x, z] = onLake(aa, shoreK(aa, 1.22 + 0.08 * hash(k, gi))); if (z < LAKE.z) continue; add(x, z, 0.3 + 0.55 * hash(gi * 3, k), 'moss', 0.45, Math.max(heightAt(x, z), -0.05)); } }
+  for (const a of [2.2, 3.4, 4.6]) for (let k = 0; k < 4; k += 1) { const ag = a + (hash(a, k) - 0.5) * 0.12; const [x, z] = onLake(ag, shoreK(ag, 1.27 + 0.06 * hash(k, a))); add(x, z, 0.6 + 1.0 * hash(a * 3, k), 'moss', 0.35, Math.max(heightAt(x, z), 0)); }
   // erratics in the meadow; one beside the footpath; the foreground group
   add(-140, -320, 5.2, 'boulder', 0.3); add(-134, -316, 1.6, 'moss', 0.4); /* one great erratic across the lake, the left's counterweight to the hamlet */
   { const p = FOOTPATH[46], q = FOOTPATH[47]; const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1; add(p.x - tz / l * 3.4, p.y + tx / l * 3.4, 3.6, 'boulder', 0.3); add(p.x - tz / l * 6.2, p.y + tx / l * 6.2 - 2.0, 1.4, 'moss', 0.38); add(p.x - tz / l * 2.6, p.y + tx / l * 2.6 + 3.0, 0.8, 'moss', 0.45); /* a boulder beside the footpath, a waymark that leads the eye on toward the mill */ }
@@ -382,7 +385,7 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], (16 + 14 * v) * (1 + 0.25 * smooth(2600, 7000, Math.hypot(x, z))), v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => inLake(x, z) < 1.27 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
+  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => lakeL(x, z) < 1.4 + 0.1 * hash(x * 1.7, z * 2.3) || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
     let reeds = []; if (Q.get('blades') !== '0') {
       const blades = Q.get('blades') === '1' ? planBlades({ at: (x, z) => heightAt(x, z), skip, zone }) : []; /* the scanned meadow covers the near ground now */
@@ -394,7 +397,7 @@ export async function startBlockout(canvas, overlay) {
       if (blades.length) scene.add(buildBlades(blades)); /* procedural blades only with ?blades=1 */
       /* the scanned meadow below */
     }
-    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => inLake(x, z) < 1.16 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 240 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
+    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => lakeL(x, z) < 1.48 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 240 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
     if (Q.get('scanned') !== '0') { try { // the cards follow the land use: none on the mown plots, short plain grass where it is grazed or damp; in the hay, flowers in pockets
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
