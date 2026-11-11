@@ -387,7 +387,7 @@ export async function startBlockout(canvas, overlay) {
     if (Q.get('scanned') !== '0') { try { // the cards follow the land use: none on the mown plots, short plain grass where it is grazed or damp; in the hay, flowers in pockets
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
-        const fl = fbm(x / 45 + 3, z / 45, 3) + 0.12 * (pick - 0.5); const kind = short || mw > 0.5 ? 0 : fl < 0.5 ? 0 : fl < 0.6 ? 1 : fl < 0.67 ? 2 : 3;
+        const fl = fbm(x / 40 + 3, z / 40, 3) + 0.3 * (pick - 0.5); const mix = Math.min(0.999, Math.max(0, (fbm(x / 90 + 11, z / 90, 2) - 0.3) / 0.4 + 0.25 * (hash(z, x * 1.7) - 0.5))); /* the pockets feather out at their edges */ const kind = short || mw > 0.5 ? 0 : fl < 0.5 ? 0 : mix < 0.42 ? 1 : mix < 0.68 ? 2 : mix < 0.9 ? 3 : 4; /* flowering pockets, each its own colour: daisies, yellow, violet-blue, pink */
         cards.push(cardSites[i], cardSites[i + 1], z, cardSites[i + 3], cardSites[i + 4], short ? 0.42 : 1, kind); }
       meadow = await buildMeadow({ at: (x, z) => heightAt(x, z), skip, zone }, renderer, { cardSites: cards, reeds }); scene.add(meadow); window.__meadowCounts = { ...meadow.userData.counts, cards: meadow.userData.cards }; } catch (e) { console.warn('meadow', e); } } /* real scanned grass and flowers near, cards baked from them beyond */
     if (!meadow) scene.add(buildGrass(cardSites)); } const buildMs = Math.round(performance.now() - t0);
