@@ -8,7 +8,7 @@ import { applyValleyLook } from './look.js';
 const PH = '/design-reference/world-redesign/textures/ph/';
 const TILE = { worn_mossy_plasterwall: 3.2, plastered_wall: 2.6, rustic_stone_wall: 2.4, weathered_planks: 2.2, roof_slates_02: 2.2 }; // metres per repeat
 // the larch scan is near black and the stone deep in shade: lifted a little, so the fronts read when the sun is behind the houses
-const GAIN = { weathered_planks: 1.45, rustic_stone_wall: 1.15 };
+const GAIN = { weathered_planks: 1.7, rustic_stone_wall: 1.2 };
 const loader = new THREE.TextureLoader(); const textures = new Map();
 function maps(id) {
   if (!textures.has(id)) { const t = (name, srgb) => { const x = loader.load(`${PH}${id}/${name}.jpg`); if (srgb) x.colorSpace = THREE.SRGBColorSpace; x.wrapS = x.wrapT = THREE.RepeatWrapping; x.anisotropy = 8; x.repeat.set(1 / TILE[id], 1 / TILE[id]); return x; };
