@@ -169,7 +169,7 @@ function zoneColour(x, h, z, slope) {
   if (Math.hypot(x - UPPER.x - 15, z - UPPER.z + 235) < 135 && Math.hypot(x - UPPER.x, z - UPPER.z) > 125) { SURF[2] = 1; return n > 0.6 ? ZONE.larch : ZONE.forest; } // the wood behind the chapel terrace: a dark ground for the white tower
   if ((slope > 0.22 && h > 48) || (slope > 0.1 && h > 160 && fbm(x / 420 + 9, z / 420, 2) > 0.38)) { /* the foothills wooded too, with clearings */ /* forest from the valley sides up; the terrace banks stay open meadow */ const avalanche = Math.abs(Math.sin(x / 260 + fbm(x / 500, z / 500, 2) * 6)) < 0.05 && h > 220; if (avalanche) return ZONE.pasture.clone().lerp(ZONE.forest, 0.25); /* narrow avalanche lanes, high up, grassed and dark */ SURF[2] = 1; return n > 0.62 || h > 470 ? ZONE.larch : ZONE.forest; }
   if (Q.get('season') === 'winter' && h < 640) { const [dw] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (dw > 9) return ZONE.snow.clone().multiplyScalar(0.94 + 0.06 * n); } // winter: the whole valley floor under snow, the river open
-  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 7.5) { SURF[0] = 1 - smooth(4.5, 7, d); return ZONE.gravel.clone().lerp(ZONE.shore, smooth(4.5, 8, d)); } // a narrow stony margin, not a beach
+  const [d] = r < 1600 ? riverDistance(x, z) : [Infinity]; if (d < 8.5) { const bar = smooth(0.42, 0.58, fbm(x / 26 + 3, z / 26, 2)); const gv = (1 - smooth(4.5, 8, d)) * (0.25 + 0.75 * bar); SURF[0] = gv; return ZONE.shore.clone().lerp(ZONE.gravel, gv); } // stony bars in places; elsewhere the turf comes down to the water
   { const lk = lakeL(x, z); if (lk < 1.5) { SURF[0] = 0.75 * (1 - smooth(1.24, 1.36, lk)) * (0.5 + 0.5 * fbm(x / 14, z / 14, 2)); /* stony patches in the mud at the waterline */ } if (lk < 1.5) return ZONE.shore.clone().lerp(C('#4a4434'), 0.75 * (1 - smooth(1.24, 1.44, lk))); } // a muddy wet margin at the waterline
   if (Math.hypot(x - UPPER.x, z - UPPER.z) < 110) return ZONE.terrace;
   if (r < 75) return ZONE.dry.clone().lerp(ZONE.meadow, 0.4 * n + 0.6 * smooth(40, 75, r)); // the knoll: thin dry turf, fading into the meadow
@@ -246,20 +246,20 @@ function buildWater() {
     for (let k = 0; k < X; k += 1) { const u = k / (X - 1), off = (u * 2 - 1) * w; P.push(p.x + (tz / l) * off, yy, p.y - (tx / l) * off); F.push(u, along); }
     if (i) { const a0 = (i - 1) * X, a1 = i * X; for (let k = 0; k < X - 1; k += 1) I.push(a0 + k, a0 + k + 1, a1 + k, a0 + k + 1, a1 + k + 1, a1 + k); } }
   const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setAttribute('aFlow', new THREE.Float32BufferAttribute(F, 2)); rg.setIndex(I); rg.computeVertexNormals();
-  const riverMat = lookMat(new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+  const riverMat = lookMat(new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, depthWrite: false }));
   if (LOOK_ON) { const bed = new THREE.TextureLoader().load('/design-reference/world-redesign/textures/river_small_rocks.jpg'); bed.colorSpace = THREE.SRGBColorSpace; bed.wrapS = bed.wrapT = THREE.RepeatWrapping; bed.anisotropy = 8;
     const look = riverMat.onBeforeCompile; riverMat.onBeforeCompile = (sh, r) => { look(sh, r); sh.uniforms.tBed = { value: bed }; sh.uniforms.uTime = LOOK.uTime;
       sh.vertexShader = 'attribute vec2 aFlow; varying vec2 vlFlow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vlFlow = aFlow;');
       // a glacial stream (references 3, 7, 11): milky turquoise where it is deep, the pebble bed (scanned) showing through the shallows at
       // its edges, white water streaming downstream over the stones, strongest on the rapid reaches; the sun glints on it
       sh.fragmentShader = 'uniform sampler2D tBed; varying vec2 vlFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); if (edge > 0.8 + 0.18 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7))) discard; float depth = 1.0 - smoothstep(0.3, 0.85, edge);
+{ vec2 fl = vlFlow; float edge = abs(fl.x * 2.0 - 1.0); float lim = 0.78 + 0.2 * vlNoise(vec2(fl.y * 0.4, fl.x * 3.0 + 1.7)); diffuseColor.a = 1.0 - smoothstep(lim - 0.16, lim, edge); /* the water thins out over the stones at its edge: a soft, wandering margin */ float depth = 1.0 - smoothstep(0.3, 0.85, edge);
   float rapid = smoothstep(0.42, 0.66, vlFbm(vec2(fl.y * 0.045, 3.0))); float sp = 1.0 + 1.6 * depth + 1.2 * rapid;
   vec2 q = vec2(fl.x * 5.0, fl.y * 0.45 - uTime * sp); float rip = (vlNoise(q) - 0.5) * 0.6 + (vlNoise(q * 2.7 + 4.0) - 0.5) * 0.4; /* ripples carried downstream */
   vec3 V = normalize(cameraPosition - vlWorld); float fres = pow(1.0 - clamp(V.y + rip * 0.2, 0.0, 1.0), 4.0);
   vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb; vec3 body = mix(bedC * vec3(0.55, 0.7, 0.68), vec3(0.07, 0.19, 0.21), depth); /* stones through the shallows, deep green-blue pools */
   float pool = smoothstep(0.35, 0.65, vlFbm(vec2(fl.y * 0.03 + 9.0, fl.x * 0.7))) * (1.0 - rapid); /* slack water mirrors the dark far bank, running water the sky */
-  vec3 mirror = mix(uHaze * (0.85 + 0.9 * rip), vec3(0.1, 0.17, 0.1), pool * 0.7);
+  vec3 skyM = mix(uHaze, vec3(dot(uHaze, vec3(0.333))) * vec3(0.92, 1.0, 0.98), 0.45); /* meltwater greys the sky it mirrors */ vec3 mirror = mix(skyM * (0.8 + 0.9 * rip), vec3(0.1, 0.17, 0.1), pool * 0.7);
   vec3 water = mix(body, mirror, clamp(0.2 + 0.8 * fres, 0.0, 1.0) * (0.45 + 0.55 * depth));
   water *= 1.0 - 0.5 * smoothstep(0.55, 0.85, edge); /* the shade under the banks */
   float streak = vlNoise(vec2(fl.x * 9.0, fl.y * 0.35 - uTime * sp)) * vlNoise(vec2(fl.x * 23.0 + 3.0, fl.y * 0.9 - uTime * sp * 1.3));
@@ -408,7 +408,7 @@ export async function startBlockout(canvas, overlay) {
   let forest = null; if (Q.get('trees') !== 'cones') { try { const list = []; for (let i = 0; i < TREE_LIST.length; i += 4) { const x = TREE_LIST[i], z = TREE_LIST[i + 1], v = TREE_LIST[i + 3]; list.push(x, heightAt(x, z, true), z, TREE_LIST[i + 2], (16 + 14 * v) * (1 + 0.25 * smooth(2600, 7000, Math.hypot(x, z))), v); } forest = await buildForest(renderer, list, { x: HERO_TREE[0], y: heightAt(HERO_TREE[0], HERO_TREE[1], true), z: HERO_TREE[1], height: 24 }); scene.getObjectByName('hero placeholder')?.removeFromParent(); } catch (e) { console.warn('forest', e); } }
   scene.add(forest ?? buildTrees(TREE_LIST));
   // the near meadow's grass (grass.js): not on water, gravel, the track or round the buildings; ?grass=0 leaves the bare sward
-  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => lakeL(x, z) < 1.4 + 0.1 * hash(x * 1.7, z * 2.3) || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
+  if (LOOK_ON && Q.get('grass') !== '0' && season !== 'winter') { /* in winter the meadow lies under snow */ const nearBuilding = (x, z) => SITES.some((site) => Math.hypot(x - site[0], z - site[1]) < site[2] + 2.5) || ROCKS.some((k) => Math.abs(x - k.x) < k.size * 0.42 && Math.abs(z - k.z) < k.size * 0.42) || polyDistance(FOOTPATH, x, z) < 0.55; /* the grass overhangs the worn path */ const skip = (x, z) => lakeL(x, z) < 1.4 + 0.1 * hash(x * 1.7, z * 2.3) || riverDistance(x, z)[0] < 6.2 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z);
     const zone = (x, z) => (riverDistance(x, z)[0] < 70 || inLake(x, z) < 2.4 ? 'wet' : Math.hypot(x, z) < 75 ? 'dry' : 'hay');
     let reeds = []; if (Q.get('blades') !== '0') {
       const blades = Q.get('blades') === '1' ? planBlades({ at: (x, z) => heightAt(x, z), skip, zone }) : []; /* the scanned meadow covers the near ground now */
@@ -420,7 +420,7 @@ export async function startBlockout(canvas, overlay) {
       if (blades.length) scene.add(buildBlades(blades)); /* procedural blades only with ?blades=1 */
       /* the scanned meadow below */
     }
-    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => lakeL(x, z) < 1.48 || riverDistance(x, z)[0] < 9 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 240 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
+    const cardSites = planGrass({ at: (x, z) => heightAt(x, z), skip: (x, z) => lakeL(x, z) < 1.48 || riverDistance(x, z)[0] < 6.2 || polyDistance(TRACK, x, z) < 2.2 || nearBuilding(x, z) }, { from: 48, to: 240 }); /* beyond, the ground in the scans' own colour carries the meadow */ let meadow = null;
     if (Q.get('scanned') !== '0') { try { // the cards follow the land use: none on the mown plots, short plain grass where it is grazed or damp; in the hay, flowers in pockets
       const cards = []; for (let i = 0; i < cardSites.length; i += 5) { const x = cardSites[i], z = cardSites[i + 2]; const [mw, gz, dp] = landUse(x, z); const pick = hash(x * 1.3, z * 0.7);
         if (mw > 0.5 && pick > 0.08) continue; const short = gz > 0.5 || dp > 0.5; if (short && pick > 0.7) continue;
