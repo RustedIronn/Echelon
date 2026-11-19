@@ -108,7 +108,7 @@ export function addFarTerrain(group, camera, dress, spruce = null) {
           spots.push([x, pos[k * 3 + 1], z, hash(i, j * 3.1)]); } }
       const base = new THREE.Matrix4(), place = new THREE.Matrix4(), full = new THREE.Matrix4(); const qq = new THREE.Quaternion(); const up = new THREE.Vector3(0, 1, 0);
       for (const { o, rel } of parts) { const im = new THREE.InstancedMesh(o.geometry, o.material, spots.length);
-        spots.forEach(([x, y, z, g], n2) => { const th = (2.2 + 1.8 * g) / hgt; place.compose(new THREE.Vector3(x, y - 0.1, z), qq.setFromAxisAngle(up, g * 6.28), new THREE.Vector3(th, th, th)); base.makeTranslation(0, -box.min.y, 0); full.multiplyMatrices(place, base).multiply(rel); im.setMatrixAt(n2, full); im.setColorAt(n2, new THREE.Color(0.3 + 0.1 * g, 0.42 + 0.1 * g, 0.3)); });
+        spots.forEach(([x, y, z, g], n2) => { const th = (2.2 + 1.8 * g) / hgt; place.compose(new THREE.Vector3(x, y - 0.1, z), qq.setFromAxisAngle(up, g * 6.28), new THREE.Vector3(th, th, th)); base.makeTranslation(0, -box.min.y, 0); full.multiplyMatrices(place, base).multiply(rel); im.setMatrixAt(n2, full); im.setColorAt(n2, new THREE.Color(0.12 + 0.05 * g, 0.18 + 0.06 * g, 0.12)); });
         im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.name = 'far spruce'; group.add(im); }
     }
     trees.count = n; trees.instanceMatrix.needsUpdate = true; if (trees.instanceColor) trees.instanceColor.needsUpdate = true; trees.frustumCulled = false; trees.name = 'far terrain trees'; group.add(trees); invalidate();

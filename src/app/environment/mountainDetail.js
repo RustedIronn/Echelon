@@ -18,14 +18,15 @@ export function applyMountainDetail(material) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    shader.uniforms.uMdAirK = { value: material.userData.airK ?? 1 }; shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir; shader.uniforms.uMdForest = { value: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forest') === '0' ? 0 : 1 };
-    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; uniform float uMdForest; uniform float uMdAirK; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
+    shader.uniforms.uMdHill = { value: typeof window !== 'undefined' ? Number(new URLSearchParams(window.location.search).get('hillgreen') ?? 1) : 0 }; shader.uniforms.uMdAirK = { value: material.userData.airK ?? 1 }; shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir; shader.uniforms.uMdForest = { value: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forest') === '0' ? 0 : 1 };
+    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; uniform float uMdForest; uniform float uMdAirK; uniform float uMdHill; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 wp = cameraPosition + transpose(mat3(viewMatrix)) * (-vViewPosition); vec3 wn = normalize(transpose(mat3(viewMatrix)) * normalize(vNormal));
   float slope = 1.0 - clamp(wn.y, 0.0, 1.0); mdDist = length(wp.xz - cameraPosition.xz); float h = wp.y; mdLift = smoothstep(14.0, 40.0, h);
   vec3 base = diffuseColor.rgb; float lum = dot(base, vec3(0.2126, 0.7152, 0.0722)); float mx = max(base.r, max(base.g, base.b)); float sat = (mx - min(base.r, min(base.g, base.b))) / max(mx, 1e-4);
   float isSnow = smoothstep(0.42, 0.6, lum) * (1.0 - smoothstep(0.12, 0.3, sat)) * smoothstep(42.0, 58.0, h); /* only above the snowline: pale sunlit grass lower down is not snow */ float isGreen = smoothstep(0.06, 0.2, (base.g - max(base.r, base.b)) / max(mx, 1e-3));
   mdRock = smoothstep(0.12, 0.32, slope) * (1.0 - isSnow) * mdLift;
+  { float lowK = uMdHill * (1.0 - mdLift) * smoothstep(0.02, 0.12, (base.g - max(base.r, base.b)) / max(mx, 1e-3)); /* the low hills in the meadow's own sunlit yellow-green (?hillgreen=0 for the old teal) */ diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.40, 0.58, 0.12) * (0.9 + 0.2 * mdNoise2(wp.xz * 0.045)) * (0.55 + 0.6 * clamp(lum * 2.5, 0.0, 1.0)), lowK); }
   // rock: strata and gullies
   float strata = mdNoise2(vec2(wp.x * 0.02 + wp.z * 0.013, h * 0.55 + mdNoise2(wp.xz * 0.03) * 2.5));
   float gully = mdFbm2(vec2((wp.x + wp.z) * 0.09, h * 0.018));
@@ -60,6 +61,6 @@ reflectedLight.indirectDiffuse *= mix(1.0, 0.6, mdLift); reflectedLight.directDi
   if (uMdSky > 0.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, uMdHor * uMdGain * vec3(0.88, 0.95, 1.06), air); } // only with the generated sky (it supplies the horizon colour)
 #include <fog_fragment>`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-4-${material.userData.airK ?? 1}`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-5-${material.userData.airK ?? 1}`;
   material.needsUpdate = true; return material;
 }
