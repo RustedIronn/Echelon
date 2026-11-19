@@ -39,3 +39,6 @@ export function buildLakeGeometry(camera = [-3, 10], waterY = 0) {
   if (!idx.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(P.length / 3).fill([0, 1, 0]).flat(), 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setAttribute('waterDepth', new THREE.Float32BufferAttribute(D, 1)); g.setAttribute('aFlow', new THREE.Float32BufferAttribute(new Float32Array(P.length / 3 * 2), 2)); g.setIndex(idx); return g;
 }
+
+// True where the valley's ground at an old position lies in the lake bowl.
+export function isLakePoint(x, z, camera = [-3, 10]) { if (!data) return false; const h = valleyHeight((x - camera[0]) / SHAPE_K, (z - camera[1]) / SHAPE_K); return h === h && h < 0.08; }

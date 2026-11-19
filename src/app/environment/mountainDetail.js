@@ -18,8 +18,8 @@ export function applyMountainDetail(material) {
   const previous = material.onBeforeCompile; const previousKey = material.customProgramCacheKey;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir; shader.uniforms.uMdForest = { value: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forest') === '0' ? 0 : 1 };
-    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; uniform float uMdForest; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
+    shader.uniforms.uMdAirK = { value: material.userData.airK ?? 1 }; shader.uniforms.uMdHor = SKY_UNIFORMS.uHor; shader.uniforms.uMdSky = SKY_ACTIVE; shader.uniforms.uMdGain = SKY_UNIFORMS.uSkyGain; shader.uniforms.uMdSunDir = SKY_UNIFORMS.uSunDir; shader.uniforms.uMdForest = { value: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forest') === '0' ? 0 : 1 };
+    shader.fragmentShader = `uniform vec3 uMdHor; uniform float uMdGain; uniform float uMdSky; uniform vec3 uMdSunDir; uniform float uMdForest; uniform float uMdAirK; float mdRock = 0.0; float mdDist = 0.0; float mdLift = 0.0;\n${NOISE}\n` + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
 { vec3 wp = cameraPosition + transpose(mat3(viewMatrix)) * (-vViewPosition); vec3 wn = normalize(transpose(mat3(viewMatrix)) * normalize(vNormal));
   float slope = 1.0 - clamp(wn.y, 0.0, 1.0); mdDist = length(wp.xz - cameraPosition.xz); float h = wp.y; mdLift = smoothstep(14.0, 40.0, h);
@@ -56,10 +56,10 @@ export function applyMountainDetail(material) {
 // faces turned from the sun get less sky fill, so the forms separate; sunlit faces a touch more direct light
 reflectedLight.indirectDiffuse *= mix(1.0, 0.6, mdLift); reflectedLight.directDiffuse *= mix(1.0, 1.14, mdLift);`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', `// aerial perspective: distant rock takes on the horizon colour, more at the foot than at the summits
-{ float air = smoothstep(280.0, 1000.0, mdDist) * mix(0.46, 0.3, mdLift); /* more air between us and the range: it stands further off */
+{ float air = smoothstep(280.0, 1000.0, mdDist) * mix(0.46, 0.3, mdLift) * uMdAirK; /* more air between us and the range: it stands further off */
   if (uMdSky > 0.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, uMdHor * uMdGain * vec3(0.88, 0.95, 1.06), air); } // only with the generated sky (it supplies the horizon colour)
 #include <fog_fragment>`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-3`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-4-${material.userData.airK ?? 1}`;
   material.needsUpdate = true; return material;
 }
