@@ -61,7 +61,7 @@ export function createMeadowHabitat({group,field,clearing,roots,bank=null,config
     let rich=0;for(const s of GROWTH_SWEEPS){const u=(x-s.x+s.bend*(z-s.z)+warp)/s.across,v=(z-s.z)/s.along;rich=Math.max(rich,Math.exp(-u*u-v*v)*s.strength);}
     const quiet=Math.exp(-(((x+4+(z+105)*.22)/27)**2)-((z+105)/48)**2);
     const detail=noise(x*.085+3,z*.085+7),broad=noise(x*.022,z*.022);
-    const shore=smooth(.35,1.6,d);const valid=(y>.6?1:0)*(1-smooth(.30,.58,slope))*shore*tended;
+    const shore=smooth(.35,1.6,d);const valid=(y>.6?1:0)*(1-smooth(.55,.95,slope))*shore*tended;
     const density=clamp(.49+.23*rich+.15*damp+.17*(broad-.5)-.23*quiet+.08*(detail-.5))*valid;
     const height=clamp(.40+.31*rich+.16*damp-.20*quiet+.14*(detail-.5))*Math.sqrt(tended);
     const blooms=clamp(.20+.58*rich+.20*(broad-.5)+.10*damp-.22*quiet)*valid;

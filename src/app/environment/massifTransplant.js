@@ -114,3 +114,23 @@ export function addFarTerrain(group, camera, dress, spruce = null) {
     trees.count = n; trees.instanceMatrix.needsUpdate = true; if (trees.instanceColor) trees.instanceColor.needsUpdate = true; trees.frustumCulled = false; trees.name = 'far terrain trees'; group.add(trees); invalidate();
   }).catch((e) => console.warn('far terrain', e));
 }
+
+// The old scene's own spruce on the low hills in drifts and stands: where the rendered ground (raster.at) is above the water, out of the
+// flat meadow and the hamlet, in soft irregular patches. ?hillspruce=0 removes them; ?hillspruce=<n> sets the density (default 1).
+export function addHillSpruce(group, spruce, raster, { waterY = 0, exclude = () => false, camera = [-3, 10] } = {}) {
+  const dens = Number(Q.get('hillspruce') ?? 1); if (!spruce || dens <= 0) return;
+  const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const sm = (x, y) => { const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); return (hash(x0, y0) * (1 - u) + hash(x0 + 1, y0) * u) * (1 - v) + (hash(x0, y0 + 1) * (1 - u) + hash(x0 + 1, y0 + 1) * u) * v; };
+  spruce.updateWorldMatrix(true, true); const box = new THREE.Box3().setFromObject(spruce); const hgt = Math.max(box.max.y - box.min.y, 1e-3); const inv = spruce.matrixWorld.clone().invert();
+  const parts = []; spruce.traverse((o) => { if (o.isMesh) parts.push({ o, rel: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld) }); });
+  const spots = []; const step = 3.2;
+  for (let z = -255; z < -62; z += step) for (let x = -225; x < 225; x += step) {
+    const px = x + (hash(x, z) - 0.5) * step, pz = z + (hash(z, x) - 0.5) * step; const y = raster.at(px, pz); if (!(y === y) || y < waterY + 2.5 || exclude(px, pz)) continue;
+    const patch = sm(px / 34, pz / 26) * 0.65 + sm(px / 11, pz / 9) * 0.35; if (patch < 0.64 || hash(px * 1.3, pz * 0.7) > 0.3 * dens) continue;
+    const h0 = raster.at(px + 3, pz), h1 = raster.at(px, pz + 3); if (h0 === h0 && h1 === h1 && Math.hypot(h0 - y, h1 - y) / 3 > 0.7) continue; spots.push([px, y, pz, hash(px, pz * 2.1)]);
+  }
+  if (!spots.length) return; const base = new THREE.Matrix4(), place = new THREE.Matrix4(), full = new THREE.Matrix4(); const qq = new THREE.Quaternion(); const up = new THREE.Vector3(0, 1, 0);
+  for (const { o, rel } of parts) { const im = new THREE.InstancedMesh(o.geometry, o.material, spots.length);
+    spots.forEach(([x, y, z, g], n) => { const th = (3.0 + 2.6 * g) / hgt; place.compose(new THREE.Vector3(x, y - 0.15, z), qq.setFromAxisAngle(up, g * 6.28), new THREE.Vector3(th, th * (0.9 + 0.3 * g), th)); base.makeTranslation(0, -box.min.y, 0); full.multiplyMatrices(place, base).multiply(rel); im.setMatrixAt(n, full); im.setColorAt(n, new THREE.Color(0.22 + 0.08 * g, 0.3 + 0.08 * g, 0.2)); });
+    im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.castShadow = false; im.name = 'hill spruce'; group.add(im); }
+}

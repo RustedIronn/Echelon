@@ -26,7 +26,8 @@ export function applyMountainDetail(material) {
   vec3 base = diffuseColor.rgb; float lum = dot(base, vec3(0.2126, 0.7152, 0.0722)); float mx = max(base.r, max(base.g, base.b)); float sat = (mx - min(base.r, min(base.g, base.b))) / max(mx, 1e-4);
   float isSnow = smoothstep(0.42, 0.6, lum) * (1.0 - smoothstep(0.12, 0.3, sat)) * smoothstep(42.0, 58.0, h); /* only above the snowline: pale sunlit grass lower down is not snow */ float isGreen = smoothstep(0.06, 0.2, (base.g - max(base.r, base.b)) / max(mx, 1e-3));
   mdRock = smoothstep(0.12, 0.32, slope) * (1.0 - isSnow) * mdLift;
-  { float lowK = uMdHill * (1.0 - mdLift) * smoothstep(0.02, 0.12, (base.g - max(base.r, base.b)) / max(mx, 1e-3)); /* the low hills in the meadow's own sunlit yellow-green (?hillgreen=0 for the old teal) */ diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.40, 0.58, 0.12) * (0.9 + 0.2 * mdNoise2(wp.xz * 0.045)) * (0.55 + 0.6 * clamp(lum * 2.5, 0.0, 1.0)), lowK); }
+  { float lowK = uMdHill * (1.0 - mdLift) * smoothstep(0.02, 0.12, (base.g - max(base.r, base.b)) / max(mx, 1e-3)); /* the low hills in the meadow's own sunlit yellow-green (?hillgreen=0 for the old teal) */ float hillFlower = 0.0; vec3 hillFl = vec3(0.0); { float drift = mdFbm2(wp.xz * 0.035); float dots = mdNoise2(wp.xz * 0.16); float dots2 = mdNoise2(wp.xz * 0.31 + 7.0); float fk = smoothstep(0.0, 0.25, lowK) * (1.0 - smoothstep(0.4, 0.9, slope)); float fade = 1.0 - smoothstep(180.0, 620.0, mdDist); /* drifts of flowers across the hills: yellow, pink and white among the green */ vec3 fl = mix(vec3(0.98, 0.82, 0.16), vec3(0.98, 0.7, 0.12), smoothstep(0.4, 0.62, mdNoise2(wp.xz * 0.05 + 3.0)));  float cover = smoothstep(0.36, 0.52, drift) * smoothstep(0.4, 0.66, dots) * 0.6 * fk * fade; vec3 hf = fl; hillFlower = cover; hillFl = hf; }
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.40, 0.58, 0.12) * (0.9 + 0.2 * mdNoise2(wp.xz * 0.045)) * (0.55 + 0.6 * clamp(lum * 2.5, 0.0, 1.0)), lowK); diffuseColor.rgb = mix(diffuseColor.rgb, hillFl, hillFlower); }
   // rock: strata and gullies
   float strata = mdNoise2(vec2(wp.x * 0.02 + wp.z * 0.013, h * 0.55 + mdNoise2(wp.xz * 0.03) * 2.5));
   float gully = mdFbm2(vec2((wp.x + wp.z) * 0.09, h * 0.018));
@@ -61,6 +62,6 @@ reflectedLight.indirectDiffuse *= mix(1.0, 0.6, mdLift); reflectedLight.directDi
   if (uMdSky > 0.5) gl_FragColor.rgb = mix(gl_FragColor.rgb, uMdHor * uMdGain * vec3(0.88, 0.95, 1.06), air); } // only with the generated sky (it supplies the horizon colour)
 #include <fog_fragment>`);
   };
-  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-5-${material.userData.airK ?? 1}`;
+  material.customProgramCacheKey = () => `${previousKey ? previousKey.call(material) : ''}-mountain-detail-9-${material.userData.airK ?? 1}`;
   material.needsUpdate = true; return material;
 }

@@ -11,7 +11,7 @@ export const COMMUNITIES = Object.freeze([
 ]);
 export const COMMUNITY_MIX = Object.freeze({ 6: [['Marguerite', 0.92], ['Carthusian Pink', 0.08]], 7: [['Carthusian Pink', 0.9], [null, 0.1]], 8: [['Dandelion', 1]] });
 // The first area to be made beautiful: the far bank between the river and the hamlet. Widening this window carries the same look through the valley.
-export const VIGNETTE = { x0: -125, x1: 125, z0: -165, z1: -26, soft: 12 }; // the whole visible valley (the camera's view cone limits it further)
+export const VIGNETTE = { x0: -215, x1: 215, z0: -255, z1: -26, soft: 14 }; // the whole visible valley (the camera's view cone limits it further)
 
 const CELL = [26, 24]; // the visible middle ground is a thin band of screen (depth is foreshortened), so a drift must be deep to be seen as a drift
 const value = (x, z) => { const i = Math.floor(x), j = Math.floor(z), u = smooth(0, 1, x - i), v = smooth(0, 1, z - j); const a = habitatHash(i, j, 7), b = habitatHash(i + 1, j, 7), c = habitatHash(i, j + 1, 7), d = habitatHash(i + 1, j + 1, 7); return (a + (b - a) * u) * (1 - v) + (c + (d - c) * u) * v; };
@@ -62,7 +62,7 @@ export function slopeFacing(bank, x, z) {
 }
 
 // Flower models for the communities: dense in the core of each drift, thinning to scattered singles at its edge, a little larger with distance so they read.
-export function placeCommunityFlowers(field, habitat, { bank = null, from = 34, to = 165, cell = 0.55, window = VIGNETTE } = {}) {
+export function placeCommunityFlowers(field, habitat, { bank = null, from = 34, to = 245, cell = 0.7, window = VIGNETTE } = {}) {
   const matrices = Array.from({ length: 9 }, () => []);
   for (let j = Math.floor((10 - to) / cell); j <= Math.floor((10 - from) / cell); j += 1) for (let i = Math.floor((-3 - to) / cell); i <= Math.floor((-3 + to) / cell); i += 1) {
     const x = (i + habitatHash(i, j, 111)) * cell, z = (j + habitatHash(i, j, 112)) * cell, d = Math.hypot(x + 3, z - 10);

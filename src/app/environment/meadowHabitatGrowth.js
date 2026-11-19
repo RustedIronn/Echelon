@@ -38,7 +38,7 @@ export function growHabitatGrass(templates,field,habitat,{bank=null,from=32,to=2
   return {near:Float32Array.from(near),far:Float32Array.from(far)};
 }
 
-export function placeHabitatFlowers(field,habitat,manifest,{bank=null,from=42,to=175}={}) {
+export function placeHabitatFlowers(field,habitat,manifest,{bank=null,from=42,to=245}={}) {
   const matrices=Array.from({length:9},()=>[]),colors=Array.from({length:9},()=>[]);const occupied=new Set();
   for(const records of Object.values(manifest.flowers))for(const m of records)occupied.add(`${Math.floor(m[12])}:${Math.floor(m[14])}`);
   const cell=1.25;
