@@ -26,7 +26,7 @@ export function shapeAt(x, z, camera = [-3, 10], waterY = 0) {
   if (!data) return { mask: 0, height: 0 };
   const near = smooth(34, 80, Math.hypot(x - camera[0], z - camera[1])); const far = 1 - smooth(Number(Q.get('shapefar') ?? 190), 260, camera[1] - z); const mask = near * far; if (mask <= 0) return { mask: 0, height: 0 };
   const h = valleyHeight((x - camera[0]) / SHAPE_K, (z - camera[1]) / SHAPE_K); if (h !== h) return { mask: 0, height: 0 };
-  return { mask, height: waterY + h * SHAPE_K * Number(Q.get('shapeh') ?? 1) };
+  return { mask, height: waterY + (h < 0 ? h * 4 : h) * SHAPE_K * Number(Q.get('shapeh') ?? 1) };
 }
 
 // The valley's lake as a water surface for the old scene's water material: every grid cell of the bowl (ground below the lake surface) becomes
