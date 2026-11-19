@@ -77,9 +77,10 @@ export function addFarTerrain(group, camera, dress) {
       for (let i = 0; i < NA; i += 1) { const k = j * NA + i, a = aOf(i) + A, h = H[k]; pos[k * 3] = camera.position.x + Math.sin(a) * r; pos[k * 3 + 1] = -4 + h * s * rise * rise * (3 - 2 * rise); pos[k * 3 + 2] = camera.position.z - Math.cos(a) * r;
         const i0 = Math.max(i - 1, 0), i1 = Math.min(i + 1, NA - 1), j0 = Math.max(j - 1, 0), j1 = Math.min(j + 1, NR - 1); const da = (aOf(i1) - aOf(i0)) * rv, dr = rOf(j1) - rOf(j0); const slope = Math.hypot((H[j * NA + i1] - H[j * NA + i0]) / da, (H[j1 * NA + i] - H[j0 * NA + i]) / dr);
         const n = hash(i * 0.37, j * 0.53), n2 = hash(Math.floor(i / 9) * 1.3, Math.floor(j / 7) * 2.1); const tree = 620 + 160 * (n2 - 0.5);
-        const forest = h > 45 && h < tree && slope > 0.1 && slope < 1.0 && n2 > 0.3 ? 1 : 0; wooded[k] = forest;
+        const sm = (x, y) => { const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); return (hash(x0, y0) * (1 - u) + hash(x0 + 1, y0) * u) * (1 - v) + (hash(x0, y0 + 1) * (1 - u) + hash(x0 + 1, y0 + 1) * u) * v; };
+        const patch = sm(i / 16, j / 12) * 0.65 + sm(i / 5, j / 4) * 0.35; const gate = Math.min(1, Math.max(0, (h - 30) / 60)) * Math.min(1, Math.max(0, (tree - h) / 120)) * Math.min(1, Math.max(0, (0.9 - slope) / 0.3)); const forest = Math.min(1, Math.max(0, (patch - 0.52) / 0.2)) * gate; wooded[k] = 0;
         c.setRGB(0.3 + 0.04 * n, 0.46 + 0.05 * n, 0.17 + 0.03 * n); if (h > tree - 40) c.lerp(new THREE.Color(0.32, 0.4, 0.2), Math.min(1, (h - tree + 40) / 200)); /* the old foothills' soft green */ /* alpine pasture, greyer */
-        if (forest) c.lerp(forestC.setRGB(0.12 + 0.03 * n, 0.22 + 0.04 * n, 0.1 + 0.02 * n), 0.75 * (0.5 + 0.5 * n2)); /* patches of wood in the pasture, not a black blanket */
+        if (forest > 0) c.lerp(forestC.setRGB(0.17 + 0.03 * n, 0.3 + 0.04 * n, 0.12 + 0.02 * n), 0.6 * forest); /* patches of wood in the pasture, not a black blanket */
         const rock = Math.min(1, Math.max(0, (slope - 0.75) / 0.35) + Math.max(0, (h - 950) / 350)); c.lerp(rockC.setRGB(0.21 + 0.05 * n, 0.23 + 0.05 * n, 0.28 + 0.05 * n), rock);
         const snow = Math.min(1, Math.max(0, (h - 1500 - 300 * n2) / 200)) * Math.min(1, Math.max(0, (1.2 - slope) / 0.3)); c.lerp(snowC, snow);
         col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; } }
