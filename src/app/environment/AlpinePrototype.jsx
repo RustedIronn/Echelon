@@ -24,7 +24,7 @@ import { HeightField } from './hamletGeometry.js';
 import { applyMeadowDetail, meadowBladeTint, flowerDrift } from './meadowDetail.js';
 import { bankLowering, createBankLowering, widenFarWater } from './bankLowering.js';
 import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
-import { shapeReady } from './nearShape.js';
+import { shapeReady, buildLakeGeometry } from './nearShape.js';
 import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
@@ -137,6 +137,7 @@ function Daylight({ manifest, resources, baseline }) {
   </>;
 }
 
+const Q_LAKE = new URLSearchParams(window.location.search).get('valleylake') !== '0';
 function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, refinement, corridor, waterRefine, anisotropy, treeStyle, realReflection, hamletNew, pathMask, meadowDetail) {
   const group = gltf.scene.clone(true); const ownedMaterials = []; const ownedGeometry = [];
   group.updateMatrixWorld(true); const treeCenters = new Map();
@@ -262,6 +263,10 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
       stones.push(...placeRiffleStones(group, water, stones.find((s) => s.name === 'Delivery_Embedded_limestone_anchor_02') ?? stones[0], beds));
     }
     if (FOAM_WANTED && water?.material.uniforms?.uStones) { const lines = findStoneWaterlines(stones, water); lines.forEach((s, i) => water.material.uniforms.uStones.value[i].set(s.x, s.z, s.r, s.level)); water.material.uniforms.uStoneCount.value = lines.length; water.material.userData.foamStones = lines; }
+  }
+  if (!baseline && shapeReady() && bank?.relief && Q_LAKE) { // the valley's lake, in the old stream's own water material
+    let stream = null; group.traverse((o) => { if (o.isMesh && inheritedMetadata(o, 'echelonRole') === 'water') stream = o; });
+    const lg = stream && buildLakeGeometry([-3, 10], bank.relief.waterY); if (lg) { const lake = new THREE.Mesh(lg, stream.material); lake.name = 'valley lake'; lake.renderOrder = 2; lake.frustumCulled = false; lake.userData.echelonRole = 'water-lake'; ownedGeometry.push(lg); group.add(lake); }
   }
   if (!baseline) addMassif(group, { position: new THREE.Vector3(-3, 4.36, 10) /* the hero camera (manifest.json) */ }, (material) => { applyBlenderDisplay(material, resources); if (MOUNTAIN_DETAIL) applyMountainDetail(material); ownedMaterials.push(material); }); // the new valley's summit group behind the old range (massifTransplant.js)
   if (!baseline) addFarTerrain(group, { position: new THREE.Vector3(-3, 4.36, 10) }, (material, air) => { applyBlenderDisplay(material, resources); if (air && MOUNTAIN_DETAIL) applyMountainDetail(material); material.userData.lookRole = 'mountains'; material.userData.baseColor = material.color.clone(); ownedMaterials.push(material); }, (() => { let sp = null; group.traverse((o) => { if (!sp && inheritedMetadata(o, 'echelonRole') === 'tree' && o.parent === group) sp = o; }); return sp; })()); // the new valley's far land (massifTransplant.js)
