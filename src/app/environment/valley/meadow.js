@@ -105,7 +105,7 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
       if (ground.skip(x, z) || (jr > 50 && hash(x * 2.9, z * 3.7) < (jr - 50) / 12)) continue; /* the clumps thin out into the cards beyond, no seam */ const y = ground.at(x, z), t = hash(x * 1.7, z * 2.3); const sward = hash(x * 5.3, z * 4.1) < 0.84 ? swF : swO; const kind = sward[Math.floor(hash(x, z) * sward.length) % sward.length]; const k = grassKinds[kind];
       const pd = ground.path ? ground.path(x, z) : 99, moist = ground.moist ? ground.moist(x, z) : 0.5; const trod = 1 - Math.min(1, Math.max(0, (pd - 0.8) / 3.2)); /* 1 on the path's margin, 0 a few metres off */
       const patch = (0.8 + 0.4 * hash(Math.floor(x / 7), Math.floor(z / 7))) * (1 - 0.45 * trod) * (0.9 + 0.25 * moist); /* taller in the damp hollows, shorter on the trodden margin */
-      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [0.8 + 0.1 * t, 1.1 + 0.09 * hash(x, 3), 0.86 + 0.1 * hash(z, 5)] }); /* measured against the cards beyond: one sward, no seam */ /* matched to the cards' tone, seen from the same height */
+      grass.push({ x, y, z, kind, scale: Math.min(2.4 + 1.2 * t, (0.5 + 0.4 * hash(z, x)) * patch / k.height), stretch: 0.95 + 0.3 * hash(z, x), yaw: t * 6.28, tint: [0.9 + 0.1 * t, 1.12 + 0.09 * hash(x, 3), 0.7 + 0.1 * hash(z, 5)] }); /* measured against the cards beyond: one sward, no seam */ /* matched to the cards' tone, seen from the same height */
       // flowers as plant communities following the ground (a real alpine meadow, not a flower show): white daisies scattered everywhere,
       // thinly on the dry rises and thicker where it is richer; small irregular clusters where conditions suit - yellow buttercups and pink
       // bistort in the damp hollows, violet cranesbill and clover in the middle ground, blue harebells and daisies on the dry rises; few
@@ -113,8 +113,8 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
       // a meadow in flower: every square metre has some, finely mixed - white daisies and yellow leading, violet, blue, clover and pink among
       // them; which leads drifts slowly across the field and with the damp, and the density swells and thins gently; thin by the path
       const keep = 1 - 0.9 * trod; const swell = 0.55 + 0.9 * vn(x / 9 + 2.2, z / 9); const lead = vn(x / 26 + 7, z / 26);
-      const count = Math.floor(0.55 * swell * keep * (0.8 + 0.5 * moist) + hash(x * 3.1, z * 1.3));
-      for (let f = 0; f < count; f += 1) { const u = hash(x * 1.9 + f * 7.3, z * 2.7); const wY = 0.18 + 0.25 * moist + 0.12 * lead, wV = 0.05 + 0.07 * (1 - lead), wB = 0.03 + 0.06 * (1 - moist) * lead, wC = 0.07, wP = 0.04;
+      const count = Math.floor(0.8 * swell * keep * (0.8 + 0.5 * moist) + hash(x * 3.1, z * 1.3));
+      for (let f = 0; f < count; f += 1) { const u = hash(x * 1.9 + f * 7.3, z * 2.7); const wY = 0.42 + 0.2 * moist + 0.1 * lead, wV = 0.02 + 0.03 * (1 - lead), wB = 0.03 + 0.04 * (1 - moist) * lead, wC = 0.03, wP = 0.04 + 0.05 * (1 - lead); /* the old meadow's mix: yellow and pink lead, blue and white among them */
         const fk = u < wY ? 1 : u < wY + wV ? 4 : u < wY + wV + wB ? 5 : u < wY + wV + wB + wC ? 3 : u < wY + wV + wB + wC + wP ? 0 : 2;
         flowers.push({ x: x + (hash(x + f, 9) - 0.5) * step * 1.4, y, z: z + (hash(z + f, 9) - 0.5) * step * 1.4, kind: fk, scale: (1.3 + 0.6 * hash(x + f, z * 2)) * (0.85 + 0.25 * moist) * (fk === 3 ? 0.45 : 1), stretch: 1, yaw: hash(z, x * 2 + f) * 6.28, tint: [1, 1, 1] }); } }
     r += step; }
@@ -123,6 +123,6 @@ export async function buildMeadow(ground, renderer, { from = 9, to = 62, camera 
   reeds.forEach((s, i) => { const kind = tallK[i % tallK.length]; const k = grassKinds[kind]; for (let j = 0; j < 3; j += 1) grass.push({ x: s.x + (hash(i, j) - 0.5) * 1.4, y: s.y, z: s.z + (hash(j, i) - 0.5) * 1.4, kind, scale: (0.7 + 0.3 * hash(i, j + 5)) / k.height * 0.9, stretch: 1.7 + 0.5 * hash(i, j + 7), yaw: hash(i, j + 9) * 6.28, tint: [0.82, 0.98, 1.08] }); });
   instance(group, grassKinds, grass, 'meadow scanned grass'); instance(group, flowerKinds, flowers, 'meadow flowers');
   // the far meadow: four strips, plain grass and three flower mixes
-  if (cardSites) { const strips = [[], [2, 2, 1, 2], [1, 1, 2], [2, 0, 2, 1], [2, 2, 4, 1]].map((set, i) => bakeStrip(renderer, grassKinds, flowerKinds, set, 11 + i * 17)); group.add(buildCards(cardSites, strips)); group.userData.cards = cardSites.length / 7; window.__meadowStrips = strips; }
+  if (cardSites) { const strips = [[], [1, 1, 2, 2], [1, 2, 1, 2], [1, 1, 0, 2], [2, 1, 2, 5]].map((set, i) => bakeStrip(renderer, grassKinds, flowerKinds, set, 11 + i * 17)); group.add(buildCards(cardSites, strips)); group.userData.cards = cardSites.length / 7; window.__meadowStrips = strips; }
   group.userData.counts = { grass: grass.length, flowers: flowers.length }; return group;
 }
