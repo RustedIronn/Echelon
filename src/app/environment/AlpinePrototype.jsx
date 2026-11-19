@@ -24,6 +24,7 @@ import { HeightField } from './hamletGeometry.js';
 import { applyMeadowDetail, meadowBladeTint, flowerDrift } from './meadowDetail.js';
 import { bankLowering, createBankLowering, widenFarWater } from './bankLowering.js';
 import { createValleyRelief, withValleyRelief } from './valleyRelief.js';
+import { shapeReady } from './nearShape.js';
 import ValleyMist from './ValleyMist.jsx';
 import CloudShadows from './CloudShadows.jsx';
 import { terrainRaster } from './terrainRaster.js';
@@ -214,10 +215,10 @@ function prepareGeography(gltf, waterMode, resources, baseline, surfaceDetail, r
         object.geometry = object.geometry.clone(); ownedGeometry.push(object.geometry); const p = object.geometry.attributes.position;
         const nrm = object.geometry.attributes.normal; const tilt = new THREE.Vector3(); const reliefValues = bank.relief ? new Float32Array(p.count) : null;
         for (let i = 0; i < p.count; i += 1) {
-          const x = p.getX(i), z = p.getZ(i); const dy = bank.offsetAt(x, z, p.getY(i)); if (dy !== 0) p.setY(i, p.getY(i) + dy); if (reliefValues) reliefValues[i] = bank.relief.exactAt(x, z);
-          if (bank.relief && nrm && dy !== 0) { const [gx, gz] = bank.relief.gradient(x, z); const ny = nrm.getY(i); tilt.set(nrm.getX(i) - gx * ny, ny, nrm.getZ(i) - gz * ny).normalize(); nrm.setXYZ(i, tilt.x, tilt.y, tilt.z); }
+          const x = p.getX(i), z = p.getZ(i); const dy = bank.offsetAt(x, z, p.getY(i)); if (dy !== 0) p.setY(i, p.getY(i) + dy); if (reliefValues) reliefValues[i] = bank.relief.exactAt(x, z, p.getY(i) - dy);
+          if (bank.relief && nrm && dy !== 0 && !shapeReady()) { const [gx, gz] = bank.relief.gradient(x, z); const ny = nrm.getY(i); tilt.set(nrm.getX(i) - gx * ny, ny, nrm.getZ(i) - gz * ny).normalize(); nrm.setXYZ(i, tilt.x, tilt.y, tilt.z); }
         }
-        if (nrm) nrm.needsUpdate = true; if (reliefValues) reliefMeshes.push({ position: p, index: object.geometry.index, values: reliefValues });
+        if (shapeReady() && bank.relief) { p.needsUpdate = true; object.geometry.computeVertexNormals(); } if (nrm) nrm.needsUpdate = true; if (reliefValues) reliefMeshes.push({ position: p, index: object.geometry.index, values: reliefValues });
         p.needsUpdate = true; object.geometry.computeBoundingBox(); object.geometry.computeBoundingSphere();
       }
       const originals = Array.isArray(object.material) ? object.material : [object.material];

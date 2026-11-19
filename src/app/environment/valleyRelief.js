@@ -1,4 +1,5 @@
 import { smooth, habitatHash } from './meadowHabitat.js';
+import { shapeAt, shapeReady } from './nearShape.js';
 
 // Valley relief. The delivered valley is a plane rising about 2.5 degrees, which is nearly edge-on to the camera: the middle ground is a thin band of screen and
 // every flower in it is seen almost from the side. This adds a few gentle landforms (rolling swells whose faces turn toward the camera, a shallow hollow) as one shared
@@ -36,7 +37,9 @@ export function createValleyRelief({ water, hamletBounds, options = RELIEF, amou
     let r = WALL * smooth(40, 170, waterDistance(x, z)) * smooth(60, 150, -z) * (0.75 + 0.5 * vnoise(x * 0.02, z * 0.03)); for (const s of options.swells) r += s.h * Math.exp(-(((x - s.x) / s.sx) ** 2) - (((z - s.z) / s.sz) ** 2));
     return r + 0.9 * (vnoise(x * 0.035, z * 0.05) - 0.5); // a metre or so of unevenness so no swell is a perfect bump
   };
-  const exactAt = (x, z) => { if (!amount) return 0; const m = mask(x, z); return m > 0 ? amount * m * shape(x, z) : 0; };
+  let waterY = 0; { const ys = []; for (let i = 1; i < water.length; i += 3) ys.push(water[i]); ys.sort((a, b) => a - b); waterY = ys.length ? ys[Math.floor(ys.length / 2)] : 0; }
+  const holder = { bank: null };
+  const exactAt = (x, z, y) => { const base = amount ? (() => { const m = mask(x, z); return m > 0 ? amount * m * shape(x, z) : 0; })() : 0; if (y === undefined || !shapeReady()) return base; const s = shapeAt(x, z, options.camera, waterY); if (s.mask <= 0) return base; const b = holder.bank ? holder.bank.offsetAt(x, z, y) : 0; return base * (1 - s.mask) + s.mask * (s.height - y - b); }; /* the valley's own ground laid over the old (nearShape.js) */
   // Once the terrain mesh has been displaced, everything standing on it asks for the height of the MESH (its triangles interpolate the vertex offsets linearly), not of the
   // smooth formula: where the mesh is coarser than the landform the two differ by tens of centimetres, which showed as rows of blades floating above or sinking into the slope.
   let raster = null;
@@ -45,7 +48,7 @@ export function createValleyRelief({ water, hamletBounds, options = RELIEF, amou
     const u = fx - i, v = fz - j, a = raster.data[j * raster.w + i], b = raster.data[j * raster.w + i + 1], c = raster.data[(j + 1) * raster.w + i], d = raster.data[(j + 1) * raster.w + i + 1];
     if (a !== a || b !== b || c !== c || d !== d) return NaN; return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
   };
-  const at = (x, z) => { if (!raster) return exactAt(x, z); const v = sampleRaster(x, z); return v === v ? v : exactAt(x, z); };
+  const at = (x, z, y) => { if (!raster) return exactAt(x, z, y); const v = sampleRaster(x, z); return v === v ? v : exactAt(x, z, y); };
   // Slope of the added relief, for correcting vertex normals (always from the formula).
   const gradient = (x, z) => [(exactAt(x + 1, z) - exactAt(x - 1, z)) / 2, (exactAt(x, z + 1) - exactAt(x, z - 1)) / 2];
   // meshes: [{ position: BufferAttribute, index: BufferAttribute | null, values: Float32Array (relief at each vertex) }]
@@ -68,11 +71,11 @@ export function createValleyRelief({ water, hamletBounds, options = RELIEF, amou
     }
     raster = { data, w: w2, h: h2, cell: cellSize, minX, minZ }; return covered;
   };
-  return { at, exactAt, gradient, mask, shape, waterDistance, amount, bindMesh };
+  return { at, exactAt, gradient, mask, shape, waterDistance, amount, bindMesh, holder, waterY };
 }
 
 // Adds the relief to a bank-lowering object so every consumer of offsetAt receives it.
 export function withValleyRelief(bank, relief) {
   if (!bank || !relief) return bank;
-  return { ...bank, offsetAt: (x, z, y) => bank.offsetAt(x, z, y) + relief.at(x, z), relief };
+  relief.holder.bank = bank; return { ...bank, offsetAt: (x, z, y) => bank.offsetAt(x, z, y) + relief.at(x, z, y), relief };
 }
