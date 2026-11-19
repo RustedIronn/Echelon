@@ -66,7 +66,7 @@ export function addForestRidge(group, camera, dress) {
 // the camera keeps every angle, so the skyline is the valley's own; the old scene's meadow, water and hamlet stay in front of it, and the
 // land wears the old scene's mountain material. Forest by height and slope with small conifers on the nearer slopes. ?far=0 removes it.
 export const FAR_WANTED = Q.get('far') !== '0';
-export function addFarTerrain(group, camera, dress) {
+export function addFarTerrain(group, camera, dress, spruce = null) {
   if (!FAR_WANTED) return;
   Promise.all([fetch(`${ROOT}/far-terrain.json`).then((r) => r.json()), fetch(`${ROOT}/far-terrain.bin`).then((r) => r.arrayBuffer())]).then(([meta, buf]) => {
     const H0 = new Float32Array(buf); const { na: NA, nr: NR, a0, a1, r0, r1 } = meta; const cap = Number(Q.get('farcap') ?? 900); const H = H0.map((h) => (h > 0 ? cap * Math.tanh(h / cap) : h)); /* the massif is capped: this land is the foothills, the pass and the saddle, the peaks are the old range's */ const s = Number(Q.get('fars') ?? 0.1), A = (Number(Q.get('faraz') ?? 0) * Math.PI) / 180;
@@ -95,6 +95,22 @@ export function addFarTerrain(group, camera, dress) {
       for (let i = 0; i < NA - 1 && n < max; i += 1) { const k = j * NA + i; if (!wooded[k] || hash(i * 1.7, j * 0.9) > keep) continue; const g = hash(i, j * 3.1); const u = hash(i * 2.3, j), v = hash(j * 1.9, i);
         const x = pos[k * 3] + (pos[(k + 1) * 3] - pos[k * 3]) * u + (pos[(k + NA) * 3] - pos[k * 3]) * v, z = pos[k * 3 + 2] + (pos[(k + 1) * 3 + 2] - pos[k * 3 + 2]) * u + (pos[(k + NA) * 3 + 2] - pos[k * 3 + 2]) * v, y = pos[k * 3 + 1];
         const th = 1.8 + 1.6 * g; m.compose(new THREE.Vector3(x, y - 0.2, z), q, new THREE.Vector3(th * 0.3, th, th * 0.3)); trees.setMatrixAt(n, m); trees.setColorAt(n, tc.setRGB(0.12 + 0.05 * g, 0.2 + 0.07 * g, 0.09 + 0.03 * g)); n += 1; } }
+    // the old scene's own spruce, small, on the nearest wooded ridge only
+    if (spruce && Q.get('sprucefar') !== '0') {
+      spruce.updateWorldMatrix(true, true); const box = new THREE.Box3().setFromObject(spruce); const hgt = Math.max(box.max.y - box.min.y, 1e-3); const inv = spruce.matrixWorld.clone().invert();
+      const parts = []; spruce.traverse((o) => { if (o.isMesh) parts.push({ o, rel: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld) }); });
+      const spots = []; const used = new Set();
+      for (let j = 0; j < NR - 1; j += 1) { const r = rOf(j) * s; if (r < 320 || r > 520) continue;
+        for (let i = 0; i < NA - 1; i += 1) { const k = j * NA + i; const hz = H[k]; if (hz < 40 || hz > 520) continue;
+          const sm = (x, y) => { const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); return (hash(x0, y0) * (1 - u) + hash(x0 + 1, y0) * u) * (1 - v) + (hash(x0, y0 + 1) * (1 - u) + hash(x0 + 1, y0 + 1) * u) * v; };
+          const patch = sm(i / 16, j / 12) * 0.65 + sm(i / 5, j / 4) * 0.35; if (patch < 0.64 || hash(i * 1.7, j * 0.9) > 0.22) continue;
+          const u = hash(i * 2.3, j), v = hash(j * 1.9, i); const x = pos[k * 3] + (pos[(k + 1) * 3] - pos[k * 3]) * u + (pos[(k + NA) * 3] - pos[k * 3]) * v, z = pos[k * 3 + 2] + (pos[(k + 1) * 3 + 2] - pos[k * 3 + 2]) * u + (pos[(k + NA) * 3 + 2] - pos[k * 3 + 2]) * v;
+          spots.push([x, pos[k * 3 + 1], z, hash(i, j * 3.1)]); } }
+      const base = new THREE.Matrix4(), place = new THREE.Matrix4(), full = new THREE.Matrix4(); const qq = new THREE.Quaternion(); const up = new THREE.Vector3(0, 1, 0);
+      for (const { o, rel } of parts) { const im = new THREE.InstancedMesh(o.geometry, o.material, spots.length);
+        spots.forEach(([x, y, z, g], n2) => { const th = (2.2 + 1.8 * g) / hgt; place.compose(new THREE.Vector3(x, y - 0.1, z), qq.setFromAxisAngle(up, g * 6.28), new THREE.Vector3(th, th, th)); base.makeTranslation(0, -box.min.y, 0); full.multiplyMatrices(place, base).multiply(rel); im.setMatrixAt(n2, full); im.setColorAt(n2, new THREE.Color(0.3 + 0.1 * g, 0.42 + 0.1 * g, 0.3)); });
+        im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.name = 'far spruce'; group.add(im); }
+    }
     trees.count = n; trees.instanceMatrix.needsUpdate = true; if (trees.instanceColor) trees.instanceColor.needsUpdate = true; trees.frustumCulled = false; trees.name = 'far terrain trees'; group.add(trees); invalidate();
   }).catch((e) => console.warn('far terrain', e));
 }
