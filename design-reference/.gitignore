@@ -32,3 +32,12 @@ environment/webgl-prototype/meadow-clarity/*
 !environment/webgl-prototype/meadow-clarity/*.mjs
 !environment/webgl-prototype/meadow-clarity/*.md
 !environment/webgl-prototype/meadow-clarity/*.json
+!environment/valley-composition-01/
+environment/valley-composition-01/*
+!environment/valley-composition-01/*.py
+!environment/valley-composition-01/*.sh
+!environment/valley-composition-01/*.md
+!environment/valley-composition-01/valley-layout.json
+!environment/valley-composition-01/tools/
+environment/valley-composition-01/tools/*
+!environment/valley-composition-01/tools/*.mjs

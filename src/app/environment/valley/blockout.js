@@ -379,7 +379,7 @@ export async function startBlockout(canvas, overlay) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(FRAME.vfov, 1, 0.5, 30000); camera.position.set(0, FRAME.eye, 0); camera.rotation.set(FRAME.pitch * DEG, 0, 0, 'YXZ');
   const season = Q.get('season') || 'summer'; const mood = MOODS[Q.get('tod')] ?? MOODS.noon; const night = mood[0] === null;
-  const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); scene.add(buildWater()); scene.add(buildSettlements());
+  const t0 = performance.now(); scene.add(buildTerrain()); if (DEM) scene.add(buildMassif()); { const w = buildWater(); w.name = 'export:water'; scene.add(w); const s = buildSettlements(); s.name = 'export:hamlet'; scene.add(s); }
   if (LOOK_ON && Q.get('stones') !== '0') { try { ROCKS = rockSites(); scene.add(await buildRocks(ROCKS)); } catch (e) { console.warn('rocks', e); } } // the scanned rocks
   // the paths worn into the meadow, and the footbridge where the footpath crosses the river by the mill
   { const at = (x, z) => heightAt(x, z), wet = (x, z) => riverDistance(x, z)[0] < 6.5; if (season !== 'winter') { /* paths between the houses: from the chapel door to each house and to the head of the track */ const door = new THREE.Vector2(UPPER.x - 2, UPPER.z + 40);
@@ -472,7 +472,7 @@ export async function startBlockout(canvas, overlay) {
   const finish = LOOK_ON && FINISH_ON ? createFinish(renderer, { sunDir: night ? new THREE.Vector3(0, -1, 0) : dirOf(sunPose.az, sunPose.el) }) : null; if (finish) { canvas.style.filter = ''; document.body.classList.remove('graded'); } /* the finishing pipeline replaces the compositor grade */
   let frames = 0; renderer.setAnimationLoop(() => { const tNow = performance.now() / 1000 + Number(Q.get('t') ?? 0); WIND.uTime.value = tNow; if (lakeMesh?.material.uniforms?.uTime) lakeMesh.material.uniforms.uTime.value = tNow; birds?.update(tNow); smoke?.update(tNow); (finish ? finish.render(scene, camera) : renderer.render(scene, camera)); frames += 1; window.__blockout.frames = frames; });
   if (LOOK_ON && !night) sunDisc(scene, dirOf(sunPose.az, sunPose.el), mood[4]); /* the sun's own disc and halo, hidden by the peaks when it is behind them */
-  window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season }; window.__renderer = renderer; window.__valley = { heightAt, MASSIF };
+  window.__blockout = { ready: true, frames: 0, buildMs, sun: sunPose, season }; window.__renderer = renderer; window.__valley = { heightAt, MASSIF, LAKE, UPPER, LOWER, river: riverPts.map((p) => [p.x, p.y]), track: TRACK.map((p) => [p.x, p.y]), footpath: FOOTPATH.map((p) => [p.x, p.y]) }; window.__scene = scene; window.__exportGLB = async (o) => { const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js'); return new GLTFExporter().parseAsync(o, { binary: true, onlyVisible: true, maxTextureSize: 2048 }); };
   if (overlay) { overlay.style.display = Q.get('overlay') === '0' ? 'none' : ''; window.addEventListener('keydown', (e) => { if (e.key === 'o' || e.key === 'O') overlay.style.display = overlay.style.display === 'none' ? '' : 'none'; }); }
 }
 
