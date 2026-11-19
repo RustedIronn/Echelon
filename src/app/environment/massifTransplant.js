@@ -73,7 +73,7 @@ export function addFarTerrain(group, camera, dress, spruce = null) {
     const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
     const rOf = (j) => r0 * (r1 / r0) ** (j / (NR - 1)), aOf = (i) => ((a0 + ((a1 - a0) * i) / (NA - 1)) * Math.PI) / 180;
     const pos = new Float32Array(NA * NR * 3), col = new Float32Array(NA * NR * 3); const c = new THREE.Color(), rockC = new THREE.Color(), snowC = new THREE.Color(0.88, 0.9, 0.94), forestC = new THREE.Color(); const wooded = new Uint8Array(NA * NR);
-    for (let j = 0; j < NR; j += 1) { const rv = rOf(j), r = rv * s; const rise = Math.min(1, Math.max(0, (r - 300) / 90)); /* it rises from behind the meadow hills */
+    for (let j = 0; j < NR; j += 1) { const rv = rOf(j), r = rv * s; const rise = Math.min(1, Math.max(0, (r - Number(Q.get("farrise") ?? 125)) / 90)); /* it rises from behind the meadow hills */
       for (let i = 0; i < NA; i += 1) { const k = j * NA + i, a = aOf(i) + A, h = H[k]; pos[k * 3] = camera.position.x + Math.sin(a) * r; pos[k * 3 + 1] = -4 + h * s * rise * rise * (3 - 2 * rise); pos[k * 3 + 2] = camera.position.z - Math.cos(a) * r;
         const i0 = Math.max(i - 1, 0), i1 = Math.min(i + 1, NA - 1), j0 = Math.max(j - 1, 0), j1 = Math.min(j + 1, NR - 1); const da = (aOf(i1) - aOf(i0)) * rv, dr = rOf(j1) - rOf(j0); const slope = Math.hypot((H[j * NA + i1] - H[j * NA + i0]) / da, (H[j1 * NA + i] - H[j0 * NA + i]) / dr);
         const n = hash(i * 0.37, j * 0.53), n2 = hash(Math.floor(i / 9) * 1.3, Math.floor(j / 7) * 2.1); const tree = 620 + 160 * (n2 - 0.5);
