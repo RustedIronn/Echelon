@@ -69,7 +69,7 @@ export const FAR_WANTED = Q.get('far') !== '0';
 export function addFarTerrain(group, camera, dress) {
   if (!FAR_WANTED) return;
   Promise.all([fetch(`${ROOT}/far-terrain.json`).then((r) => r.json()), fetch(`${ROOT}/far-terrain.bin`).then((r) => r.arrayBuffer())]).then(([meta, buf]) => {
-    const H = new Float32Array(buf); const { na: NA, nr: NR, a0, a1, r0, r1 } = meta; const s = Number(Q.get('fars') ?? 0.1), A = (Number(Q.get('faraz') ?? 0) * Math.PI) / 180;
+    const H0 = new Float32Array(buf); const { na: NA, nr: NR, a0, a1, r0, r1 } = meta; const cap = Number(Q.get('farcap') ?? 900); const H = H0.map((h) => (h > 0 ? cap * Math.tanh(h / cap) : h)); /* the massif is capped: this land is the foothills, the pass and the saddle, the peaks are the old range's */ const s = Number(Q.get('fars') ?? 0.1), A = (Number(Q.get('faraz') ?? 0) * Math.PI) / 180;
     const hash = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
     const rOf = (j) => r0 * (r1 / r0) ** (j / (NR - 1)), aOf = (i) => ((a0 + ((a1 - a0) * i) / (NA - 1)) * Math.PI) / 180;
     const pos = new Float32Array(NA * NR * 3), col = new Float32Array(NA * NR * 3); const c = new THREE.Color(), rockC = new THREE.Color(), snowC = new THREE.Color(0.88, 0.9, 0.94), forestC = new THREE.Color(); const wooded = new Uint8Array(NA * NR);
@@ -77,9 +77,9 @@ export function addFarTerrain(group, camera, dress) {
       for (let i = 0; i < NA; i += 1) { const k = j * NA + i, a = aOf(i) + A, h = H[k]; pos[k * 3] = camera.position.x + Math.sin(a) * r; pos[k * 3 + 1] = -4 + h * s * rise * rise * (3 - 2 * rise); pos[k * 3 + 2] = camera.position.z - Math.cos(a) * r;
         const i0 = Math.max(i - 1, 0), i1 = Math.min(i + 1, NA - 1), j0 = Math.max(j - 1, 0), j1 = Math.min(j + 1, NR - 1); const da = (aOf(i1) - aOf(i0)) * rv, dr = rOf(j1) - rOf(j0); const slope = Math.hypot((H[j * NA + i1] - H[j * NA + i0]) / da, (H[j1 * NA + i] - H[j0 * NA + i]) / dr);
         const n = hash(i * 0.37, j * 0.53), n2 = hash(Math.floor(i / 9) * 1.3, Math.floor(j / 7) * 2.1); const tree = 620 + 160 * (n2 - 0.5);
-        const forest = h > 45 && h < tree && slope > 0.07 && slope < 1.1 && n2 > 0.12 ? 1 : 0; wooded[k] = forest;
-        c.setRGB(0.2 + 0.05 * n, 0.33 + 0.05 * n, 0.12); if (h > tree - 40) c.lerp(new THREE.Color(0.24, 0.3, 0.16), Math.min(1, (h - tree + 40) / 200)); /* alpine pasture, greyer */
-        if (forest) c.copy(forestC.setRGB(0.05 + 0.03 * n, 0.1 + 0.04 * n, 0.05 + 0.02 * n));
+        const forest = h > 45 && h < tree && slope > 0.1 && slope < 1.0 && n2 > 0.3 ? 1 : 0; wooded[k] = forest;
+        c.setRGB(0.3 + 0.04 * n, 0.46 + 0.05 * n, 0.17 + 0.03 * n); if (h > tree - 40) c.lerp(new THREE.Color(0.32, 0.4, 0.2), Math.min(1, (h - tree + 40) / 200)); /* the old foothills' soft green */ /* alpine pasture, greyer */
+        if (forest) c.lerp(forestC.setRGB(0.12 + 0.03 * n, 0.22 + 0.04 * n, 0.1 + 0.02 * n), 0.75 * (0.5 + 0.5 * n2)); /* patches of wood in the pasture, not a black blanket */
         const rock = Math.min(1, Math.max(0, (slope - 0.75) / 0.35) + Math.max(0, (h - 950) / 350)); c.lerp(rockC.setRGB(0.21 + 0.05 * n, 0.23 + 0.05 * n, 0.28 + 0.05 * n), rock);
         const snow = Math.min(1, Math.max(0, (h - 1500 - 300 * n2) / 200)) * Math.min(1, Math.max(0, (1.2 - slope) / 0.3)); c.lerp(snowC, snow);
         col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; } }
@@ -90,10 +90,10 @@ export function addFarTerrain(group, camera, dress) {
     // small conifers on the wooded slopes out to about 900 m: at this scale a 25 m spruce stands 2.5 m tall
     const max = 60000; const cone = new THREE.ConeGeometry(1, 1, 5); cone.translate(0, 0.5, 0); const treeMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 }); dress(treeMat, true);
     const trees = new THREE.InstancedMesh(cone, treeMat, max); const m = new THREE.Matrix4(), q = new THREE.Quaternion(), tc = new THREE.Color(); let n = 0;
-    for (let j = 0; j < NR - 1 && n < max; j += 1) { const r = rOf(j) * s; if (r < 330 || r > 900) continue; const keep = r < 600 ? 1 : 0.5;
+    for (let j = 0; j < NR - 1 && n < max; j += 1) { const r = rOf(j) * s; if (r < 330 || r > 900) continue; const keep = r < 600 ? 0.35 : 0.15;
       for (let i = 0; i < NA - 1 && n < max; i += 1) { const k = j * NA + i; if (!wooded[k] || hash(i * 1.7, j * 0.9) > keep) continue; const g = hash(i, j * 3.1); const u = hash(i * 2.3, j), v = hash(j * 1.9, i);
         const x = pos[k * 3] + (pos[(k + 1) * 3] - pos[k * 3]) * u + (pos[(k + NA) * 3] - pos[k * 3]) * v, z = pos[k * 3 + 2] + (pos[(k + 1) * 3 + 2] - pos[k * 3 + 2]) * u + (pos[(k + NA) * 3 + 2] - pos[k * 3 + 2]) * v, y = pos[k * 3 + 1];
-        const th = 1.8 + 1.6 * g; m.compose(new THREE.Vector3(x, y - 0.2, z), q, new THREE.Vector3(th * 0.3, th, th * 0.3)); trees.setMatrixAt(n, m); trees.setColorAt(n, tc.setRGB(0.06 + 0.04 * g, 0.11 + 0.06 * g, 0.055 + 0.03 * g)); n += 1; } }
+        const th = 1.8 + 1.6 * g; m.compose(new THREE.Vector3(x, y - 0.2, z), q, new THREE.Vector3(th * 0.3, th, th * 0.3)); trees.setMatrixAt(n, m); trees.setColorAt(n, tc.setRGB(0.12 + 0.05 * g, 0.2 + 0.07 * g, 0.09 + 0.03 * g)); n += 1; } }
     trees.count = n; trees.instanceMatrix.needsUpdate = true; if (trees.instanceColor) trees.instanceColor.needsUpdate = true; trees.frustumCulled = false; trees.name = 'far terrain trees'; group.add(trees); invalidate();
   }).catch((e) => console.warn('far terrain', e));
 }

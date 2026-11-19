@@ -37,7 +37,7 @@ import { flowerHeadInfo, applyFlowerBehaviour, tagFlowerHeads, CLOSING_SPECIES }
 import { applyMountainDetail, mountainDetailWanted } from './mountainDetail.js';
 import { addMassif, addForestRidge, addFarTerrain, FAR_WANTED } from './massifTransplant.js';
 const MOUNTAIN_DETAIL = mountainDetailWanted();
-const RANGE_SCALE = typeof window === 'undefined' ? 1 : Number(new URLSearchParams(window.location.search).get('range') ?? (FAR_WANTED ? -0.5 : 1.6)); // with the new valley's far land in place the old peaks sink out of sight (-0.5); 1.6 grows them when ?far=0 // the old range grown in place (chosen 2026-11-12); ?range=1 for the original
+const RANGE_SCALE = typeof window === 'undefined' ? 1 : Number(new URLSearchParams(window.location.search).get('range') ?? 1.6); // with the new valley's far land in place the old peaks sink out of sight (-0.5); 1.6 grows them when ?far=0 // the old range grown in place (chosen 2026-11-12); ?range=1 for the original
 import { FOLIAGE_A2C, TAA } from './antialias.js';
 import {isWorldVisible,subscribeWorldActivity} from './worldActivity.js';
 import { clearBakedPath, fillTrackGrass, heightFieldFrom } from './bakedPath.js';
