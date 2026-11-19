@@ -31,8 +31,9 @@ export function createValleyRelief({ water, hamletBounds, options = RELIEF, amou
     const far = 1 - smooth(options.far[0], options.far[1], -z); if (far <= 0) return 0;
     return near * far * smooth(options.water[0], options.water[1], waterDistance(x, z)) * smooth(0, options.hamletFade, rectDistance(x, z));
   };
+  const WALL = typeof window === 'undefined' ? 0 : Number(new URLSearchParams(window.location.search).get('wall') ?? 14); /* the valley's sides: ground rising away from the stream, as in the new valley (?wall=0 for none) */
   const shape = (x, z) => {
-    let r = 0; for (const s of options.swells) r += s.h * Math.exp(-(((x - s.x) / s.sx) ** 2) - (((z - s.z) / s.sz) ** 2));
+    let r = WALL * smooth(40, 170, waterDistance(x, z)) * smooth(60, 150, -z) * (0.75 + 0.5 * vnoise(x * 0.02, z * 0.03)); for (const s of options.swells) r += s.h * Math.exp(-(((x - s.x) / s.sx) ** 2) - (((z - s.z) / s.sz) ** 2));
     return r + 0.9 * (vnoise(x * 0.035, z * 0.05) - 0.5); // a metre or so of unevenness so no swell is a perfect bump
   };
   const exactAt = (x, z) => { if (!amount) return 0; const m = mask(x, z); return m > 0 ? amount * m * shape(x, z) : 0; };
