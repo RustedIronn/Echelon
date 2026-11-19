@@ -79,7 +79,7 @@ varying vec3 vlWorld; varying vec3 vlNormal;${ground ? ' varying vec3 vlSurf; va
   if (open > 0.0) { vec3 f = diffuseColor.rgb; float fade = 1.0 - smoothstep(600.0, 2200.0, d); /* fine detail gives way to the plot's average tone */
     vec3 mownC = f * vec3(1.2, 1.16, 0.9) * (1.0 + 0.1 * fade * sin(dot(p, vec2(0.83, 0.55)) * 1.1)); /* pale stubble with windrow lines */
     vec3 grazedC = f * vec3(0.94, 1.06, 1.0) * (1.0 + fade * (0.18 * (vlNoise(p / 2.2) - 0.5) - 0.28 * step(0.82, vlNoise(p / 1.6)))); /* short turf, dark tussocks */
-    vec3 dampC = f * vec3(0.76, 0.9, 0.96) * (1.0 + fade * 0.3 * (vlNoise(p / 3.5) - 0.5)); /* rushes, darker and bluer */
+    vec3 dampC = f * vec3(0.86, 0.96, 0.84) * (1.0 + fade * 0.3 * (vlNoise(p / 3.5) - 0.5)); /* rushes, darker and bluer */
     float daisies = smoothstep(0.58, 0.72, vlFbm(p / 38.0 + 3.0)), pinks = smoothstep(0.64, 0.76, vlFbm(p / 52.0 + 9.0)); /* flower pockets in the hay */
     vec3 longC = f * (0.93 + 0.14 * vlFbm(p / 9.0)); longC = mix(longC, longC * vec3(1.16, 1.14, 1.2), daisies * 0.45); longC = mix(longC, longC * vec3(1.15, 0.95, 1.08), pinks * 0.35);
     vec3 tone = mix(mix(mix(longC, mownC, vlLand.x), grazedC, vlLand.y), dampC, vlLand.z);

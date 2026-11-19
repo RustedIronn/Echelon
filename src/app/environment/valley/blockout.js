@@ -156,7 +156,7 @@ export function heightAt(x, z, cheap = false, noPads = false) {
 const C = (hex) => new THREE.Color(hex);
 // the grass zones take the scanned meadow's own albedo (the mean of the baked strips, #5b6439), so the far valley floor is the same
 // meadow as the near one, not a lime lawn; the land gets more light instead (LAND_LIGHT)
-const ZONE = { meadow: C('#486c3a'), hay: C('#566c38'), pasture: C('#426237'), shore: C('#4e5a3c'), forest: C('#2c4429'), larch: C('#4a6435'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#6a6a66'), terrace: C('#486c3a'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
+const ZONE = { meadow: C('#5f8c2c'), hay: C('#6f8b2e'), pasture: C('#5a812e'), shore: C('#62752f'), forest: C('#2f4a20'), larch: C('#5a7d2c'), scree: C('#8b8a84'), rock: C('#6f6e6a'), snow: C('#eef1f4'), gravel: C('#6a6a66'), terrace: C('#5f8c2c'), track: C('#9a8e6c'), wet: C('#4a5838'), dry: C('#76744a'), mown: C('#7e7c4c') };
 const LAND_LIGHT = 1.45; // the land is lit to make up for the lower exposure
 const SNOWLINE = Q.get('season') === 'winter' ? 120 : Q.get('season') === 'spring' ? 900 : 1500;
 export const SURF = [0, 0, 0]; // set by zoneColour: gravel, track and forest-floor weights for the ground textures
@@ -220,15 +220,15 @@ void main() {
   vec2 p = vWorld.xz; float paws = smoothstep(0.5, 0.72, lf(p * 0.025)); // where a breath of wind is crossing
   vec2 rp = p * vec2(0.9, 2.6) + vec2(uTime * 0.35, uTime * 0.12); vec2 ripple = vec2(lf(rp), lf(rp + 7.3)) - 0.5; /* the ripples move */
   float fw = length(fwidth(rp)); /* ripples finer than a pixel would only shake the reflection row by row: let them fade with distance */
-  vec4 uv = vUv; uv.xy += ripple * (0.004 + 0.03 * paws) / (1.0 + 2.5 * fw) * uv.w;
+  vec4 uv = vUv; uv.xy += ripple * (0.007 + 0.03 * paws) / (1.0 + 2.5 * fw) * uv.w;
   vec3 refl = texture2DProj(tDiffuse, uv).rgb;
   vec3 v = normalize(cameraPosition - vWorld); float f = 0.02 + 0.98 * pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
   // the shallows: near the shore the lake bed shows through (stones and silt, brown-green), the reflection weaker
   vec2 q = vWorld.xz - uLake.xy; float cr = cos(uRot), sr = sin(uRot); vec2 e = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr) / uLake.zw; float l = length(e);
   float shallow = smoothstep(1.0, 1.24, l + 0.05 * (lf(p * 0.15) - 0.5));
   vec3 bed = mix(vec3(0.16, 0.15, 0.1), vec3(0.24, 0.22, 0.16), lf(p * 0.6)) * (0.8 + 0.3 * lf(p * 2.3));
-  vec3 body = mix(vec3(0.04, 0.08, 0.07), bed, shallow) * uDay; /* the lake bed is lit by the day, dark at night */
-  gl_FragColor = vec4(mix(body, refl * vec3(0.9, 0.94, 0.97) * (1.0 - 0.1 * paws), clamp(f * 1.05 + 0.08, 0.0, 1.0) * (1.0 - 0.6 * shallow)), 1.0); /* the reflection a little darker and greener than the sky it shows: the water sits in the land */
+  vec3 body = mix(vec3(0.015, 0.035, 0.045) * 1.6, bed, shallow) * uDay; /* the lake bed is lit by the day, dark at night */
+  gl_FragColor = vec4(mix(body, refl * vec3(0.98, 1.0, 1.03) * (1.0 - 0.06 * paws), clamp(f * 1.05 + 0.08, 0.0, 1.0) * (1.0 - 0.6 * shallow)), 1.0); /* the reflection a little darker and greener than the sky it shows: the water sits in the land */
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,
@@ -258,16 +258,16 @@ function buildWater() {
   float fine = 1.0 / (1.0 + 6.0 * length(fwidth(vec2(fl.x * 5.0, fl.y * 0.45)))); /* detail finer than a pixel only glitters: let it melt into a calm sheen with distance */
   vec2 q = vec2(fl.x * 5.0, fl.y * 0.45 - uTime * sp); float rip = ((vlNoise(q) - 0.5) * 0.6 + (vlNoise(q * 2.7 + 4.0) - 0.5) * 0.4 * fine) * (0.35 + 0.65 * fine); /* ripples carried downstream */
   vec3 V = normalize(cameraPosition - vlWorld); float fres = pow(1.0 - clamp(V.y + rip * 0.2, 0.0, 1.0), 4.0);
-  vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb; vec3 body = mix(bedC * vec3(0.55, 0.7, 0.68), vec3(0.07, 0.19, 0.21), depth); /* stones through the shallows, deep green-blue pools */
+  vec3 bedC = texture2D(tBed, vlWorld.xz / 2.4).rgb; vec3 body = mix(bedC * vec3(0.55, 0.7, 0.68), vec3(0.02, 0.05, 0.065), depth); /* stones through the shallows, deep green-blue pools */
   float pool = smoothstep(0.35, 0.65, vlFbm(vec2(fl.y * 0.03 + 9.0, fl.x * 0.7))) * (1.0 - rapid); /* slack water mirrors the dark far bank, running water the sky */
-  vec3 skyM = mix(uHaze, vec3(dot(uHaze, vec3(0.333))) * vec3(0.92, 1.0, 0.98), 0.45); /* meltwater greys the sky it mirrors */ vec3 mirror = mix(skyM * (0.8 + 0.9 * rip), vec3(0.1, 0.17, 0.1), pool * 0.7);
+  vec3 skyM = mix(uHaze, vec3(0.30, 0.52, 0.92), 0.55); /* meltwater greys the sky it mirrors */ vec3 mirror = mix(skyM * (0.8 + 0.9 * rip), vec3(0.1, 0.17, 0.1), pool * 0.7);
   vec3 water = mix(body, mirror, clamp(0.2 + 0.8 * fres, 0.0, 1.0) * (0.45 + 0.55 * depth));
   water *= 1.0 - 0.5 * smoothstep(0.55, 0.85, edge); /* the shade under the banks */
   float streak = vlNoise(vec2(fl.x * 9.0, fl.y * 0.35 - uTime * sp)) * vlNoise(vec2(fl.x * 23.0 + 3.0, fl.y * 0.9 - uTime * sp * 1.3));
-  float foam = mix(0.3 * rapid, smoothstep(0.4 - 0.2 * rapid, 0.62, streak), fine) * rapid * (0.4 + 0.6 * depth); /* far off, the rapids are a soft pale reach, not speckle */
+  float foam = 0.25 * mix(0.3 * rapid, smoothstep(0.4 - 0.2 * rapid, 0.62, streak), fine) * rapid * (0.4 + 0.6 * depth); /* far off, the rapids are a soft pale reach, not speckle */
   diffuseColor.rgb = mix(water, vec3(0.88, 0.91, 0.9), foam * 0.75);
   float glint = fine * fine * step(0.97, vlNoise(vec2(fl.x * 40.0, fl.y * 2.0 - uTime * sp * 2.0))) * pow(max(dot(-V, normalize(uSunDir)), 0.0), 6.0) * smoothstep(0.0, 0.15, uSunDir.y);
-  diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; }`); }; riverMat.customProgramCacheKey = () => 'valley-river-2'; }
+  diffuseColor.rgb += vec3(1.6, 1.5, 1.3) * glint; }`); }; riverMat.customProgramCacheKey = () => 'valley-river-3'; }
   group.add(new THREE.Mesh(rg, riverMat));
   // stones: the glacial river's grey cobbles and boulders along its banks and on the bars at the bends, and a scatter on the lake shore;
   // rounded, half buried, pale where dry and darker at the waterline
