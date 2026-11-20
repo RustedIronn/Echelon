@@ -19,3 +19,10 @@ the renders are large and stay local). These scripts rebuild everything from the
 
 State (Nov 2026): first pass. Flowers are a first drift layout; bank cobbles were taken out until there are good rock models; the stream
 was rebuilt to read like a glacial river (ref: the Lonza). Not yet exported back to WebGL.
+
+Target 01 pass (Nov 2026): the frame rebuilt against the agreed feeling (nostalgia and tranquility; references and rules on the board made
+by `../target-01/make_board.ps1`). The camera stands low in the meadow (`common.py` CAM); `build_hamlet.py` composes the heart of the frame -
+South Tyrol farmhouses and barns built in `houses.py` (stone plinth, plastered ground floor, dark larch boards, deep-eaved shingle roofs,
+shuttered windows with geraniums) around the exported chapel, trees in natural groups, a worn path, a still pond with an irregular shore and
+sedge; `build_flowers.py` lays buttercup-led drifts with white marguerite and lesser celandine (CC0, asset-auditions); `build_air.py` sets a
+low warm evening backlight. Chimney smoke is off (volume speckle at this sample count).

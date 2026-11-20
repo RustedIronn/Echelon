@@ -13,22 +13,29 @@ def vnoise(x, y, seed):
     return (h(xi, yi) * (1 - u) + h(xi + 1, yi) * u) * (1 - v) + (h(xi, yi + 1) * (1 - u) + h(xi + 1, yi + 1) * u) * v
 def fbm(x, y, seed): return 0.55 * vnoise(x, y, seed) + 0.3 * vnoise(x * 2.2 + 3.1, y * 2.2, seed + 1) + 0.15 * vnoise(x * 4.7, y * 4.7 + 5.3, seed + 2)
 
+if 'PLANT Celandine' not in bpy.data.objects:  # lesser celandine (CC0, asset-auditions/celandine-01)
+    with bpy.data.libraries.load(str(HERE.parent / 'asset-auditions' / 'celandine-01' / 'celandine-01_source.blend'), link=False) as (s_, d_): d_.objects = ['celandine_01_c_LOD0']
+    cel = d_.objects[0]; cel.name = 'PLANT Celandine'; bpy.data.collections['Library'].objects.link(cel); cel.location = (0, 0, -500); cel.rotation_euler = (0, 0, 0)
 near = scene.objects['Valley ground (near, 2 m)']; me = near.data; n = len(me.vertices)
 get = lambda k: (lambda a: (me.attributes[k].data.foreach_get('value', a), a)[1])(np.empty(n, np.float32))
 co = np.empty(n * 3, np.float32); me.vertices.foreach_get('co', co); co = co.reshape(-1, 3); x, y, h = co[:, 0].astype(float), co[:, 1].astype(float), co[:, 2].astype(float)
-d = np.hypot(x, y)
+import sys; sys.path.insert(0, str(HERE)); from common import cam_rel
+d, _ang, _ahead = cam_rel(x, y)
 meadow = np.clip(get('dens_tall') + get('dens_mid') + get('dens_hill') * 0.6, 0, 1)  # the grass masks already keep off water, path, rock and houses
 meadow *= sm(get('river_w') + 1.0, get('river_w') + 3.0, get('river_d'))
 meadow *= 1 - sm(170, 260, d)
 damp = get('damp_soil'); rise = sm(2.0, 9.0, h)
 SPECIES = {
-    'marguerite': (fbm(x / 60, y / 45, 11), 0.50, 0.68, 0.10, None),
-    'dandelion': (fbm(x / 38, y / 30, 23), 0.52, 0.70, 0.06, lambda: 0.6 + 0.8 * damp + 0.4 * (1 - rise)),
-    'pink': (fbm(x / 18, y / 15, 37), 0.58, 0.74, 0.03, lambda: 0.5 + 0.9 * rise),
-    'clover': (fbm(x / 26, y / 22, 51), 0.45, 0.65, 0.08, None),
+    'marguerite': (fbm(x / 60, y / 45, 11), 0.44, 0.7, 0.14, lambda: 0.7 + 0.6 * rise),  # white woven through, more on the drier ground
+    'dandelion': (fbm(x / 30, y / 24, 23), 0.36, 0.66, 0.30, lambda: 1.0 + 0.5 * damp),  # buttercup yellow leads, richer where it is damp
+    'pink': (fbm(x / 22, y / 18, 37), 0.62, 0.82, 0.02, lambda: 0.5 + 0.9 * rise),
+    'celandine': (fbm(x / 24, y / 20, 51), 0.45, 0.7, 0.12, lambda: 0.7 + 0.8 * damp),  # low glossy yellow in the damper sward
 }
 for name, (field, lo, hi, scatter, bias) in SPECIES.items():
-    v = (sm(lo, hi, field) + scatter) * meadow * (bias() if bias else 1.0)
+    wx, wy = x + 40 * (fbm(x / 120, y / 120, 81) - 0.5), y + 40 * (fbm(x / 120 + 7, y / 120, 82) - 0.5)  # warped, so no patch looks stamped
+    rhythm = 0.18 + 0.82 * sm(0.3, 0.68, fbm(wx / 44, wy / 32, 71)) * (0.75 + 0.25 * fbm(x / 9, y / 9, 91))  # soft drifts that thin gradually into quieter green (no on/off patches)
+    rhythm *= 1 + 0.5 * sm(6, 9, d) * (1 - sm(18, 30, d))  # a little more just in front of us
+    v = (sm(lo, hi, field) + scatter) * meadow * (bias() if bias else 1.0) * rhythm
     key = 'dens_fl_' + name
     if key in me.attributes: me.attributes.remove(me.attributes[key])
     me.attributes.new(key, 'FLOAT', 'POINT').data.foreach_set('value', np.clip(v, 0, 1).astype(np.float32))
@@ -49,8 +56,18 @@ def scatter_tree(name, attr, plant, spacing, density, smin, smax):
     join = N.new('GeometryNodeJoinGeometry'); Lk(gi.outputs[0], join.inputs[0]); Lk(inst.outputs[0], join.inputs[0]); Lk(join.outputs[0], go.inputs[0]); return ng
 
 for m in [m for m in near.modifiers if m.name.startswith('Flowers')]: near.modifiers.remove(m)
-for name, plant, spacing, density, smin, smax in (('marguerite', 'PLANT Marguerite', 0.09, 18.0, 0.9, 1.5), ('dandelion', 'PLANT Dandelion', 0.1, 12.0, 1.0, 1.6),
-                                                  ('pink', 'PLANT Carthusian Pink', 0.12, 9.0, 0.8, 1.3), ('clover', 'PLANT Red Clover', 0.12, 7.0, 0.8, 1.2)):
+for name, plant, spacing, density, smin, smax in (('marguerite', 'PLANT Marguerite', 0.1, 13.0, 1.0, 1.4), ('dandelion', 'PLANT Dandelion', 0.09, 20.0, 1.9, 2.8),
+                                                  ('pink', 'PLANT Carthusian Pink', 0.12, 9.0, 0.8, 1.3), ('celandine', 'PLANT Celandine', 0.1, 14.0, 1.6, 2.3)):
     mod = near.modifiers.new('Flowers ' + name, 'NODES'); mod.node_group = scatter_tree('Scatter flowers ' + name, 'dens_fl_' + name, bpy.data.objects[plant], spacing, density, smin, smax)
+# the dandelion stands in for buttercup: its yellow brightened and cleaned (it read mustard in the low light)
+for slot in bpy.data.objects['PLANT Dandelion'].material_slots:
+    m_ = slot.material
+    if not m_ or not m_.use_nodes or m_.get('brightened'): continue
+    for bsdf in [nd for nd in m_.node_tree.nodes if nd.bl_idname == 'ShaderNodeBsdfPrincipled']:
+        inp = bsdf.inputs['Base Color']; hs = m_.node_tree.nodes.new('ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value = 1.35; hs.inputs['Value'].default_value = 1.35
+        if inp.is_linked: src = inp.links[0].from_socket; m_.node_tree.links.new(src, hs.inputs['Color'])
+        else: hs.inputs['Color'].default_value = inp.default_value
+        m_.node_tree.links.new(hs.outputs['Color'], inp)
+    m_['brightened'] = True
 bpy.ops.wm.save_as_mainfile(filepath=str(HERE / 'valley_composition_01.blend'))
 scene.render.filepath = str(HERE / 'renders' / 'flowers-01.png'); bpy.ops.render.render(write_still=True); print('FLOWERS done')

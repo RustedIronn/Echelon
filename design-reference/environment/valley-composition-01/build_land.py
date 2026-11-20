@@ -68,9 +68,12 @@ far = mesh_from('Valley far land (polar)', fverts, quads[keep])
 clay = bpy.data.materials.new('Clay'); clay.use_nodes = True; bsdf = clay.node_tree.nodes['Principled BSDF']; bsdf.inputs['Base Color'].default_value = (0.32, 0.36, 0.26, 1); bsdf.inputs['Roughness'].default_value = 0.95
 for ob in (near, far): ob.data.materials.append(clay)
 
-# hero camera: 9.7 m above the lake, 32 degree vertical view, horizon lifted 1.64 degrees
+# hero camera: low in the meadow (common.py CAM), 32 degree vertical view
 cam_data = bpy.data.cameras.new('Hero'); cam_data.sensor_fit = 'VERTICAL'; cam_data.angle_y = math.radians(32); cam_data.clip_start = 0.5; cam_data.clip_end = 40000
-cam = bpy.data.objects.new('Hero camera', cam_data); scene.collection.objects.link(cam); cam.location = (0, 0, 9.7); cam.rotation_euler = (math.radians(90 + 1.64), 0, 0); scene.camera = cam
+cam = bpy.data.objects.new('Hero camera', cam_data); scene.collection.objects.link(cam); from common import CAM, CAM_EYE, CAM_YAW
+_ci, _cj = int(round((CAM[0] - nm['minX']) / C)), int(round((-CAM[1] - nm['minZ']) / C)); _gz = float(nh[_cj, _ci])
+cam.location = (CAM[0], CAM[1], _gz + CAM_EYE); cam.rotation_euler = (math.radians(90 + 3.0), 0, -math.radians(CAM_YAW));  # low in the meadow, the horizon a little below the middle: sky and meadow leave room for the UI
+scene.camera = cam
 scene.render.resolution_x, scene.render.resolution_y = 1864, 727
 
 # daylight: a sun ahead and a little left (the valley's noon), with the physical sky

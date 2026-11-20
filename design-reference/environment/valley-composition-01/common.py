@@ -23,3 +23,11 @@ def polyline_distance(px, py, Q):
         t = np.clip(((P[:, None] - A) * AB).sum(-1) / np.maximum((AB * AB).sum(-1), 1e-9), 0, 1); dd = np.sqrt(((P[:, None] - (A + AB * t[..., None])) ** 2).sum(-1)); j = dd.argmin(1); dj = dd[np.arange(n), j]
         u = dj < best; best[u] = dj[u]; seg[u] = k + j[u]
     return best, seg
+
+# The hero camera: standing low in the meadow on the river's east bank, turned a little right so the hamlet sits at the right third and the
+# river leads away up the valley on the left (target 01: composition first). Valley metres, Blender axes (x right, y ahead).
+CAM = (100.0, 160.0); CAM_EYE = 2.4; CAM_YAW = 10.0  # eye on a gentle rise: from 1.7 m the foreground flowers hid the pond  # degrees to the right of straight up the valley
+def cam_rel(x, y):
+    """distance from the camera, absolute angle off the view axis (degrees), and distance ahead along the view axis"""
+    dx, dy = x - CAM[0], y - CAM[1]; yaw = np.radians(CAM_YAW)
+    return np.hypot(dx, dy), np.abs(np.degrees(np.arctan2(dx, dy)) - CAM_YAW), dy * np.cos(yaw) + dx * np.sin(yaw)

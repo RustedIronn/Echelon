@@ -53,7 +53,8 @@ near = scene.objects['Valley ground (near, 2 m)']; me = near.data; n = len(me.ve
 get = lambda k: (lambda a: (me.attributes[k].data.foreach_get('value', a), a)[1])(np.empty(n, np.float32))
 d_, w_ = get('river_d'), get('river_w'); co = np.empty(n * 3, np.float32); me.vertices.foreach_get('co', co); co = co.reshape(-1, 3)
 nz_ = 0.5 + 0.3 * np.sin(co[:, 0] / 17.0 + 1.7) * np.sin(co[:, 1] / 13.0) + 0.2 * np.sin(co[:, 0] / 5.3 + co[:, 1] / 7.1)
-view = (co[:, 1] > 0) * (1 - sm(46, 56, np.degrees(np.abs(np.arctan2(co[:, 0], co[:, 1]))))) * sm(0.1, 0.35, get('orig_z'))  # dry ground only: nothing of the bank stands in the lake
+import sys; sys.path.insert(0, str(HERE)); from common import cam_rel
+_d, _ang, _ahead = cam_rel(co[:, 0].astype(float), co[:, 1].astype(float)); view = (_ahead > 0) * (1 - sm(46, 56, _ang)) * sm(0.1, 0.35, get('orig_z'))  # dry ground only: nothing of the bank stands in the lake
 cob = (sm(w_ * 0.8, w_ * 0.95, d_) * (1 - sm(w_ + 1.5 + 2.5 * nz_, w_ + 3.5 + 3.0 * nz_, d_))) * view * (d_ < 60)
 bush = sm(w_ + 1.5, w_ + 3.0, d_) * (1 - sm(w_ + 7, w_ + 14, d_)) * sm(0.5, 0.7, nz_) * view
 for k_, v_ in (('cobble', cob), ('bank_scrub', bush)):

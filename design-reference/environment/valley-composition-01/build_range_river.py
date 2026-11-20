@@ -10,6 +10,13 @@ for o in [o for o in scene.objects if o.name.startswith('RANGE')]: bpy.data.obje
 with bpy.data.libraries.load(str(HERE / 'valley-range.blend'), link=False) as (s, d): d.objects = ['RANGE approved']
 rng = d.objects[0]; scene.collection.objects.link(rng)
 for p in rng.data.polygons: p.use_smooth = True
+# two mountains, not a row of spikes (target 01): the tallest, pointed peak and the broadest other mass stay; the rest sink to low ridges
+# between them; the whole range set further back and lower, so it supports the mood instead of overpowering it
+_rm2 = rng.data; _n2 = len(_rm2.vertices); _c2 = np.empty(_n2 * 3, np.float32); _rm2.vertices.foreach_get('co', _c2); _c2 = _c2.reshape(-1, 3)
+_p1 = _c2[int(np.argmax(_c2[:, 2])), :2]; _far = np.hypot(_c2[:, 0] - _p1[0], _c2[:, 1] - _p1[1]) > 2600; _p2 = _c2[int(np.argmax(np.where(_far, _c2[:, 2], -1))), :2]
+_keep = np.maximum(np.exp(-(np.hypot(_c2[:, 0] - _p1[0], _c2[:, 1] - _p1[1]) / 1500) ** 2), np.exp(-(np.hypot(_c2[:, 0] - _p2[0], _c2[:, 1] - _p2[1]) / 2100) ** 2))
+_c2[:, 2] = _c2[:, 2] * (0.28 + 0.72 * _keep) * 0.95; _rm2.vertices.foreach_set('co', _c2.ravel()); _rm2.update(); rng.location = (0, 1700, 0)  # majestic: they rise well above the hills, still far and soft
+print('RR peaks', _p1.round(0), _p2.round(0))
 # the range's foot (its flat lowland, 4.5 to 6 km out) carries forest like a real valley floor under the peaks; bare, it read as a pale band in the haze
 _rm = rng.data; _rn = len(_rm.vertices); _rc = np.empty(_rn * 3, np.float32); _rm.vertices.foreach_get('co', _rc); _rc = _rc.reshape(-1, 3)
 _patch = 0.5 + 0.3 * np.sin(_rc[:, 0] / 310.0 + 1.1) * np.sin(_rc[:, 1] / 270.0) + 0.2 * np.sin(_rc[:, 0] / 97.0 + _rc[:, 1] / 131.0)
@@ -22,7 +29,7 @@ far = scene.objects['Valley far land (polar)']; me = far.data; n = len(me.vertic
 co = np.empty(n * 3, np.float32); me.vertices.foreach_get('co', co); co = co.reshape(-1, 3); r = np.hypot(co[:, 0], co[:, 1])
 if 'orig_z' not in me.attributes: me.attributes.new('orig_z', 'FLOAT', 'POINT').data.foreach_set('value', co[:, 2].copy())
 oz = np.empty(n, np.float32); me.attributes['orig_z'].data.foreach_get('value', oz)
-k = sm(3600, 4500, r); k2 = sm(6800, 8200, r); co[:, 2] = (oz * (1 - k) + np.minimum(oz, 60.0) * k) * (1 - k2) + (lambda am: 700 * np.tanh(np.maximum(oz, 0) / 700) * (1 - am) + (950 + 380 * np.sin(np.arctan2(co[:, 0], co[:, 1]) * 9.0 + 0.6) + 220 * np.sin(np.arctan2(co[:, 0], co[:, 1]) * 23.0 + 2.2)) * am)(1 - sm(20, 27, np.degrees(np.abs(np.arctan2(co[:, 0], co[:, 1]))))) * k2  # behind the range a far mountain line (blue in the haze), so the gap at the range's foot reads as distant hills, not a pale flat band, so the eye never runs past the range's back edge into the sky; kept as a low floor under the range: dropped further, it left a hole below the range's front edge (sky seen through the ground)
+k = sm(3600, 4500, r); k2 = sm(6800, 8200, r); co[:, 2] = (oz * (1 - k) + np.minimum(oz, 60.0) * k) * (1 - k2) + (lambda am: 700 * np.tanh(np.maximum(oz, 0) / 700) * (1 - am) + (140 + 70 * np.sin(np.arctan2(co[:, 0], co[:, 1]) * 9.0 + 0.6) + 50 * np.sin(np.arctan2(co[:, 0], co[:, 1]) * 23.0 + 2.2)) * am)(1 - sm(20, 27, np.degrees(np.abs(np.arctan2(co[:, 0], co[:, 1]))))) * k2  # behind the range a far mountain line (blue in the haze), so the gap at the range's foot reads as distant hills, not a pale flat band, so the eye never runs past the range's back edge into the sky; kept as a low floor under the range: dropped further, it left a hole below the range's front edge (sky seen through the ground)
 me.vertices.foreach_set('co', co.ravel()); me.update()
 for key in ('streambed', 'damp_soil'):  # it was flagged as lake bed before it was lowered: the pale gravel showed through the haze as a white band
     a = np.empty(n, np.float32); me.attributes[key].data.foreach_get('value', a); me.attributes[key].data.foreach_set('value', (a * (1 - sm(1200, 1800, r))).astype(np.float32))

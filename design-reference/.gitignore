@@ -41,3 +41,8 @@ environment/valley-composition-01/*
 !environment/valley-composition-01/tools/
 environment/valley-composition-01/tools/*
 !environment/valley-composition-01/tools/*.mjs
+!environment/target-01/
+environment/target-01/*
+!environment/target-01/*.py
+!environment/target-01/*.ps1
+!environment/target-01/*.md

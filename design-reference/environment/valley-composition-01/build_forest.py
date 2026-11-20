@@ -18,7 +18,8 @@ for ob in [scene.objects['Valley ground (near, 2 m)'], scene.objects['Valley far
     nr = np.empty(n * 3, np.float32); me.vertices.foreach_get('normal', nr); slope = 1 - np.clip(nr.reshape(-1, 3)[:, 2], 0, 1)
     get = lambda k: (lambda a: (me.attributes[k].data.foreach_get('value', a), a)[1])(np.empty(n, np.float32))
     rock, snow, bed = get('alpine_rock'), get('alpine_snow'), get('streambed')
-    d = np.hypot(x, y); ang = np.degrees(np.abs(np.arctan2(x, y))); view = (1 - sm(46, 56, ang)) * (y > 0)
+    import sys; sys.path.insert(0, str(HERE)); from common import cam_rel
+    d, ang, ahead = cam_rel(x, y); view = (1 - sm(46, 56, ang)) * (ahead > 0)
     stands = sm(0.42, 0.6, fbm(x / 160, y / 160, 7) + 0.25 * sm(0.05, 0.25, slope))  # stands follow the slopes: the steeper sides wooded, clearings between
     edge = sm(0.35, 0.65, fbm(x / 22, y / 22, 11))  # a ragged edge, single trees outside it
     treeline = 1 - sm(650, 900, h + 200 * (fbm(x / 400, y / 400, 2) - 0.5))
@@ -26,7 +27,7 @@ for ob in [scene.objects['Valley ground (near, 2 m)'], scene.objects['Valley far
     forest = stands * (0.55 + 0.45 * edge) * treeline * floor * (1 - rock) * (1 - snow) * (1 - bed) * (1 - sm(0.55, 0.8, slope)) * view * sm(90, 160, d) * (1 - sm(5000, 7000, d))
     if 'forest' in me.attributes: me.attributes.remove(me.attributes['forest'])
     me.attributes.new('forest', 'FLOAT', 'POINT').data.foreach_set('value', forest.astype(np.float32))
-    th = np.maximum(get('tree_habitat_soil'), sm(0.3, 0.7, forest) * 0.8); me.attributes['tree_habitat_soil'].data.foreach_set('value', th.astype(np.float32))  # dark needle floor under the stands
+    th = np.maximum(get('tree_habitat_soil'), sm(0.4, 0.8, forest) * 0.22);  # only a hint of needle litter: the ground between the trees stays green me.attributes['tree_habitat_soil'].data.foreach_set('value', th.astype(np.float32))  # dark needle floor under the stands
     print('FOREST', ob.name, 'forest cover', round(float(forest.mean()), 3))
 
 def tree_scatter(name, plant, spacing, density, smin, smax, seed):
@@ -47,7 +48,7 @@ spruce, larch = bpy.data.objects['PLANT Norway Spruce'], bpy.data.objects['PLANT
 for ob in [scene.objects['Valley ground (near, 2 m)'], scene.objects['Valley far land (polar)']]:
     for m in [m for m in ob.modifiers if m.name.startswith('Forest')]: ob.modifiers.remove(m)
     big = 'far' in ob.name
-    for nm, plant, sp, dn, a, b, sd in (('Forest spruce', spruce, 5.0, 1 / 28, 0.55, 1.25, 3), ('Forest larch', larch, 7.0, 1 / 160, 0.5, 1.05, 9)):
+    for nm, plant, sp, dn, a, b, sd in (('Forest spruce', spruce, 5.0, 1 / 28, 0.55, 1.25, 3),):  # (larch taken out: it renders ghost-white against the low sun)
         ng = tree_scatter(nm + (' far' if big else ' near'), plant, sp * (1.6 if big else 1), dn / (2.2 if big else 1), a, b, sd)
         mod = ob.modifiers.new(nm, 'NODES'); mod.node_group = ng
 bpy.ops.wm.save_as_mainfile(filepath=str(HERE / 'valley_composition_01.blend'))

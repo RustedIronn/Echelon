@@ -24,7 +24,8 @@ near = scene.objects['Valley ground (near, 2 m)']; me = near.data; n = len(me.ve
 co = np.empty(n * 3, np.float32); me.vertices.foreach_get('co', co); co = co.reshape(-1, 3); x, y, h = co[:, 0].astype(float), co[:, 1].astype(float), co[:, 2].astype(float)
 get = lambda k: (lambda a: (me.attributes[k].data.foreach_get('value', a), a)[1])(np.empty(n, np.float32))
 open_ground = (1 - get('alpine_rock')) * (1 - get('streambed')) * (1 - get('alpine_snow')) * sm(0.05, 0.4, h)
-d = np.hypot(x, y); ang = np.degrees(np.abs(np.arctan2(x, y))); view = (1 - sm(42, 50, ang)) * (y > -5)
+import sys; sys.path.insert(0, str(HERE)); from common import cam_rel
+d, ang, ahead = cam_rel(x, y); view = (1 - sm(42, 50, ang)) * (ahead > -5)
 lane = sm(1.2, 3.0, polyd(x, y, pth))
 for name, a, b, k in TIERS:
     dens = open_ground * view * sm(a - 8, a + 8, d) * (1 - sm(b - 15, b + 15, d)) * (lane if 'tall' in name or 'basal' in name else 1)
